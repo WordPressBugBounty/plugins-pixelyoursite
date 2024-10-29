@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'URL\\' => array($vendorDir . '/glenscott/url-normalizer/src/URL'),
+    'Jaybizzle\\CrawlerDetect\\' => array($vendorDir . '/jaybizzle/crawler-detect/src'),
 );

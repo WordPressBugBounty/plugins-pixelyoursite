@@ -178,6 +178,12 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
 
                                 <i class="fa fa-google" style="opacity: .25;"></i>
 
+                                <?php if ( $event->isGTMEnabled() && $event->isGTMPresent()) : ?>
+                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.png">
+                                <?php else : ?>
+                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.png" style="opacity: 0.25">
+                                <?php endif; ?>
+
                                 <?php if ( Pinterest()->enabled() && $event->isPinterestEnabled() ) : ?>
                                     <i class="fa fa-pinterest-square"></i>
                                 <?php else : ?>

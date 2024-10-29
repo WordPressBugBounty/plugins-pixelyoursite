@@ -292,7 +292,39 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
     </div>
 <?php endif; ?>
+<hr>
 
+<?php if ( GTM()->enabled() ) : ?>
+
+    <div class="card" id="pys-section-gtm-id">
+        <div class="card-header">
+            GTM tag settings <?php cardCollapseBtn(); ?>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col col-offset-left form-inline">
+                    <label>ecomm_prodid</label>
+                    <?php GTM()->render_select_input( 'edd_content_id',
+                        array(
+                            'download_id' => 'Download ID',
+                            'download_sku'   => 'Download SKU',
+                        )
+                    ); ?>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col col-offset-left form-inline">
+                    <label>ecomm_prodid prefix</label><?php GTM()->render_text_input( 'edd_content_id_prefix', '(optional)' ); ?>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col col-offset-left form-inline">
+                    <label>ecomm_prodid suffix</label><?php GTM()->render_text_input( 'edd_content_id_suffix', '(optional)' ); ?>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <hr>
 <!-- Google Dynamic Remarketing Vertical -->
@@ -346,6 +378,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 <!-- Purchase -->
+<hr>
+<h2 class="section-title">Recommended events</h2>
 <div class="card">
     <div class="card-header has_switch">
         <?php PYS()->render_switcher_input('edd_purchase_enabled'); ?>Track Purchases <?php cardCollapseBtn(); ?>
@@ -447,7 +481,16 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
-
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'edd_purchase_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the purchase event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
         <div class="row mt-3">
             <div class="col">
                 <p class="mb-0">*This event will be fired on the order-received, the default Easy Digital Downloads
@@ -546,7 +589,16 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
-
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'edd_initiate_checkout_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the begin_checkout event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 
@@ -636,7 +688,16 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
-
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'edd_add_to_cart_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the add_to_cart event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 
@@ -733,7 +794,16 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
-
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'edd_view_content_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the view_item event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 
@@ -790,7 +860,16 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </div>
             </div>
         <?php endif; ?>
-
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'edd_view_category_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the ViewCategory event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 
@@ -844,6 +923,15 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <h4 class="switcher-label">Enable on TikTok</h4>
             </div>
         </div>
+
+        <hr class="mb-3 mt-3">
+            <div class="row mb-1">
+                <div class="col">
+                    <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+                </div>
+            </div>
+        <hr class="mb-3 mt-3">
 
         <div class="row mt-3">
             <div class="col col-offset-left form-inline">
@@ -903,6 +991,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <h4 class="switcher-label">Enable on TikTok</h4>
             </div>
         </div>
+        <hr class="mb-3 mt-3">
+            <div class="row mb-1">
+                <div class="col">
+                    <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+                </div>
+            </div>
+        <hr class="mb-3 mt-3">
 
         <div class="row mt-3">
             <div class="col col-offset-left form-inline">
@@ -964,6 +1060,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <h4 class="switcher-label">Enable on TikTok</h4>
             </div>
         </div>
+        <hr class="mb-3 mt-3">
+            <div class="row mb-1">
+                <div class="col">
+                    <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+                </div>
+            </div>
+        <hr class="mb-3 mt-3">
 
         <div class="row mt-3">
             <div class="col col-offset-left form-inline">
@@ -1026,7 +1130,16 @@ if ( ! defined( 'ABSPATH' ) ) {
         <!--                </div>-->
         <!--            </div>-->
         <!--        --><?php //endif; ?>
-
+        <hr class="mb-3 mt-3">
+            <?php if ( GTM()->enabled() ) : ?>
+                <div class="row mb-1">
+                    <div class="col">
+                        <?php GTM()->render_switcher_input( 'edd_remove_from_cart_enabled' ); ?>
+                        <h4 class="switcher-label">Enable the RemoveFromCart event on GTM dataLayer</h4>
+                    </div>
+                </div>
+            <?php endif; ?>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 

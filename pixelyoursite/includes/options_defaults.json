@@ -7,6 +7,8 @@
   "general_event_on_woo_enabled": true,
   "general_event_on_edd_enabled": true,
 
+  "enable_all_tracking_ids" : true,
+
   "cookie_duration": 7,
   "last_visit_duration": 60,
   "debug_enabled": false,
@@ -16,7 +18,8 @@
     "administrator"
   ],
 
-  "block_robot_enabled": false,
+  "block_robot_enabled": true,
+  "exclude_blocked_robots": ["WP Rocket"],
   "block_ip_enabled": false,
   "blocked_ips": [],
 

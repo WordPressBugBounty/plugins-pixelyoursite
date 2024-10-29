@@ -1,0 +1,24 @@
+<?php
+
+namespace PixelYourSite;
+defined('ABSPATH') || exit;
+
+require_once PYS_FREE_PATH . '/containers_gtm/containerDownloads.php';
+
+class gtmContainers extends containerDownloads {
+
+    public function __construct() {
+        parent::__construct(trailingslashit(PYS_FREE_PATH) . 'containers_gtm/');
+    }
+
+    public function getContainers() {
+        return [
+            [
+                'enable' => true,
+                'file_name' => 'GTM-PYS-v1-0.json',
+                'show_name' => 'GTM Container Version 1.0',
+                'description' => 'Once the file is imported, the GTM Container will have triggers for our events, and variables for our parameters. Version 1.0 comes with GA4 tag support. You must edit the GA4 ID variable and add your own GA4 tag ID.'
+            ]
+        ];
+    }
+}

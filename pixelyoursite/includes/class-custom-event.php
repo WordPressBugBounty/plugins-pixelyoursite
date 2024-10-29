@@ -47,6 +47,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @property string ga_ads_event_category
  * @property string ga_ads_event_label
  *
+ * @property bool gtm_enabled
+ * @property string gtm_pixel_id
+ * @property string gtm_event_action
+ * @property string gtm_custom_event_action
+ * @property array gtm_custom_params
+ * @property array gtm_params
+ * @property string gtm_version
+ * @property string gtm_conversion_label
+ * @property string gtm_event_category
+ * @property string gtm_event_label
  *
  * @property bool   bing_enabled
  * @property string bing_event_action
@@ -181,6 +191,16 @@ class CustomEvent {
         'ga_ads_custom_params'      => array(),
         'ga_ads_custom_params_enabled'    => false,
 
+        'gtm_enabled'             => false,
+        'gtm_pixel_id'            => array(),
+        'gtm_event_action'        => '_custom',
+        'gtm_custom_event_action' => null,
+        //ver 4
+        'gtm_params'             => array(),
+        'gtm_custom_params'      => array(),
+        'gtm_custom_params_enabled'    => false,
+        'gtm_conversion_label'    => null,
+
 
         'bing_enabled' => false,
         'bing_event_action' => null,
@@ -228,13 +248,15 @@ class CustomEvent {
 			$state = get_post_meta( $post_id, '_pys_event_state', true );
 			$this->enabled = $state == 'active' ? true : false;
 
-
-            if(count(GA()->getPixelIDs()) == 0) {
-                $this->data['ga_enabled'] = false;
-                $this->clearGa();
-            }
-
 		}
+        else{
+            if(empty($this->data['gtm_pixel_id'])) {
+                $all = GTM()->getPixelIDs();
+                if(count($all) > 0) {
+                    $this->data['gtm_pixel_id'] = $all[0];
+                }
+            }
+        }
 
 	}
 
@@ -462,6 +484,7 @@ class CustomEvent {
 		 */
         $this->updateGA($args);
 
+        $this->updateGTM($args);
         /**
          * BING
          */
@@ -503,6 +526,12 @@ class CustomEvent {
 	public function getTitle() {
 		return $this->title;
 	}
+
+    public function transformTitle() {
+        $cleaned = preg_replace('/[^A-Za-z0-9]+/', ' ', $this->title);
+        $result = ucwords(trim($cleaned));
+        return str_replace(' ', '', $result);
+    }
 
 	public function isEnabled() {
 		return $this->enabled;
@@ -749,7 +778,113 @@ class CustomEvent {
         return $list;
     }
 
+    public function isGTMEnabled(){
+        return (bool) $this->gtm_enabled;
+    }
+    public function isGTMPresent(){
+        $allValues = GTM()->getAllPixels();
+        $selectedValues = (array) $this->gtm_pixel_id;
+        $hasAWElement = !empty($selectedValues) && (
+                ( in_array( 'all', $selectedValues ) &&
+                    (bool) array_filter( $allValues, function ( $value ) {
+                        return strpos( $value, 'GTM' ) === 0;
+                    } ) ) ||
+                (bool) array_filter($selectedValues, function($value) {
+                    return strpos($value, 'GTM') === 0;
+                })
+            );
 
+        return $hasAWElement;
+    }
+
+    public function getGTMParams() {
+        if(is_array($this->gtm_params)) {
+            return $this->gtm_params;
+        } else {
+            return [];
+        }
+    }
+
+    public function getGTMAction(){
+        return $this->gtm_event_action == '_custom' || $this->gtm_event_action ==  'CustomEvent' ? $this->gtm_custom_event_action : $this->gtm_event_action;
+    }
+
+    public function getGTMCustomParams() {
+        return  (array)$this->gtm_custom_params;
+    }
+
+    private function clearGTM() {
+        $this->data['gtm_params'] = array();
+        $this->data['gtm_custom_params'] = array();
+        $this->data['gtm_event_action'] = 'CustomEvent';
+        $this->data['gtm_custom_event_action']=null;
+    }
+
+    private function updateGTM($args)
+    {
+        $all = GTM()->getAllPixels();
+
+        if(!empty( $args['gtm_pixel_id'] )) {
+            $this->data['gtm_pixel_id'] = array_map(function($pixelId) use ($all) {
+                if (in_array( $pixelId,$all)) {
+                    return $pixelId;
+                }
+            }, $args['gtm_pixel_id']);
+        } elseif (count($all) > 0) {
+            $this->data['gtm_pixel_id'] = (array) $all[0];
+        } else {
+            $this->data['gtm_pixel_id'] = [];
+        }
+
+        $this->data['gtm_enabled'] = isset( $args['gtm_enabled']  )
+            && $args['gtm_enabled'];
+
+        $this->data['gtm_event_action'] = isset( $args['gtm_event_action'] )
+            ? sanitize_text_field( $args['gtm_event_action'] )
+            : 'view_item';
+        $this->data['gtm_custom_event_action'] = (isset( $args['gtm_event_action'] ) && ($args['gtm_event_action'] == '_custom' || $args['gtm_event_action'] == 'CustomEvent')) && !empty($args['gtm_custom_event_action'])
+            ? sanitizeKey( $args['gtm_custom_event_action'] )
+            : null;
+        $this->data['gtm_params'] = array();
+
+        foreach ($this->GAEvents as $group) {
+            foreach ($group as $name => $fields) {
+                if($name == $this->data['gtm_event_action']) {
+                    foreach ($fields as $field) {
+                        $this->data['gtm_params'][$field] = isset($args['gtm_params'][$field]) ? $args['gtm_params'][$field] : "";
+                    }
+                    break;
+                }
+            }
+        }
+
+        if ( isset( $args['gtm_params'] ) ) {
+            foreach ($args['gtm_params'] as $key => $val) {
+                $this->data['gtm_params'][$key] = sanitize_text_field( $val );
+            }
+        }
+
+        // reset old custom params
+        $this->data['gtm_custom_params'] = array();
+
+        // custom params
+        if ( isset( $args['gtm_custom_params'] ) ) {
+
+            foreach ( $args['gtm_custom_params'] as $custom_param ) {
+
+                if ( ! empty( $custom_param['name'] ) && ! empty( $custom_param['value'] ) ) {
+
+                    $this->data['gtm_custom_params'][] = array(
+                        'name'  => sanitize_text_field( $custom_param['name'] ),
+                        'value' => sanitize_text_field( $custom_param['value'] ),
+                    );
+
+                }
+
+            }
+
+        }
+    }
 
 
 }

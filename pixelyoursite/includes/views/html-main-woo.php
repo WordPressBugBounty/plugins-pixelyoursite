@@ -286,6 +286,16 @@ use PixelYourSite\Facebook\Helpers;
                     <label>content_id suffix</label><?php Facebook()->render_text_input( 'woo_content_id_suffix', '(optional)' ); ?>
                 </div>
             </div>
+	        <?php if (isWPMLActive()) : ?>
+                <div class="row mb-3 mt-3">
+                    <div class="col">
+                        <p class="mb-3"> WPML Detected! Select your ID logic.</p>
+				        <?php Facebook()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                        <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
+                    </div>
+                </div>
+	        <?php endif; ?>
         </div>
     </div>
 
@@ -337,6 +347,16 @@ use PixelYourSite\Facebook\Helpers;
                     <label>id suffix</label><?php GATags()->render_text_input( 'woo_content_id_suffix', '(optional)' ); ?>
                 </div>
             </div>
+	        <?php if (isWPMLActive()) : ?>
+                <div class="row mb-3 mt-3">
+                    <div class="col">
+                        <p class="mb-3"> WPML Detected! Select your ID logic.</p>
+				        <?php GATags()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                        <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
+                    </div>
+                </div>
+	        <?php endif; ?>
         </div>
     </div>
 <?php endif; ?>
@@ -383,6 +403,16 @@ use PixelYourSite\Facebook\Helpers;
                     <label>ID suffix</label><?php Pinterest()->render_text_input( 'woo_content_id_suffix', '(optional)' ); ?>
                 </div>
             </div>
+	        <?php if (isWPMLActive()) : ?>
+                <div class="row mb-3 mt-3">
+                    <div class="col">
+                        <p class="mb-3"> WPML Detected! Select your ID logic.</p>
+				        <?php Pinterest()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                        <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
+                    </div>
+                </div>
+	        <?php endif; ?>
         </div>
     </div>
 <?php else: ?>
@@ -438,6 +468,16 @@ use PixelYourSite\Facebook\Helpers;
                     <label>ID suffix</label><?php Bing()->render_text_input( 'woo_content_id_suffix', '(optional)' ); ?>
                 </div>
             </div>
+	        <?php if (isWPMLActive()) : ?>
+                <div class="row mb-3 mt-3">
+                    <div class="col">
+                        <p class="mb-3"> WPML Detected! Select your ID logic.</p>
+				        <?php Bing()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                        <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
+                    </div>
+                </div>
+	        <?php endif; ?>
         </div>
     </div>
 <?php else : ?>
@@ -449,7 +489,67 @@ use PixelYourSite\Facebook\Helpers;
         </div>
     </div>
 <?php endif; ?>
+<hr>
+<?php if ( GTM()->enabled() ) : ?>
 
+    <div class="card" id="pys-section-gtm-id">
+        <div class="card-header">
+            GTM tag settings <?php cardCollapseBtn(); ?>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                    <h4 class="switcher-label">Treat variable products like simple products</h4>
+                    <p class="mt-3">If you enable this option, the main ID will be used instead of the variation ID. Turn this option ON when your Merchant Catalog doesn't include the variants for variable products.</p>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'woo_variable_data_select_product' ); ?>
+                    <h4 class="switcher-label">For product pages, track the variation data when a variation is selected</h4>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <?php GTM()->render_checkbox_input( 'woo_variations_use_parent_name', "When tracking variations, use the parent name" ); ?>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col col-offset-left form-inline">
+                    <label>id</label>
+                    <?php GTM()->render_select_input( 'woo_content_id',
+                        array(
+                            'product_id' => 'Product ID',
+                            'product_sku'   => 'Product SKU',
+                        )
+                    ); ?>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col col-offset-left form-inline">
+                    <label>id prefix</label><?php GTM()->render_text_input( 'woo_content_id_prefix', '(optional)' ); ?>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col col-offset-left form-inline">
+                    <label>id suffix</label><?php GTM()->render_text_input( 'woo_content_id_suffix', '(optional)' ); ?>
+                </div>
+            </div>
+	        <?php if (isWPMLActive()) : ?>
+                <div class="row mb-3 mt-3">
+                    <div class="col">
+                        <p class="mb-3"> WPML Detected! Select your ID logic.</p>
+				        <?php GTM()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                        <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
+                    </div>
+                </div>
+	        <?php endif; ?>
+        </div>
+    </div>
+<?php endif; ?>
+<hr>
 <!-- Google Dynamic Remarketing Vertical -->
 <div class="card card-static card-disabled">
     <div class="card-header">
@@ -632,6 +732,17 @@ use PixelYourSite\Facebook\Helpers;
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
 
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'woo_purchase_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the purchase event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
+
         <div class="row mt-3">
             <div class="col">
                 <p class="mb-0">*This event will be fired on the order-received, the default WooCommerce "thank you
@@ -736,6 +847,17 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
+
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'woo_initiate_checkout_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the begin_checkout event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
 
     </div>
 </div>
@@ -890,7 +1012,16 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
-
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'woo_add_to_cart_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the add_to_cart event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 
@@ -994,6 +1125,17 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
+
+        <hr class="mb-3 mt-3">
+        <?php if ( GTM()->enabled() ) : ?>
+            <div class="row mb-1">
+                <div class="col">
+                    <?php GTM()->render_switcher_input( 'woo_view_content_enabled' ); ?>
+                    <h4 class="switcher-label">Enable the view_item event on GTM dataLayer</h4>
+                </div>
+            </div>
+        <?php endif; ?>
+        <hr class="mb-3 mt-3">
 
     </div>
 </div>
@@ -1202,6 +1344,15 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
 
+        <hr class="mb-3 mt-3">
+            <div class="row mb-1">
+                <div class="col">
+                    <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+                </div>
+            </div>
+        <hr class="mb-3 mt-3">
+
         <div class="row mt-3">
             <div class="col col-offset-left form-inline">
                 <label>Fire this event when the client has at least </label>
@@ -1261,6 +1412,15 @@ use PixelYourSite\Facebook\Helpers;
                 <h4 class="switcher-label">Enable on TikTok</h4>
             </div>
         </div>
+
+        <hr class="mb-3 mt-3">
+        <div class="row mb-1">
+            <div class="col">
+                <?php renderDummySwitcher(); ?>
+                <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+            </div>
+        </div>
+        <hr class="mb-3 mt-3">
 
         <div class="row mt-3">
             <div class="col col-offset-left form-inline">
@@ -1323,6 +1483,15 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
 
+        <hr class="mb-3 mt-3">
+        <div class="row mb-1">
+            <div class="col">
+                <?php renderDummySwitcher(); ?>
+                <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+            </div>
+        </div>
+        <hr class="mb-3 mt-3">
+
         <div class="row mt-3">
             <div class="col col-offset-left form-inline">
                 <label>Fire this event when the client has LTV at least</label>
@@ -1380,6 +1549,15 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
 
+        <hr class="mb-3 mt-3">
+        <div class="row mb-1">
+            <div class="col">
+                <?php renderDummySwitcher(); ?>
+                <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+            </div>
+        </div>
+        <hr class="mb-3 mt-3">
+
         <div class="row mt-3">
             <div class="col col-offset-left form-inline">
                 <label>Fire this event when the client has at least </label>
@@ -1429,6 +1607,15 @@ use PixelYourSite\Facebook\Helpers;
                 <h4 class="switcher-label">Send the event to TikTok</h4>
             </div>
         </div>
+
+        <hr class="mb-3 mt-3">
+        <div class="row mb-1">
+            <div class="col">
+                <?php renderDummySwitcher(); ?>
+                <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+            </div>
+        </div>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 <div class="card card-disabled">
@@ -1471,6 +1658,15 @@ use PixelYourSite\Facebook\Helpers;
                 <h4 class="switcher-label">Send the event to TikTok</h4>
             </div>
         </div>
+
+        <hr class="mb-3 mt-3">
+        <div class="row mb-1">
+            <div class="col">
+                <?php renderDummySwitcher(); ?>
+                <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+            </div>
+        </div>
+        <hr class="mb-3 mt-3">
     </div>
 </div>
 <h2 class="section-title">Extra events</h2>

@@ -31,7 +31,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="row">
 			<div class="col">
 				<?php Facebook()->render_switcher_input( 'remove_metadata' ); ?>
-				<h4 class="switcher-label">Remove Facebook default events</h4>
+				<h4 class="switcher-label">autoConfig: false</h4>
+                <p><small>Remove Facebook default events</small></p>
 			</div>
 		</div>
 		<div class="row mb-3">
