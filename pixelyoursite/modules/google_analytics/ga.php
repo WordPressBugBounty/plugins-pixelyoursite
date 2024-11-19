@@ -56,7 +56,7 @@ class GA extends Settings implements Pixel {
 			$this->configured = $this->enabled()
                                 && count( $tracking_id ) > 0
                                 && !empty($tracking_id[0])
-			                    && ! apply_filters( 'pys_pixel_disabled', false, $this->getSlug() );
+			                    && ! apply_filters( 'pys_pixel_disabled', array(), $this->getSlug() );
 			
 		}
 		
@@ -577,6 +577,11 @@ class GA extends Settings implements Pixel {
         );
         $params['items'] = $items;
 
+        if ( PYS()->getOption( 'woo_view_content_value_enabled' ) ) {
+            $value_option = PYS()->getOption( 'woo_view_content_value_option' );
+            $global_value = PYS()->getOption( 'woo_view_content_value_global', 0 );
+            $params['value']    = getWooEventValue( $value_option, $global_value,100, $product->get_id() ,$quantity);
+        }
 
 		return array(
 			'name'  => 'view_item',
@@ -608,7 +613,7 @@ class GA extends Settings implements Pixel {
         {
             foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
 
-                $product = wc_get_product(!empty($cart_item['variation_id']) ? $cart_item['variation_id'] : $cart_item['product_id']);
+                $product = wc_get_product(!empty($cart_item['variation_id'] && !GATags()->getOption('woo_variable_as_simple')) ? $cart_item['variation_id'] : $cart_item['product_id']);
 
                 if ($product) {
 
@@ -711,6 +716,13 @@ class GA extends Settings implements Pixel {
 			'items'           => $items,
 		);
 
+        if ( PYS()->getOption( 'woo_add_to_cart_value_enabled' ) ) {
+            $value_option = PYS()->getOption( 'woo_add_to_cart_value_option' );
+            $global_value = PYS()->getOption( 'woo_add_to_cart_value_global', 0 );
+
+            $params['value']    = getWooEventValue( $value_option, $global_value,100, $product_id,$quantity );
+        }
+
         $data = array(
             'params'  => $params,
         );
@@ -810,7 +822,7 @@ class GA extends Settings implements Pixel {
 			return false;
 		}
 
-		$params = $this->getWooCartParams();
+		$params = $this->getWooCartParams('InitiateCheckout');
 
 		return array(
 			'name'  => 'begin_checkout',
@@ -851,6 +863,9 @@ class GA extends Settings implements Pixel {
             $content_id = GA\Helpers\getWooProductContentId( $product_id );
 
 			$product = wc_get_product( $product_id );
+            if (GATags()->getOption('woo_variable_as_simple') && $product->is_type('variation')) {
+                $product = wc_get_product($product->get_parent_id());
+            }
             if(!$product) continue;
             $name = GATags()->getOption('woo_variations_use_parent_name') && $product->is_type('variation') ? $product->get_title() : $product->get_name();
 
@@ -917,14 +932,17 @@ class GA extends Settings implements Pixel {
 			$total_value   += $item['price' ];
 
 		}
-		
+
 		$params = array(
 			'event_category'  => 'ecommerce',
             'transaction_id'  => $order_id,
-			'value'           => $order->get_total(),
 			'currency'        => get_woocommerce_currency(),
 			'items'           => $items,
 		);
+        $value_option = PYS()->getOption( 'woo_purchase_value_option' );
+        $global_value = PYS()->getOption( 'woo_purchase_value_global', 0 );
+
+        $params['value'] = getWooEventValueOrder( $value_option, $order, $global_value );
 
         $params['fees'] = get_fees($order);
 
@@ -935,7 +953,7 @@ class GA extends Settings implements Pixel {
 
 	}
 
-	private function getWooCartParams() {
+	private function getWooCartParams($context='cart') {
 
 		$items = array();
 		$product_ids = array();
@@ -991,6 +1009,28 @@ class GA extends Settings implements Pixel {
 			'items' => $items,
 		);
 
+        if ( $context == 'InitiateCheckout' ) {
+
+            $value_enabled_option = 'woo_initiate_checkout_value_enabled';
+            $value_option_option  = 'woo_initiate_checkout_value_option';
+            $value_global_option  = 'woo_initiate_checkout_value_global';
+
+        } else { // AddToCart
+
+            $value_enabled_option = 'woo_add_to_cart_value_enabled';
+            $value_option_option  = 'woo_add_to_cart_value_option';
+            $value_global_option  = 'woo_add_to_cart_value_global';
+
+        }
+        if ( PYS()->getOption( $value_enabled_option ) ) {
+
+            $value_option = PYS()->getOption( $value_option_option );
+            $global_value = PYS()->getOption( $value_global_option, 0 );
+
+            $params['value']    = getWooEventValueCart( $value_option, $global_value );
+
+        }
+
 		return $params;
 
 	}
@@ -1015,7 +1055,15 @@ class GA extends Settings implements Pixel {
 				),
 			),
 		);
+        if ( PYS()->getOption( 'edd_view_content_value_enabled' ) ) {
 
+            $amount = getEddDownloadPriceToDisplay( $post->ID );
+            $value_option   = PYS()->getOption( 'edd_view_content_value_option' );
+            $global_value   = PYS()->getOption( 'edd_view_content_value_global', 0 );
+
+            $params['value'] = getEddEventValue( $value_option, $amount, $global_value );
+
+        }
 		return array(
 			'name'  => 'view_item',
 			'data'  => $params,
@@ -1047,7 +1095,16 @@ class GA extends Settings implements Pixel {
 				),
 			),
 		);
-		
+
+        if ( PYS()->getOption( 'edd_add_to_cart_value_enabled' ) ) {
+
+            $amount = getEddDownloadPriceToDisplay( $download_id, $price_index );
+            $value_option = PYS()->getOption( 'edd_add_to_cart_value_option' );
+            $global_value = PYS()->getOption( 'edd_add_to_cart_value_global', 0 );
+
+            $params['value'] = getEddEventValue( $value_option, $amount, $global_value );
+
+        }
 		return $params;
 
 	}
@@ -1061,6 +1118,20 @@ class GA extends Settings implements Pixel {
 		} elseif ( $context == 'purchase' && ! $this->getOption( 'edd_purchase_enabled' ) ) {
 			return false;
 		}
+
+        if ( $context == 'add_to_cart' ) {
+            $value_enabled  = PYS()->getOption( 'edd_add_to_cart_value_enabled' );
+            $value_option   = PYS()->getOption( 'edd_add_to_cart_value_option' );
+            $global_value   = PYS()->getOption( 'edd_add_to_cart_value_global', 0 );
+        } elseif ( $context == 'begin_checkout' ) {
+            $value_enabled  = PYS()->getOption( 'edd_initiate_checkout_value_enabled' );
+            $value_option   = PYS()->getOption( 'edd_initiate_checkout_value_option' );
+            $global_value   = PYS()->getOption( 'edd_initiate_checkout_global', 0 );
+        } else {
+            $value_enabled  = PYS()->getOption( 'edd_purchase_value_enabled' );
+            $value_option   = PYS()->getOption( 'edd_purchase_value_option' );
+            $global_value   = PYS()->getOption( 'edd_purchase_value_global', 0 );
+        }
 
 		if ( $context == 'add_to_cart' || $context == 'begin_checkout' ) {
 			$cart = edd_get_cart_contents();
@@ -1137,9 +1208,13 @@ class GA extends Settings implements Pixel {
 
             $params['transaction_id'] = $payment_id;
 			$params['currency'] = edd_get_currency();
-            $params['value'] = edd_get_payment_amount( $payment_id );
 
 		}
+
+        if ( $value_enabled ) {
+            $amount = edd_get_payment_amount( $payment_id );
+            $params['value']    = getEddEventValue( $value_option, $amount, $global_value );
+        }
 		
 		return array(
 			'name' => $context,

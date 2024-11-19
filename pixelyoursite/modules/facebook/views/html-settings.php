@@ -16,12 +16,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		General
 	</div>
 	<div class="card-body">
-        <div class="row mb-3">
-            <div class="col">
-                <?php Facebook()->render_switcher_input( 'enabled' ); ?>
-                <h4 class="switcher-label">Enable Meta Pixel (formerly Facebook Pixel)</h4>
-            </div>
-        </div>
 		<div class="row">
 			<div class="col">
 				<?php Facebook()->render_switcher_input( 'advanced_matching_enabled' ); ?>
@@ -31,7 +25,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="row">
 			<div class="col">
 				<?php Facebook()->render_switcher_input( 'remove_metadata' ); ?>
-				<h4 class="switcher-label">Remove Facebook default events</h4>
+				<h4 class="switcher-label">autoConfig: false</h4>
+                <p><small>Remove Facebook default events</small></p>
 			</div>
 		</div>
 		<div class="row mb-3">

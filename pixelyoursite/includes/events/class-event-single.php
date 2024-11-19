@@ -7,6 +7,23 @@ class SingleEvent extends PYSEvent{
     public $payload = array(
         'delay' => 0
     );
+    private $ecommerceParamArray = array(
+        'currency',
+        'value',
+        'items',
+        'tax',
+        'shipping',
+        'coupon',
+        'affiliation',
+        'fees',
+        'new_customer',
+        'transaction_id',
+        'total_value',
+        'ecomm_prodid',
+        'ecomm_pagetype',
+        'ecomm_totalvalue'
+    );
+
 
     public function __construct($id,$type,$category=''){
         parent::__construct($id,$type,$category);
@@ -21,7 +38,18 @@ class SingleEvent extends PYSEvent{
     function addParams($data) {
 
         if(is_array($data)) {
-            $this->params = array_merge($this->params,$data);
+            if (isset($this->params['triggerType']['type']) && $this->params['triggerType']['type'] === 'ecommerce') {
+                foreach ( $data as $key => $value ) {
+                    if ( in_array( $key, $this->ecommerceParamArray ) ) {
+                        $this->params['ecommerce'][ $key ] = $data[ $key ];
+                    } else {
+                        $this->params[ $key ] = $data[ $key ];
+                    }
+                }
+            }
+            else{
+                $this->params = array_merge($this->params, $data);
+            }
         } else {
             error_log("addParams no array ".print_r($data,true));
         }
@@ -61,5 +89,16 @@ class SingleEvent extends PYSEvent{
         if(isset($this->payload[$key]))
             return $this->payload[$key];
         return null;
+    }
+    function removeParam($key) {
+        if (isset($this->params[$key])) {
+            unset($this->params[$key]);
+        }
+    }
+
+    function removePayload($key) {
+        if (isset($this->payload[$key])) {
+            unset($this->payload[$key]);
+        }
     }
 }

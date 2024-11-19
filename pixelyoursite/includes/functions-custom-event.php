@@ -124,7 +124,41 @@ function renderGAParamInput( $key, $val ) {
     <?php
 
 }
+/**
+ * Output checkbox input
+ *
+ * @param      $key
+ * @param      $label
+ * @param bool $disabled
+ */
+function render_checkbox_input( &$event, $key, $label, $disabled = false ) {
 
+    $attr_name  = "pys[event][$key]";
+    $attr_value = $event->$key;
+
+    $classes = array( 'custom-control', 'custom-checkbox' );
+
+    if ( $disabled ) {
+        $attr_value = false;
+        $classes[] = 'disabled';
+    }
+
+    $classes = implode( ' ', $classes );
+
+    ?>
+
+    <label class="<?php esc_attr_e( $classes ); ?>">
+        <input type="hidden" name="<?php esc_attr_e( $attr_name ); ?>" value="0">
+        <input type="checkbox" name="<?php esc_attr_e( $attr_name ); ?>" value="1"
+               class="custom-control-input" <?php disabled( $disabled, true ); ?> <?php checked( $attr_value,
+            true ); ?> >
+        <span class="custom-control-indicator"></span>
+        <span class="custom-control-description"><?php echo wp_kses_post( $label ); ?></span>
+    </label>
+
+    <?php
+
+}
 /**
  * @param CustomEvent $event
  * @param string      $key
@@ -235,18 +269,23 @@ function renderSelectInput( &$event, $key, $options, $full_width = false ) {
 function renderTriggerTypeInput( &$event, $key ) {
 
 	$options = array(
-        'page_visit'    => 'Page visit',
-        'number_page_visit'    => 'Number of Page Visits - PRO',
-        'url_click'     => 'Click on HTML link - PRO',
-        'css_click'     => 'Click on CSS selector - PRO',
-        'css_mouseover' => 'Mouse over CSS selector - PRO',
-        'scroll_pos'    => 'Page Scroll - PRO',
-        'post_type'    => 'Post type - PRO',
+		'page_visit'        => 'Page visit',
+		'number_page_visit' => 'Number of Page Visits - PRO',
+		'url_click'         => 'Click on HTML link - PRO',
+		'css_click'         => 'Click on CSS selector - PRO',
+		'css_mouseover'     => 'Mouse over CSS selector - PRO',
+		'scroll_pos'        => 'Page Scroll - PRO',
+		'post_type'         => 'Post type - PRO',
+		'video_view'        => 'Embedded Video View - PRO',
+		'email_link'        => 'Email Link - PRO',
 	);
     $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
     foreach ($eventsFormFactory as $activeFormPlugin) :
         $options[$activeFormPlugin->getSlug()] = $activeFormPlugin->getName().' - PRO';
     endforeach;
+
+	asort( $options );
+
 	renderSelectInput( $event, $key, $options );
 
 }
@@ -430,4 +469,55 @@ function renderPinterestEventTypeInput( &$event, $key ) {
 	
 	renderSelectInput( $event, $key, $options );
 	
+}
+
+/**
+ * @param CustomEvent $event
+ * @param string      $key
+ */
+function renderGTMEventId( &$event, $key) {
+    $options = array();
+    $mainPixels = PixelYourSite\GTM()->getPixelIDs();
+    foreach ($mainPixels as $mainPixel) {
+        if (strpos($mainPixel, 'GTM-') === 0 && strpos($mainPixel, 'GTM-') !== false) {
+            $options[$mainPixel] = $mainPixel.' (global)';
+        }
+        else{
+            $options[$mainPixel] = $mainPixel.' (not supported)';
+        }
+
+    }
+
+    render_multi_select_input( $event, $key, $options );
+
+}
+
+/**
+ * @param CustomEvent $event
+ * @param string      $key
+ * @param string      $placeholder
+ */
+function renderGTMParamInput( $key, $val ) {
+
+    $attr_name = "pys[event][gtm_params][$key]";
+    $attr_id = 'pys_event_gtm_' . $key;
+    $attr_value = $val;
+
+    ?>
+
+    <input type="text" name="<?php esc_attr_e( $attr_name ); ?>"
+           id="<?php esc_attr_e( $attr_id ); ?>"
+           value="<?php esc_attr_e( $attr_value ); ?>"
+           class="form-control">
+
+    <?php
+
+}
+
+/**
+ * @param CustomEvent $event
+ * @param string      $key
+ */
+function renderGTMActionInput( &$event, $key ) {
+    renderGroupSelectInput( $event, $key, $event->GAEvents, false,'action_gtm' );
 }

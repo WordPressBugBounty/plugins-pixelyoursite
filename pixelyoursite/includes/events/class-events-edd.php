@@ -6,12 +6,12 @@ class EventsEdd extends EventsFactory {
         //'edd_frequent_shopper', pro
         //'edd_vip_client',pro
         //'edd_big_whale',pro
+        'edd_purchase',
         'edd_view_content',
         'edd_view_category',
         'edd_add_to_cart_on_checkout_page',
         'edd_remove_from_cart',
         'edd_initiate_checkout',
-        'edd_purchase',
         'edd_add_to_cart_on_button_click'
     );
 

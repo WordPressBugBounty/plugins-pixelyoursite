@@ -29,6 +29,19 @@ use PixelYourSite\GA\Helpers;
                 </p>
             </div>
         </div>
+        <hr>
+        <h3>DataLayer Setting:</h3>
+        <div class="row mb-3">
+            <div class="col">
+                <?php GATags()->render_radio_input('gtag_datalayer_type', 'default', 'Use PYS recommended name for data layer variable (recommended).'); ?>
+                <?php GATags()->render_radio_input('gtag_datalayer_type', 'disable', 'Disable name transformation for the data layer (use dataLayer).'); ?>
+                <?php GATags()->render_radio_input('gtag_datalayer_type', 'custom', 'Use this custom name for the data layer variable.'); ?>
+                <div class="col col-offset-left mb-2">
+                    <?php GATags()->render_text_input('gtag_datalayer_name', 'custom name for the data layer'); ?>
+                </div>
+            </div>
+        </div>
+        <hr>
         <div class="row mb-3">
             <div class="col">
                 <?php GA()->renderDummySwitcher(); ?>
@@ -74,12 +87,6 @@ use PixelYourSite\GA\Helpers;
 	<div class="card-body">
         <div class="row mb-4">
             <div class="col">
-                <?php GA()->render_switcher_input( 'enabled' ); ?>
-                <h4 class="switcher-label">Enable Google Analytics IDs</h4>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col">
                 <?php GA()->render_switcher_input( 'custom_page_view_event' ); ?>
                 <h4 class="switcher-label">Control the page_view event</h4>
                 <p class="mt-1 mb-0">
@@ -116,12 +123,6 @@ use PixelYourSite\GA\Helpers;
         Google Ads <?php renderSpBadge(); ?>
     </div>
     <div class="card-body">
-        <div class="row mb-3">
-            <div class="col">
-				<?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable Google Ads IDs</h4>
-            </div>
-        </div>
         <div class="row">
             <div class="col">
 				<?php renderDummySwitcher(); ?>

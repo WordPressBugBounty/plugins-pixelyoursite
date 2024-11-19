@@ -1,6 +1,6 @@
 {
     "exportFormatVersion": 2,
-    "exportTime": "2024-10-25 14:22:52",
+    "exportTime": "2024-11-18 10:22:00",
     "containerVersion": {
         "path": "accounts/6209157978/containers/198599132/versions/0",
         "accountId": "6209157978",
@@ -415,7 +415,7 @@
                             {
                                 "type": "TEMPLATE",
                                 "key": "arg1",
-                                "value": ".*"
+                                "value": "^(?!gtm\\.dom$|gtm\\.load$).*"
                             }
                         ]
                     }
@@ -435,29 +435,9 @@
                                 "value": "advanced_marketing"
                             }
                         ]
-                    },
-                    {
-                        "type": "EQUALS",
-                        "parameter": [
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg0",
-                                "value": "{{Event}}"
-                            },
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg1",
-                                "value": "gtm"
-                            },
-                            {
-                                "type": "BOOLEAN",
-                                "key": "negate",
-                                "value": "true"
-                            }
-                        ]
                     }
                 ],
-                "fingerprint": "1729860966145",
+                "fingerprint": "1729877993505",
                 "parentFolderId": "18"
             },
             {
@@ -478,7 +458,7 @@
                             {
                                 "type": "TEMPLATE",
                                 "key": "arg1",
-                                "value": ".*"
+                                "value": "^(?!gtm\\.dom$|gtm\\.load$).*"
                             }
                         ]
                     }
@@ -498,29 +478,9 @@
                                 "value": "manual"
                             }
                         ]
-                    },
-                    {
-                        "type": "EQUALS",
-                        "parameter": [
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg0",
-                                "value": "{{Event}}"
-                            },
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg1",
-                                "value": "gtm"
-                            },
-                            {
-                                "type": "BOOLEAN",
-                                "key": "negate",
-                                "value": "true"
-                            }
-                        ]
                     }
                 ],
-                "fingerprint": "1729861003099",
+                "fingerprint": "1729878022402",
                 "parentFolderId": "18"
             },
             {
@@ -541,7 +501,7 @@
                             {
                                 "type": "TEMPLATE",
                                 "key": "arg1",
-                                "value": ".*"
+                                "value": "^(?!gtm\\.dom$|gtm\\.load$).*"
                             }
                         ]
                     }
@@ -561,29 +521,9 @@
                                 "value": "ecommerce"
                             }
                         ]
-                    },
-                    {
-                        "type": "EQUALS",
-                        "parameter": [
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg0",
-                                "value": "{{Event}}"
-                            },
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg1",
-                                "value": "gtm"
-                            },
-                            {
-                                "type": "BOOLEAN",
-                                "key": "negate",
-                                "value": "true"
-                            }
-                        ]
                     }
                 ],
-                "fingerprint": "1729860986535",
+                "fingerprint": "1729878011177",
                 "parentFolderId": "18"
             },
             {
@@ -604,7 +544,7 @@
                             {
                                 "type": "TEMPLATE",
                                 "key": "arg1",
-                                "value": ".*"
+                                "value": "^(?!gtm\\.dom$|gtm\\.load$).*"
                             }
                         ]
                     }
@@ -624,29 +564,9 @@
                                 "value": "automated"
                             }
                         ]
-                    },
-                    {
-                        "type": "EQUALS",
-                        "parameter": [
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg0",
-                                "value": "{{Event}}"
-                            },
-                            {
-                                "type": "TEMPLATE",
-                                "key": "arg1",
-                                "value": "gtm"
-                            },
-                            {
-                                "type": "BOOLEAN",
-                                "key": "negate",
-                                "value": "true"
-                            }
-                        ]
                     }
                 ],
-                "fingerprint": "1729860941686",
+                "fingerprint": "1729878001460",
                 "parentFolderId": "18"
             }
         ],
@@ -2471,7 +2391,7 @@
                 "name": "Click Text"
             }
         ],
-        "fingerprint": "1729866172121",
+        "fingerprint": "1731925320699",
         "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6209157978/containers/198599132/versions/0?apiLink=version"
     }
 }

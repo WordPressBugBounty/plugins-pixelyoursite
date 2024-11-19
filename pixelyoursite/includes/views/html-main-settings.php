@@ -210,8 +210,17 @@ include "html-popovers.php";
                         </div>
                         <div class="row mb-3">
                             <div class="col">
-                                <?php PYS()->render_switcher_input('block_robot_enabled', false, true, true); ?>
+                                <?php PYS()->render_switcher_input('block_robot_enabled', false); ?>
                                 <h4 class="switcher-label">Disable the plugin for known web crawlers</h4>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <h4 class="label">Exclude these robots from blocking</h4>
+	                            <?php PYS()->render_tags_select_input('exclude_blocked_robots',false); ?>
+                                <small class="mt-2 d-block">
+                                    You can exclude robots by their user-agent. You can use either the full name or part of it.
+                                </small>
                             </div>
                         </div>
                         <div class="row mb-3">

@@ -11,110 +11,116 @@ if ( ! defined( 'ABSPATH' ) ) {
 <!-- Pixel IDs -->
 <div class="card card-static">
     <div class="card-header">
-        Pixel IDs
+        <div class="row align-items-center mt-2">
+            <div class="col-12">
+                <?php PYS()->render_switcher_input("enable_all_tracking_ids"); ?>
+                <h4 class="switcher-label">Tracking IDs</h4>
+            </div>
+        </div>
     </div>
     <div class="card-body">
 
-        <?php if ( Facebook()->enabled() ) : ?>
-
-            <div class="row align-items-center mb-3">
-                <div class="col-2  py-2">
-                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/facebook-small-square.png">
-                </div>
-                <div class="col-6">
-                    Your Meta Pixel (formerly Facebook Pixel)
-                </div>
-                <div class="col-4">
-                    <label for="fb_settings_switch" class="btn btn-block btn-sm btn-primary btn-settings">Click for settings</label>
+        <div class="row align-items-center mb-3">
+            <div class="col-2  py-2">
+                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/facebook-small-square.png">
+            </div>
+            <div class="col-6">
+                Your Meta Pixel (formerly Facebook Pixel)
+            </div>
+            <div class="col-4">
+                <label for="fb_settings_switch" class="btn btn-block btn-sm btn-primary btn-settings">Click for settings</label>
+            </div>
+        </div>
+        <input type="checkbox" id="fb_settings_switch" style="display: none">
+        <div class="settings_content">
+            <div class="row  mb-2">
+                <div class="col-12">
+                    <?php Facebook()->render_switcher_input("use_server_api"); ?>
+                    <h4 class="switcher-label">Enable Conversion API (add the token below)</h4>
                 </div>
             </div>
-            <input type="checkbox" id="fb_settings_switch" style="display: none">
-            <div class="settings_content">
-                <div class="row  mb-2">
+            <div class="row mb-3">
+                <div class="col">
+                    <?php Facebook()->render_switcher_input( 'advanced_matching_enabled' ); ?>
+                    <h4 class="switcher-label">Enable Advanced Matching</h4>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <p>
+                        Learn about Conversion API and Advanced Matching privacy and consent:
+                        <a href="https://www.youtube.com/watch?v=PsKdCkKNeLU" target="_blank">watch video</a>
+                    </p>
+                    <p>
+                        Install multiple Facebook Pixles with CAPI support:
+                        <a href="https://www.youtube.com/watch?v=HM98mGZshvc" target="_blank">watch video</a>
+                    </p>
+                    <p>
+                        What is Events Matching and EMQ and how you can improve it:
+                        <a href=" https://www.youtube.com/watch?v=3soI_Fl0JQw" target="_blank">watch video</a>
+                    </p>
+                </div>
+            </div>
+
+            <div class="plate pt-3 pb-3 mb-3">
+
+                <div class="row mb-3">
+                    <div class="col">
+                        <?php Facebook()->render_switcher_input( 'enabled' ); ?>
+                        <h4 class="switcher-label">Enable Pixel</h4>
+                    </div>
+                </div>
+                <div class="row mb-3">
                     <div class="col-12">
-                        <?php Facebook()->render_switcher_input("use_server_api"); ?>
-                        <h4 class="switcher-label">Enable Conversion API (add the token below)</h4>
+                        <h4 class="label">Meta Pixel (formerly Facebook Pixel) ID:</h4>
+                        <?php Facebook()->render_pixel_id( 'pixel_id', 'Meta Pixel (formerly Facebook Pixel) ID' ); ?>
+                        <small class="form-text">
+                            <a href="https://www.pixelyoursite.com/pixelyoursite-free-version/add-your-facebook-pixel?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
+                               target="_blank">How to get it?</a>
+                        </small>
+                        <p class="mt-3 mb-0">Add multiple Meta Pixel (formerly Facebook Pixel)s with the <a href="https://www.pixelyoursite.com/?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
+                                                                                      target="_blank">pro version</a>.</p>
                     </div>
                 </div>
+                <div class="row align-items-center mb-3">
+                    <div class="col-12">
+                        <h4 class="label">Conversion API (recommended):</h4>
+                        <?php Facebook()->render_text_area_array_item("server_access_api_token","Api token") ?>
+                    </div>
+                </div>
+
                 <div class="row mb-3">
                     <div class="col">
-                        <?php Facebook()->render_switcher_input( 'advanced_matching_enabled' ); ?>
-                        <h4 class="switcher-label">Enable Advanced Matching</h4>
+                        Send events directly from your web server to Facebook through the Conversion API. This can help you capture more events. An access token is required to use the server-side API.
+                        <a href='https://www.pixelyoursite.com/facebook-conversion-api-capi' target='_blank'>Learn how to generate the token and how to test Conversion API</a>
                     </div>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col">
-                        <p>
-                            Learn about Conversion API and Advanced Matching privacy and consent:
-                            <a href="https://www.youtube.com/watch?v=PsKdCkKNeLU" target="_blank">watch video</a>
-                        </p>
-                        <p>
-                            Install multiple Facebook Pixles with CAPI support:
-                            <a href="https://www.youtube.com/watch?v=HM98mGZshvc" target="_blank">watch video</a>
-                        </p>
-                        <p>
-                            What is Events Matching and EMQ and how you can improve it:
-                            <a href=" https://www.youtube.com/watch?v=3soI_Fl0JQw" target="_blank">watch video</a>
-                        </p>
+                <div class="row align-items-center mb-3">
+                    <div class="col-12">
+                        <h4 class="label">test_event_code :</h4>
+                        <?php Facebook()->render_text_input_array_item("test_api_event_code","Code"); ?>
+                        <?php Facebook()->render_text_input_array_item("test_api_event_code_expiration_at", "", 0, true); ?>
+
+                        <small class="form-text">
+                            Use this if you need to test the server-side event. <strong>Remove it after
+                                testing.</strong> The code will auto-delete itself after 24 hours.
+                        </small>
                     </div>
                 </div>
-
-                <div class="plate pt-3 pb-3 mb-3">
+                <?php if(isWPMLActive()) : ?>
                     <div class="row mb-3">
                         <div class="col-12">
-                            <h4 class="label">Meta Pixel (formerly Facebook Pixel) ID:</h4>
-                            <?php Facebook()->render_pixel_id( 'pixel_id', 'Meta Pixel (formerly Facebook Pixel) ID' ); ?>
-                            <small class="form-text">
-                                <a href="https://www.pixelyoursite.com/pixelyoursite-free-version/add-your-facebook-pixel?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
-                                   target="_blank">How to get it?</a>
-                            </small>
-                            <p class="mt-3 mb-0">Add multiple Meta Pixel (formerly Facebook Pixel)s with the <a href="https://www.pixelyoursite.com/?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
-                                                                                          target="_blank">pro version</a>.</p>
+                            <strong>WPML Detected. </strong> With the <a target="_blank" href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional?utm_medium=plugin&utm_campaign=multilingual">Advanced and Agency</a> licenses, you can fire a different pixel for each language.
                         </div>
                     </div>
-                    <div class="row align-items-center mb-3">
-                        <div class="col-12">
-                            <h4 class="label">Conversion API (recommended):</h4>
-                            <?php Facebook()->render_text_area_array_item("server_access_api_token","Api token") ?>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col">
-                            Send events directly from your web server to Facebook through the Conversion API. This can help you capture more events. An access token is required to use the server-side API.
-                            <a href='https://www.pixelyoursite.com/facebook-conversion-api-capi' target='_blank'>Learn how to generate the token and how to test Conversion API</a>
-                        </div>
-                    </div>
-
-                    <div class="row align-items-center mb-3">
-                        <div class="col-12">
-                            <h4 class="label">test_event_code :</h4>
-                            <?php Facebook()->render_text_input_array_item("test_api_event_code","Code"); ?>
-                            <?php Facebook()->render_text_input_array_item("test_api_event_code_expiration_at", "", 0, true); ?>
-
-                            <small class="form-text">
-                                Use this if you need to test the server-side event. <strong>Remove it after
-                                    testing.</strong> The code will auto-delete itself after 24 hours.
-                            </small>
-                        </div>
-                    </div>
-                    <?php if(isWPMLActive()) : ?>
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <strong>WPML Detected. </strong> With the <a target="_blank" href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional?utm_medium=plugin&utm_campaign=multilingual">Advanced and Agency</a> licenses, you can fire a different pixel for each language.
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <?php addMetaTagFields(Facebook(),"https://www.pixelyoursite.com/verify-domain-facebook"); ?>
+                <?php endif; ?>
             </div>
+            <?php addMetaTagFields(Facebook(),"https://www.pixelyoursite.com/verify-domain-facebook"); ?>
+        </div>
 
-            <hr>
-        <?php endif; ?>
-
-
-	    <?php if ( GA()->enabled() ) : ?>
+        <hr>
 
             <div class="row align-items-center mb-3">
                 <div class="col-2 py-2">
@@ -165,6 +171,12 @@ if ( ! defined( 'ABSPATH' ) ) {
         <input type="checkbox" id="gan_settings_switch" style="display: none">
         <div class="settings_content">
             <div class="plate pt-3 pb-3">
+                <div class="row mb-2">
+                    <div class="col">
+						<?php GA()->render_switcher_input( 'enabled' ); ?>
+                        <h4 class="switcher-label">Enable Pixel</h4>
+                    </div>
+                </div>
                 <div class="row  mb-2">
                     <div class="col-12">
                         <?php renderDummySwitcher(false); ?>
@@ -279,10 +291,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
 
-
-            <hr>
-
-	    <?php endif; ?>
+        <hr>
 
         <?php do_action( 'pys_admin_pixel_ids' ); ?>
 
@@ -331,6 +340,140 @@ if ( ! defined( 'ABSPATH' ) ) {
     </div>
 </div>
 
+    <div class="card card-static">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-12">
+                    GTM Tag
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center mb-3 py-2">
+                <div class="col-2">
+                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/gtm-square-small.png">
+                </div>
+                <div class="col-6">
+                    Your GTM Tag
+                </div>
+                <div class="col-4">
+                    <label for="gtm_settings_switch" class="btn btn-block btn-sm btn-primary btn-settings">Click
+                        for settings</label>
+                </div>
+            </div>
+
+            <input type="checkbox" id="gtm_settings_switch" style="display: none">
+            <div class="settings_content">
+
+                <div class="plate pixel_info pt-3">
+                    <div class="row mb-2">
+                        <div class="col">
+							<?php GTM()->render_switcher_input( 'enabled' ); ?>
+                            <h4 class="switcher-label">Enable GTM</h4>
+                        </div>
+                    </div>
+                    <div class="row pt-3 pb-3">
+                        <div class="col-12">
+                            <h4 class="label">GTM Tag:</h4>
+                            <?php GTM()->render_pixel_id('gtm_id', 'GTM-123456789'); ?>
+                            <p>
+                                <small>
+                                    If you want to use the dataLayer setting without the container itself, enter "GTM-123456789" in the field and disable the container on the <a href="<?php echo buildAdminUrl( 'pixelyoursite', 'gtm_tags_settings' );?>">GTM settings page.</a>
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <p>
+                                <b>Beta version:</b> This feature is now in Beta and can change in the future.
+                            </p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row ">
+                        <div class="col-12">
+                            <?php GTM()->render_switcher_input('gtm_just_data_layer'); ?>
+                            <h4 class="switcher-label"><?php _e('Send just the data layer', 'pys');?></h4>
+                            <p>
+                                <small>
+                                    <?php _e('Turning ON this option will remove both the head and the body part of the container code but leave data layer code working. This should be only used in specific cases where you need to place the container code manually or using another tool.', 'pys');?>
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row pt-2 pb-3">
+                        <div class="col-12">
+                            <p>
+                                <?php _e('<b>Important:</b> Don\'t use GTM and our native integrations for the same tag/pixel ID. A pixel installed with the native integration must not be installed with GTM.', 'pys');?>
+                            </p>
+                            <hr>
+                            <?php $containers = new gtmContainers();
+                            if(!empty($containers)):
+                                ?>
+                                <p>
+                                    <b><?php _e('GTM Container Import:', 'pys');?> </b>
+                                </p>
+                                <?php
+                                foreach ($containers->getContainers() as $container) {
+                                    if (!$container['enable'] || empty($container['file_name'])) continue;
+                                    ?>
+                                    <p>
+                                        <a href="<?php echo esc_url( buildAdminUrl( 'pixelyoursite', 'containers' ) ); ?>&download_container=<?php echo $container['file_name'];?>" target="_blank" download><?php echo $container['show_name']; ?></a><?php echo !empty($container['description']) ? ' - '.$container['description'] : '';?>
+                                    </p>
+                                    <?php
+                                } ?>
+                                <p class="mt-2">
+                                    <?php _e('Learn how to use the file: ', 'pys');?> <a href="https://www.youtube.com/watch?v=qKJ3mmCgT3M" target="_blank">watch video</a>
+                                </p>
+                                <hr>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="row pt-3 pb-3">
+                        <div class="col-12">
+
+                            <?php if ( isSuperPackActive() ) {
+                                if ( SuperPack()->getOption( 'additional_ids_enabled' ) ) : ?>
+                                    <p>
+                                        <?php GTM()->render_checkbox_input( 'is_fire_signal', 'Fire the active automated events for this pixel' ); ?>
+                                    </p>
+                                    <?php if ( isWooCommerceActive() ) : ?>
+                                        <p>
+                                            <?php GTM()->render_checkbox_input( 'is_fire_woo', 'Fire the WooCommerce events for this pixel' ); ?>
+                                        </p>
+                                    <?php endif; ?>
+                                    <?php if ( isEddActive() ) : ?>
+                                        <p>
+                                            <?php GTM()->render_checkbox_input( 'is_fire_edd', 'Fire the Easy Digital Downloads events for this pixel' ); ?>
+                                        </p>
+                                    <?php endif; ?>
+
+                                    <p>
+                                        <strong>Display conditions:</strong>
+                                        <?php
+                                        $main_pixel = GTM()->getOption( 'main_pixel' );
+                                        if ( !empty( $main_pixel ) && isset( $main_pixel[ 0 ] ) ) {
+                                            $conditions = SuperPack\SPPixelId::fromArray( json_decode( $main_pixel[ 0 ], true ) );
+                                            SuperPack\SpPixelCondition()->renderHtml( $conditions->displayConditions );
+                                        } else {
+                                            SuperPack\SpPixelCondition()->renderHtml();
+                                        } ?>
+                                    </p>
+                                <?php endif; ?>
+
+                                <?php
+                                if ( SuperPack()->getOption( 'enable_hide_this_tag_by_tags' ) || SuperPack()->getOption( 'enable_hide_this_tag_by_url' ) ) {
+                                    GTM()->render_hide_pixel_block();
+                                }
+                            } ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 <div class="panel panel-primary link_youtube">
     <div class="row">
         <div class="col">
@@ -350,24 +493,20 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="card-body">
         <div class="row">
             <div class="col">
+
+                <p><a href="https://www.youtube.com/watch?v=bEK3qaaRvNg" target="_blank">Google Tag Manager and PixelYourSite (7:48 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=uXTpgFu2V-E" target="_blank">How to configure Facebook Conversion API (2:51 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=DZzFP4pSitU" target="_blank">Meta Pixel (formerly Facebook Pixel), CAPI, and PixelYourSite MUST WATCH (8:19) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=QqAIO1ONc0I" target="_blank">How to test Facebook Conversion API (10:16 min) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=sM9yNkBK6Eg" target="_blank">Potentially Violating Personal Data Sent to Facebook (7:30 min) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=PsKdCkKNeLU" target="_blank">Facebook Conversion API and the Consent Problem (9:25 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=kEp5BDg7dP0" target="_blank">How to fire EVENTS with PixelYourSite (22:28) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=zkb67djRnd0" target="_blank">FIX IT: PixelYourSite high number of admin-ajax requests (9:04) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=EvzGMAvBnbs" target="_blank">How to create Meta (Facebook) Custom Audiences & Lookalikes based on Events & Parameters (21:53) - watch now</a></p>
                 <p>
-                    <a href="https://www.youtube.com/watch?v=w97FATUy7ok" target="_blank">
-                        How to configure Custom Conversions on Meta (Facebook) based on Events & Parameters (11:03) - watch now
+                <a href="https://www.youtube.com/watch?v=w97FATUy7ok" target="_blank">How to configure Custom Conversions on Meta (Facebook) based on Events & Parameters (11:03) - watch now
                     </a>
                 </p>
-              
+
                 <p><a href="https://www.youtube.com/watch?v=snUKcsTbvCk" target="_blank">Improve META (Facebook) EMQ score
                         with form automatic data detection (11:48) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=X65h4uhsMJY" target="_blank">
-                        Track ANY WordPress Form - Meta, Google, Pinterest, Bing (3:52) - watch video</a></p>
                 <p><a href="https://www.youtube.com/watch?v=c4Hrb8WK5bw" target="_blank">
                         Fire a LEAD event on form submit - WordPress & PixelYourSite (5:58) - watch video</a></p>
             </div>
@@ -405,7 +544,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     The Form event will fire when a form is successfully submitted for the following plugins: Contact Form 7, Forminator, WP Forms, Formidable Pro, Ninja Forms, and Fluent Forms. For forms added by different means, we will fire the event when the submit button is clicked. Watch <a href="https://www.youtube.com/watch?v=c4Hrb8WK5bw" target="_blank">this video</a> to learn more.
                 </p>
                 <?php
-                enableEventForEachPixel('automatic_event_form_enabled', true, true, true, true, true, true);
+                enableEventForEachPixel('automatic_event_form_enabled', true, true, true, true, true, true, true);
                 ?>
                 <br/>
                 <p>Fires when the website visitor clicks form submit buttons.</p>
@@ -487,6 +626,17 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </div>
                     </div>
                 <?php endif; ?>
+
+                <?php if ( GTM()->enabled()) : ?>
+                    <hr class="mb-3 mt-3">
+                    <div class="row">
+                        <div class="col">
+                            <?php GTM()->render_switcher_input('automatic_event_signup_enabled'); ?>
+                            <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+                        </div>
+                    </div>
+                    <hr class="mb-3 mt-3">
+                <?php endif; ?>
                 <br/>
                 <p>Fires when the website visitor signup for a WordPress account.</p>
                 <p><strong>Event name: </strong></p>
@@ -506,7 +656,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             <div class="card-body">
                 <?php
-                enableEventForEachPixel('automatic_event_login_enabled', true, true, true, true, false, true);
+                enableEventForEachPixel('automatic_event_login_enabled', true, true, true, true, true, false, true);
                 ?>
                 <br/>
                 <p>Fires when the website visitor logins a WordPress account.</p>
@@ -523,7 +673,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             <div class="card-body">
                 <?php
-                enableEventForEachPixel('automatic_event_download_enabled', true, true, true, true, true, true);
+                enableEventForEachPixel('automatic_event_download_enabled', true, true, true, true, true, true, true);
                 ?>
                 <br/>
                 <div>Extension of files to track as downloads:</div>
@@ -545,7 +695,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             <div class="card-body">
                 <?php
-                enableEventForEachPixel('automatic_event_comment_enabled', true, true, true, true, false, true);
+                enableEventForEachPixel('automatic_event_comment_enabled', true, true, true, true, true, false, true);
                 ?>
                 <br/>
                 <p>Fires when the website visitor ads a comment.</p>
@@ -561,7 +711,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             <div class="card-body">
                 <?php
-                enableEventForEachPixel('automatic_event_scroll_enabled', true, true, true, true, false, true);
+                enableEventForEachPixel('automatic_event_scroll_enabled', true, true, true, true, true, false, true);
                 ?>
                 <br/>
                 <div class="mb-2 form-inline">
@@ -583,7 +733,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             <div class="card-body">
                 <?php
-                enableEventForEachPixel('automatic_event_time_on_page_enabled', true, true, true, true, false, true);
+                enableEventForEachPixel('automatic_event_time_on_page_enabled', true, true, true, true, true, false, true);
                 ?>
                 <br/>
                 <div class="mb-2 form-inline">
@@ -601,7 +751,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             <div class="card-body">
                 <?php
-                enableEventForEachPixel('automatic_event_search_enabled', true, true, true, true, true, true);
+                enableEventForEachPixel('automatic_event_search_enabled', true, true, true, true, true, true, true);
                 ?>
                 <br/>
                 <p><strong>Event name: </strong></p>
@@ -988,7 +1138,43 @@ if ( ! defined( 'ABSPATH' ) ) {
         <button class="btn btn-block btn-save">Save Settings</button>
     </div>
 </div>
-    <?php function enableEventForEachPixel($event, $fb = true, $ga = true, $ads = true, $bi = true, $tic = true, $pin = true)
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const checkbox = document.getElementById("pys_core_enable_all_tracking_ids");
+        const parentCard = checkbox.closest(".card");
+        const cardBody = parentCard.querySelector(".card-body");
+
+        function setCardBodyState(isEnabled) {
+            if (isEnabled) {
+                cardBody.classList.remove("disabled");
+                cardBody.style.pointerEvents = "auto";
+                cardBody.style.opacity = "1";
+                cardBody.style.backgroundColor = "";
+                cardBody.querySelectorAll("input, select, textarea, button").forEach(function(element) {
+                    element.removeAttribute("disabled");
+                });
+            } else {
+                cardBody.classList.add("disabled");
+                cardBody.style.pointerEvents = "none";
+                cardBody.style.opacity = "0.3";
+                cardBody.style.backgroundColor = "rgba(0, 0, 0, 0.13)";
+                cardBody.querySelectorAll("input, select, textarea, button").forEach(function(element) {
+                    element.setAttribute("disabled", "disabled");
+                });
+            }
+        }
+
+        // Set the initial state
+        setCardBodyState(checkbox.checked);
+
+        // Checkbox state change handler
+        checkbox.addEventListener("change", function() {
+            setCardBodyState(this.checked);
+        });
+    });
+</script>
+    <?php function enableEventForEachPixel($event, $fb = true, $ga = true, $ads = true,$gtm = true, $bi = true, $tic = true, $pin = true)
 { ?>
     <?php if ($fb && Facebook()->enabled()) : ?>
     <div class="row">
@@ -1025,6 +1211,15 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
     </div>
 <?php endif; ?>
-
+    <?php if ($gtm && GTM()->enabled()) : ?>
+    <hr class="mb-3 mt-3">
+    <div class="row">
+        <div class="col">
+            <?php GTM()->render_switcher_input($event); ?>
+            <h4 class="switcher-label">Enable on GTM dataLayer</h4>
+        </div>
+    </div>
+    <hr class="mb-3 mt-3">
+<?php endif; ?>
     <?php
 }

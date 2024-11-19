@@ -499,7 +499,7 @@ abstract class Settings {
 	 * @param      $label
 	 * @param bool $disabled
 	 */
-	public function render_radio_input( $key, $value, $label, $disabled = false, $with_pro_badge = false ) {
+	public function render_radio_input( $key, $value, $label, $disabled = false, $with_pro_badge = false, $need_cog = false ) {
   
 		$attr_name = "pys[$this->slug][$key]";
  
@@ -511,9 +511,12 @@ abstract class Settings {
                    value="<?php esc_attr_e( $value ); ?>">
             <span class="custom-control-indicator"></span>
             <span class="custom-control-description"><?php echo wp_kses_post( $label ); ?></span>
-	        <?php if ( $with_pro_badge ) {
-		        renderCogBadge();
-	        } ?>
+	        <?php if ( $need_cog ) {
+                renderCogBadge();
+            } ?>
+            <?php if ( $with_pro_badge ) {
+                renderProBadge();
+            } ?>
         </label>
 
 		<?php
@@ -527,21 +530,25 @@ abstract class Settings {
 	 * @param string $placeholder
 	 * @param bool $disabled
 	 */
-	public function render_number_input( $key, $placeholder = '', $disabled = false,$max = null,$min = 0 ) {
+	public function render_number_input( $key, $placeholder = '', $disabled = false,$max = null,$min = 0, $step = 'any') {
 
-		$attr_name  = "pys[$this->slug][$key]";
-		$attr_id    = 'pys_' . $this->slug . '_' . $key;
-		$attr_value = $this->getOption( $key );
-  
-		?>
+        $attr_name  = "pys[$this->slug][$key]";
+        $attr_id    = 'pys_' . $this->slug . '_' . $key;
+        $attr_value = $this->getOption( $key );
 
-        <input <?php disabled( $disabled ); ?> type="number" name="<?php esc_attr_e( $attr_name ); ?>"
-                                               id="<?php esc_attr_e( $attr_id ); ?>"
-                                               value="<?php esc_attr_e( $attr_value ); ?>"
-                                               placeholder="<?php esc_attr_e( $placeholder ); ?>"
-											   min="<?=$min?>" class="form-control"
-												<?php if($max != null) : ?> max="<?=$max?>" <?php endif; ?>
-		>
+        ?>
+        <div class="input-number-wrapper">
+            <button class="decrease"><i class="fa fa-minus"></i></button>
+            <input <?php disabled( $disabled ); ?> type="number" name="<?php esc_attr_e( $attr_name ); ?>"
+                                                   id="<?php esc_attr_e( $attr_id ); ?>"
+                                                   value="<?php esc_attr_e( $attr_value ); ?>"
+                                                   placeholder="<?php esc_attr_e( $placeholder ); ?>"
+                                                   min="<?=$min?>" class="form-control"
+                <?php if($max != null) : ?> max="<?=$max?>" <?php endif; ?>
+                                                   step="<?=$step?>"
+            >
+            <button class="increase"><i class="fa fa-plus"></i></button>
+        </div>
 		
 		<?php
 		
@@ -655,7 +662,25 @@ abstract class Settings {
 
 		<?php
 	}
-	
+    public function render_checkbox_blacklist_input_array( $key, $label, $value, $disabled = false ) {
+
+        $attr_name  = "pys[$this->slug][$key][]";
+        $attr_values = (array)$this->getOption( $key );
+
+        $isChecked = in_array($value,$attr_values);
+        ?>
+
+        <label class="custom-control custom-checkbox">
+            <input type="checkbox" name="<?php esc_attr_e( $attr_name ); ?>" value="<?=$value?>"
+                   class="custom-control-input" <?php disabled( $disabled, true ); ?>
+                <?php echo $isChecked ? "checked" : ""?>>
+            <span class="custom-control-indicator"></span>
+            <span class="custom-control-description"><?php echo wp_kses_post( $label ); ?></span>
+        </label>
+
+        <?php
+
+    }
 	/**
 	 * Sanitize text field value
 	 *
@@ -973,5 +998,68 @@ abstract class Settings {
                 break;
         }
         return $time;
+    }
+
+
+    public function renderValueOptionsBlock($context, $useEnable = true) {
+        if(empty($context)) return;
+
+        $prefixes = ['purchase', 'complete_registration'];
+        if (count(array_filter($prefixes, function($prefix) use ($context) {
+                return strpos($context, $prefix) !== false;
+            })) > 0) {
+            $priceText = 'Order\'s total';
+            $percentText = 'Percent of the order\'s total';
+        } else{
+            $priceText = 'Products price (subtotal)';
+            $percentText = 'Percent of the products price (subtotal)';
+        }
+        ?>
+        <div class="row">
+            <div class="col">
+                <div class="flex-align-center">
+                    <?php if(!is_null($this->getOption($context.'_value_enabled')) ||$useEnable) { $this->render_switcher_input( $context.'_value_enabled', true ); } ?>
+                    <h4 class="indicator-label title-options-block">Value parameter settings:</h4>
+                    <?php renderPopoverButton( $context.'_event_value' ); ?>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+
+                <div <?php if(!is_null($this->getOption($context.'_value_enabled'))){ renderCollapseTargetAttributes( $context.'_value_enabled', PYS() );} ?>>
+                    <div class="collapse-inner pt-0">
+                        <div class="custom-controls-stacked radio-stacked">
+                            <?php $this->render_radio_input( $context.'_value_option', 'price', $priceText ); ?>
+
+                            <?php if (strpos($context, 'edd_') !== 0) { ?>
+                                <?php  if ( !isPixelCogActive() ) { ?>
+                                    <?php $this->render_radio_input( $context.'_value_option', 'cog',
+                                        'Price minus Cost of Goods', true, false, true ); ?>
+                                <?php } else { ?>
+                                    <?php $this->render_radio_input( $context.'_value_option', 'cog',
+                                        'Price minus Cost of Goods', false ); ?>
+                                <?php } ?>
+                            <?php } ?>
+                            <div class="custom-control compact-radio-number">
+                                <?php renderDummyRadioInput( $percentText ); ?>
+                                <div class="form-inline">
+                                    <?php renderDummyNumberInput( 0 ); ?>
+                                </div>
+                            </div>
+                            <div class="custom-control compact-radio-number">
+                                <?php $this->render_radio_input( $context.'_value_option', 'global',
+                                    'Use Global value' ); ?>
+                                <div class="form-inline">
+                                    <?php $this->render_number_input( $context.'_value_global' ); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php
     }
 }

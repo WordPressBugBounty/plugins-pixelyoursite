@@ -46,7 +46,10 @@ class FacebookServer {
         $this->isDebug = PYS()->getOption( 'debug_enabled' );
 
         if($this->isEnabled) {
-            add_action( 'woocommerce_checkout_update_order_meta',array($this,'saveFbTagsInOrder'),10, 2);
+            // Classic hook for checkout page
+            add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'saveFbTagsInOrder' ), 10, 1 );
+            // Hook for Store API (passes WC_Order object instead of order_id)
+            add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'saveFbTagsInOrder' ), 10, 1 );
             add_action( 'wp_ajax_pys_api_event',array($this,"catchAjaxEvent"));
             add_action( 'wp_ajax_nopriv_pys_api_event', array($this,"catchAjaxEvent"));
             add_action( 'woocommerce_remove_cart_item', array($this, 'trackRemoveFromCartEvent'), 10, 2);
@@ -306,19 +309,19 @@ class FacebookServer {
         }
     }
 
-    public function saveFbTagsInOrder($order_id, $data) {
+    public function saveFbTagsInOrder($order_param) {
         $pysData = [];
         $pysData['fbc'] = ServerEventHelper::getFbc();
         $pysData['fbp'] = ServerEventHelper::getFbp();
-        $order = wc_get_order($order_id);
+        $order = wc_get_order($order_param);
         if (isWooCommerceVersionGte('3.0.0') && !empty($order)) {
             // WooCommerce >= 3.0
                 $order->update_meta_data("pys_fb_cookie", $pysData);
                 $order->save();
         } else {
             // WooCommerce < 3.0
-            if(!empty($order_id)){
-                update_post_meta($order_id, 'pys_fb_cookie', $pysData);
+            if(!empty($order_param)){
+                update_post_meta($order_param, 'pys_fb_cookie', $pysData);
             }
         }
     }

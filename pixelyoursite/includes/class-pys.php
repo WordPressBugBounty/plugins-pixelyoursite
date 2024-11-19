@@ -1,6 +1,7 @@
 <?php
 
 namespace PixelYourSite;
+use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
@@ -28,6 +29,8 @@ final class PYS extends Settings implements Plugin {
      * @var PYS_Logger
      */
     private $logger;
+    private $containers;
+    private $crawlerDetect;
 	
 	public static function instance() {
 
@@ -96,7 +99,6 @@ final class PYS extends Settings implements Plugin {
          * Restore settings after COG plugin
          * */
         add_action( 'deactivate_pixel-cost-of-goods/pixel-cost-of-goods.php',array($this,"restoreSettingsAfterCog"));
-        add_action( 'woocommerce_checkout_create_order', array( $this,'add_order_external_meta_data'), 10, 2 );
 
 		/**
 		 * For Woo
@@ -111,20 +113,23 @@ final class PYS extends Settings implements Plugin {
 		}
 
         $this->logger = new PYS_Logger();
-
+        $this->containers = new gtmContainers();
+        $this->crawlerDetect = new CrawlerDetect();
     }
 
     public function init() {
 
+        $this->logger->init();
+
         $loggers = [
-            'meta' => [PYS()->getLog(), 'downloadLogFile'],
+            'meta' => [$this->logger, 'downloadLogFile'],
         ];
 
         $clearLoggers = [
-            'clear_plugin_logs' => [PYS()->getLog(), 'remove'],
+            'clear_plugin_logs' => [$this->logger, 'remove'],
         ];
 
-        if (class_exists('Pinterest')) {
+        if (isPinterestActive()) {
             $loggers['pinterest'] = [Pinterest()->getLog(), 'downloadLogFile'];
             $clearLoggers['clear_pinterest_logs'] = [Pinterest()->getLog(), 'remove'];
         }
@@ -149,6 +154,10 @@ final class PYS extends Settings implements Plugin {
                 wp_redirect(remove_query_arg($key, $actual_link));
                 exit;
             }
+        }
+
+        if ( isset( $_GET[ 'download_container' ] )) {
+            $this->containers->downloadLogFile($_GET[ 'download_container' ]);
         }
 
         register_post_type( 'pys_event', array(
@@ -184,7 +193,7 @@ final class PYS extends Settings implements Plugin {
 		    add_filter( 'facebook_for_woocommerce_integration_pixel_enabled', '__return_false' );
 	    }
 
-        $this->logger->init();
+
         if(Facebook()->getOption('test_api_event_code_expiration_at'))
         {
             foreach (Facebook()->getOption('test_api_event_code_expiration_at') as $key => $test_code_expiration_at)
@@ -308,29 +317,6 @@ final class PYS extends Settings implements Plugin {
             }
         }
     }
-    public function add_order_external_meta_data($order, $posted_data){
-
-        $pbidCookieName = 'pbid';
-        $pbid = false;
-        if (isset($_COOKIE[$pbidCookieName])) {
-            $pbid = $_COOKIE[$pbidCookieName];
-        }
-        // Добавляем мета-информацию в заказ
-        if(!empty($pbid)){
-            if ( isWooCommerceVersionGte('3.0.0') ) {
-                // WooCommerce версия >= 3.0
-                if($order) {
-                    $order->update_meta_data( 'external_id', $pbid );
-                    $order->save();
-                }
-
-            } else {
-                // WooCommerce версия < 3.0
-                update_post_meta( $order->get_id(), 'external_id', $pbid );
-            }
-        }
-
-    }
     public function utmTemplate() {
         include 'views/html-utm-templates.php';
     }
@@ -364,6 +350,9 @@ final class PYS extends Settings implements Plugin {
 	 * @param Pixel|Settings $pixel
 	 */
     public function registerPixel( &$pixel ) {
+        if(!is_admin() && !PYS()->getOption('enable_all_tracking_ids') && $pixel->getSlug() != 'gtm'){
+            return;
+        }
         switch ($pixel->getSlug()) {
             case 'pinterest':
                 if(!isPinterestVersionIncompatible()){
@@ -531,7 +520,22 @@ final class PYS extends Settings implements Plugin {
     }
 
     function is_user_agent_bot(){
+        if (!PYS()->getOption('block_robot_enabled')) {
+            return false;
+        }
         if (!empty($_SERVER['HTTP_USER_AGENT'])) {
+
+            $userAgent = strtolower($_SERVER['HTTP_USER_AGENT']);
+            $excludedRobots = PYS()->getOption('exclude_blocked_robots');
+
+            if (!empty($excludedRobots)) {
+                foreach ($excludedRobots as $robot) {
+                    if (stripos($userAgent, strtolower($robot)) !== false) {
+                        return false;
+                    }
+                }
+            }
+
             $options = array(
                 'YandexBot', 'YandexAccessibilityBot', 'YandexMobileBot', 'YandexDirectDyn', 'YandexScreenshotBot',
                 'YandexImages', 'YandexVideo', 'YandexVideoParser', 'YandexMedia', 'YandexBlogs',
@@ -560,17 +564,17 @@ final class PYS extends Settings implements Plugin {
                 'Seomoz', 'BLEXBot', 'YisouSpider', '360Spider', 'AddThis', 'TweetmemeBot', 'ContextAd Bot',
                 'Screaming Frog SEO Spider', 'Nutch', 'Baiduspider-image', 'Panscient.com', 'Twitterbot',
                 'YoudaoBot', 'OpenSiteExplorer', 'Linkfluence', 'YaK', 'ContentKing', 'Spinn3r', 'PhantomJS',
-                'HeadlessChrome', 'Snapchat', 'Pingdom', 'Googlebot-Mobile'
+                'HeadlessChrome', 'Snapchat', 'Pingdom', 'Googlebot-Mobile', 'Barkrowler'
             );
 
             foreach($options as $row) {
-                if (stripos(strtolower($_SERVER['HTTP_USER_AGENT']), strtolower($row)) !== false) {
+                if (stripos($userAgent, strtolower($row)) !== false) {
                     return true;
                 }
             }
         }
 
-        return false;
+        return $this->crawlerDetect->isCrawler();
     }
 
     public function ajaxGetGdprFiltersValues() {
@@ -763,18 +767,25 @@ final class PYS extends Settings implements Plugin {
 
 
 			if ( $action == 'update' && wp_verify_nonce( $nonce, 'pys_update_event' ) ) {
-
+                $pys_event = $_REQUEST['pys']['event'];
 				if ( $post_id ) {
 					$event = CustomEventFactory::getById( $post_id );
-					$event->update( $_REQUEST['pys']['event'] );
+					$event->update( $pys_event );
 				} else {
-				    if(isset( $_REQUEST['pys']['event']) && is_array($_REQUEST['pys']['event'])) {
-                        CustomEventFactory::create( $_REQUEST['pys']['event'] );
+				    if(isset( $pys_event) && is_array($pys_event)) {
+                        $event = CustomEventFactory::create( $pys_event );
                     } else {
-                        CustomEventFactory::create( [] );
+                        $event = CustomEventFactory::create( [] );
                     }
-
 				}
+
+                purgeCache();
+
+                // redirect to events tab
+                wp_safe_redirect( buildAdminUrl( 'pixelyoursite', 'events', 'edit', array(
+                    'id' => $event->getPostId()
+                ) ));
+                exit;
 
 			} elseif ( $action == 'enable' && $post_id && wp_verify_nonce( $nonce, 'pys_enable_event' ) ) {
 

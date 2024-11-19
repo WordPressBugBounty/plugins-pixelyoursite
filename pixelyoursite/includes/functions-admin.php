@@ -106,6 +106,11 @@ function getAdminSecondaryNavTabs() {
             'url'  => buildAdminUrl( 'pixelyoursite', 'google_tags_settings' ),
             'name' => 'Google Tags Settings',
         ),
+        'gtm_tags_settings'   => array(
+            'url'  => buildAdminUrl( 'pixelyoursite', 'gtm_tags_settings' ),
+            'name' => 'GTM Tag Settings',
+        ),
+
     );
 
     $tabs = apply_filters( 'pys_admin_secondary_nav_tabs', $tabs );
@@ -119,7 +124,11 @@ function getAdminSecondaryNavTabs() {
         'url'  => buildAdminUrl( 'pixelyoursite', 'head_footer' ),
         'name' => 'Head & Footer',
     );
-
+    $tabs['hooks'] = array(
+        'url'  => buildAdminUrl( 'pixelyoursite', 'hooks' ),
+        'name' => 'Filter & Hook List',
+        'pos' => 50
+    );
     return $tabs;
 
 }
@@ -753,9 +762,11 @@ function renderDummyTextAreaInput( $placeholder = '' ) {
 }
 function renderDummyNumberInput($default = 0) {
     ?>
-
-    <input type="number" disabled="disabled" min="0" max="100" class="form-control" value="<?=$default?>">
-
+    <div class="input-number-wrapper">
+        <button class="decrease"><i class="fa fa-minus"></i></button>
+        <input type="number" disabled="disabled" min="0" max="100" class="form-control" value="<?=$default?>">
+        <button class="increase"><i class="fa fa-plus"></i></button>
+    </div>
     <?php
 }
 
@@ -820,7 +831,7 @@ function renderDummyTagsFields( $tags = array() ) {
 
 function renderDummySelectInput( $value, $full_width = false ) {
 
-    $attr_width = $full_width ? 'width: 100%;' : '';
+    $attr_width = $full_width ? 'width: 100%;max-width: 100%;' : '';
 
     ?>
 
@@ -951,5 +962,20 @@ function isGaV4($tag) {
         return false;
     } else {
         return strpos($tag, 'G') === 0;
+    }
+}
+
+add_action( 'wp_ajax_get_transform_title', 'PixelYourSite\getAjaxTransformTitle' );
+add_action( 'wp_ajax_nopriv_get_transform_title', 'PixelYourSite\getAjaxTransformTitle'  );
+
+function getAjaxTransformTitle()
+{
+    $event = new CustomEvent();
+    if(!empty($_POST['title'])) {
+        wp_send_json_success( array(
+            'title' => 'manual_'.$event->transformTitle($_POST['title'])
+        ) );
+    }else {
+        wp_send_json_error("Title not found");
     }
 }

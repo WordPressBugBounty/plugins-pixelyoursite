@@ -291,7 +291,7 @@ class Plugin_Updater {
 		$edd_api_request_transient = $this->get_cached_version_info( $cache_key );
 		
 		//If we have no transient-saved value, run the API, set a fresh transient with the API value, and return that value too right now.
-		if ( empty( $edd_api_request_transient ) ) {
+		if ( empty( $edd_api_request_transient ) || $this->is_cache_expired()) {
 			
 			$api_response = $this->api_request( 'plugin_information', $to_send );
 			
@@ -442,7 +442,7 @@ class Plugin_Updater {
 		$cache_key    = md5( 'edd_plugin_' . sanitize_key( $_REQUEST['plugin'] ) . '_' . $beta . '_version_info' );
 		$version_info = $this->get_cached_version_info( $cache_key );
 		
-		if ( false === $version_info ) {
+		if ( false === $version_info || $this->is_cache_expired()) {
 			
 			$api_params = array(
 				'edd_action' => 'get_version',

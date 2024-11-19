@@ -69,7 +69,38 @@ class HeadFooter extends Settings {
 	public function render_meta_box() {
 		include 'views/html-meta-box.php';
 	}
+	/*function check_for_script_with_base64_or_base64($data) {
+		// Checking for the presence of a <script> tag with base64 data
+		if (preg_match_all('/<script\b[^>]*>(.*?)<\/script>/is', $data, $matches)) {
+			foreach ($matches[1] as $script_content) {
+				// Checking the contents of the <script> tag for the presence of a base64 string
+				if ($this->is_base64($script_content)) {
+					return true;
+				}
+			}
+		}
 
+		// Checking for a base64 encoded string
+		if ($this->is_base64($data)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	function is_base64($string) {
+		// Checking if the string is potentially base64 (valid characters only)
+		if (preg_match('/^[a-zA-Z0-9\/+]*={0,2}$/', $string)) {
+			// Trying to decode a string
+			$decoded_data = base64_decode($string, true);
+
+			// If decoding is successful and the result is encoded back into the same string
+			if ($decoded_data !== false && base64_encode($decoded_data) === $string) {
+				return true;
+			}
+		}
+		return false;
+	}*/
 	public function save_meta_box( $post_id ) {
 
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
@@ -90,6 +121,11 @@ class HeadFooter extends Settings {
             'disable_global' => isset( $data['disable_global'] ) ? true : false,
         );
         foreach ( $data as $key => $val ) {
+	        /*if (!empty($val) && $this->check_for_script_with_base64_or_base64($val)) {
+		        //
+		        error_log('Find base64 in:'. print_r($val,true));
+				continue;
+	        }*/
 			switch ($key) {
 				case "head_any":
 					$meta['head_any'] = isset($val) ? trim($val) : '';

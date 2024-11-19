@@ -66,7 +66,7 @@ class GTM extends Settings implements Pixel {
         return $this->configured;
 
     }
-    function pys_wp_header_top( $echo = true ) {
+    public function pys_wp_header_top( $echo = true ) {
 
         $has_html5_support    = current_theme_supports( 'html5' );
         $gtm_dataLayer_name = $this->getOption( 'gtm_dataLayer_name' ) ?? 'dataLayer';
@@ -122,7 +122,7 @@ class GTM extends Settings implements Pixel {
             'gtm_container_identifier'      => $this->getOption( 'gtm_container_identifier' ),
             'gtm_auth'                      => $this->getOption( 'gtm_auth' ),
             'gtm_preview'                   => $this->getOption( 'gtm_preview' ),
-            'container_code'                => $this->getOption( 'container_code' ),
+            'gtm_just_data_layer'           => $this->getOption( 'gtm_just_data_layer' ),
             'check_list'                    => $this->getOption( 'check_list' ),
             'check_list_contain'            => $this->getOption( 'check_list_contain' ),
             'wooVariableAsSimple'           => GTM()->getOption( 'woo_variable_as_simple' ),
@@ -212,7 +212,7 @@ class GTM extends Settings implements Pixel {
 
 
             case 'custom_event': {
-                $eventData = $this->getCustomEventData($event->args);
+                $eventData = $this->getCustomEventData($event);
                 if ($eventData) {
                     $isActive = true;
                     $this->addDataToEvent($eventData, $event);
@@ -336,7 +336,7 @@ class GTM extends Settings implements Pixel {
 
     public function outputNoScriptEvents() {
 
-        if ( ! $this->configured() || $this->getOption('disable_noscript') || !$this->getOption('container_code') || empty($this->getPixelIDs())) {
+        if ( ! $this->configured() || $this->getOption('disable_noscript') || $this->getOption('gtm_just_data_layer') || empty($this->getPixelIDs())) {
             return;
         }
 
@@ -424,7 +424,7 @@ class GTM extends Settings implements Pixel {
         /**
          * @var CustomEvent $customEvent
          */
-        $customEvent = $event;
+        $customEvent = $event->args;
         $gtm_action = $customEvent->getGTMAction();
 
 
@@ -433,31 +433,22 @@ class GTM extends Settings implements Pixel {
         }
 
 
-        $params = $customEvent->getGTMParams();
+        $params = $customEvent->getAllGTMParams();
+        $params['manualName'] = $customEvent->getManualCustomObjectName();
 
-        $customParams = $customEvent->getGTMCustomParams();
-
-        // SuperPack Dynamic Params feature
-        $params = apply_filters( 'pys_superpack_dynamic_params', $params, 'gtm' );
-
-        foreach ($customParams as $item){
-            $params['customParameters'][$item['name']]=$item['value'];
+        if($customEvent->removeGTMCustomTrigger()){
+            $event->removeParam('triggerType');
         }
 
-        if(isset($params['customParameters'])){
-            $params['customParameters'] = apply_filters( 'pys_superpack_dynamic_params', $params['customParameters'], 'gtm' );
-        }
-
-        $params['manualName'] = $customEvent->transformTitle();
-
+        $event->addPayload(array(
+            'hasAutoParam' => $customEvent->hasAutomatedParam(),
+        ));
         return array(
             'name'  => $customEvent->getGTMAction(),
             'data'  => $params,
             'delay' => $customEvent->getDelay(),
 
         );
-
-
 
     }
 
@@ -747,15 +738,17 @@ class GTM extends Settings implements Pixel {
             }
         }
 
-        $value =  getWooProductPriceToDisplay( $product->get_id() ,$quantity,$customProductPrice );
-
-
         $params = array(
             'event_category'  => 'ecommerce',
             'currency'        => get_woocommerce_currency(),
         );
         $params['items'] = $items;
-        $params['value'] = $value;
+
+        if ( PYS()->getOption( 'woo_view_content_value_enabled' ) ) {
+            $value_option = PYS()->getOption( 'woo_view_content_value_option' );
+            $global_value = PYS()->getOption( 'woo_view_content_value_global', 0 );
+            $params['value']    = getWooEventValue( $value_option, $global_value,100, $product->get_id() ,$quantity);
+        }
 
 
         return array(
@@ -893,8 +886,12 @@ class GTM extends Settings implements Pixel {
             'items'           => $items,
         );
 
-        $value =  getWooProductPriceToDisplay( $product_id, $quantity ,$customProductPrice);
-        $params['value'] = $value;
+        if ( PYS()->getOption( 'woo_add_to_cart_value_enabled' ) ) {
+            $value_option = PYS()->getOption( 'woo_add_to_cart_value_option' );
+            $global_value = PYS()->getOption( 'woo_add_to_cart_value_global', 0 );
+
+            $params['value']    = getWooEventValue( $value_option, $global_value,100, $product_id,$quantity );
+        }
 
         $data = array(
             'params'  => $params,
@@ -995,7 +992,7 @@ class GTM extends Settings implements Pixel {
             return false;
         }
 
-        $params = $this->getWooCartParams();
+        $params = $this->getWooCartParams('InitiateCheckout');
 
         return array(
             'name'  => 'begin_checkout',
@@ -1109,10 +1106,14 @@ class GTM extends Settings implements Pixel {
         $params = array(
             'event_category'  => 'ecommerce',
             'transaction_id'  => $order_id,
-            'value'           => $order->get_total(),
             'currency'        => get_woocommerce_currency(),
             'items'           => $items,
         );
+
+        $value_option = PYS()->getOption( 'woo_purchase_value_option' );
+        $global_value = PYS()->getOption( 'woo_purchase_value_global', 0 );
+
+        $params['value'] = getWooEventValueOrder( $value_option, $order, $global_value );
 
         $params['fees'] = get_fees($order);
 
@@ -1123,7 +1124,7 @@ class GTM extends Settings implements Pixel {
 
     }
 
-    private function getWooCartParams() {
+    private function getWooCartParams($context = 'cart') {
 
         $items = array();
         $product_ids = array();
@@ -1178,8 +1179,27 @@ class GTM extends Settings implements Pixel {
             'currency'        => get_woocommerce_currency(),
             'items' => $items,
         );
+        if ( $context == 'InitiateCheckout' ) {
 
-        $params['value'] = $total_value;
+            $value_enabled_option = 'woo_initiate_checkout_value_enabled';
+            $value_option_option  = 'woo_initiate_checkout_value_option';
+            $value_global_option  = 'woo_initiate_checkout_value_global';
+
+        } else { // AddToCart
+
+            $value_enabled_option = 'woo_add_to_cart_value_enabled';
+            $value_option_option  = 'woo_add_to_cart_value_option';
+            $value_global_option  = 'woo_add_to_cart_value_global';
+
+        }
+        if ( PYS()->getOption( $value_enabled_option ) ) {
+
+            $value_option = PYS()->getOption( $value_option_option );
+            $global_value = PYS()->getOption( $value_global_option, 0 );
+
+            $params['value']    = getWooEventValueCart( $value_option, $global_value );
+
+        }
 
         return $params;
 
@@ -1205,8 +1225,15 @@ class GTM extends Settings implements Pixel {
                 ),
             ),
         );
-        $value = getEddDownloadPriceToDisplay( $post->ID );
-        $params['value'] = $value;
+        if ( PYS()->getOption( 'edd_view_content_value_enabled' ) ) {
+
+            $amount = getEddDownloadPriceToDisplay( $post->ID );
+            $value_option   = PYS()->getOption( 'edd_view_content_value_option' );
+            $global_value   = PYS()->getOption( 'edd_view_content_value_global', 0 );
+
+            $params['value'] = getEddEventValue( $value_option, $amount, $global_value );
+
+        }
         return array(
             'name'  => 'view_item',
             'data'  => $params,
@@ -1239,8 +1266,15 @@ class GTM extends Settings implements Pixel {
             ),
         );
 
-        $value = getEddDownloadPriceToDisplay( $download_id, $price_index );
-        $params['value'] = $value;
+        if ( PYS()->getOption( 'edd_add_to_cart_value_enabled' ) ) {
+
+            $amount = getEddDownloadPriceToDisplay( $download_id, $price_index );
+            $value_option = PYS()->getOption( 'edd_add_to_cart_value_option' );
+            $global_value = PYS()->getOption( 'edd_add_to_cart_value_global', 0 );
+
+            $params['value'] = getEddEventValue( $value_option, $amount, $global_value );
+
+        }
 
         return $params;
 
@@ -1254,6 +1288,20 @@ class GTM extends Settings implements Pixel {
             return false;
         } elseif ( $context == 'purchase' && ! $this->getOption( 'edd_purchase_enabled' ) ) {
             return false;
+        }
+
+        if ( $context == 'add_to_cart' ) {
+            $value_enabled  = PYS()->getOption( 'edd_add_to_cart_value_enabled' );
+            $value_option   = PYS()->getOption( 'edd_add_to_cart_value_option' );
+            $global_value   = PYS()->getOption( 'edd_add_to_cart_value_global', 0 );
+        } elseif ( $context == 'begin_checkout' ) {
+            $value_enabled  = PYS()->getOption( 'edd_initiate_checkout_value_enabled' );
+            $value_option   = PYS()->getOption( 'edd_initiate_checkout_value_option' );
+            $global_value   = PYS()->getOption( 'edd_initiate_checkout_global', 0 );
+        } else {
+            $value_enabled  = PYS()->getOption( 'edd_purchase_value_enabled' );
+            $value_option   = PYS()->getOption( 'edd_purchase_value_option' );
+            $global_value   = PYS()->getOption( 'edd_purchase_value_global', 0 );
         }
 
         if ( $context == 'add_to_cart' || $context == 'begin_checkout' ) {
@@ -1331,8 +1379,12 @@ class GTM extends Settings implements Pixel {
 
             $params['transaction_id'] = $payment_id;
             $params['currency'] = edd_get_currency();
-            $params['value'] = edd_get_payment_amount( $payment_id );
 
+        }
+
+        if ( $value_enabled ) {
+            $amount = edd_get_payment_amount( $payment_id );
+            $params['value']    = getEddEventValue( $value_option, $amount, $global_value );
         }
 
         return array(
@@ -1475,11 +1527,15 @@ class GTM extends Settings implements Pixel {
      * @return array|mixed|void
      */
     public function getAllPixelsForEvent($event) {
-        $pixels = $this->getPixelIDs();
+        $pixels = array();
 
-        $pixels = array_filter($pixels, static function ($tag) {
-            return preg_match( '/^GTM-[A-Z0-9]+$/', $tag );
-        });
+        if ( $this->getOption( 'main_pixel_enabled' ) ) {
+            $main_pixel = $this->getPixelIDs();
+            $main_pixel = array_filter( $main_pixel, static function ( $tag ) {
+                return preg_match( '/^GTM-[A-Z0-9]+$/', $tag );
+            } );
+            $pixels = array_merge( $pixels, $main_pixel );
+        }
         return $pixels;
     }
 }

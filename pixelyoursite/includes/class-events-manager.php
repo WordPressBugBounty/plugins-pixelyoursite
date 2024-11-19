@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EventsManager {
     private static $_instance;
     public $facebookServerEvents = array();
+    private $pinterestServerEvents = array();
 	public $doingAMP = false;
     private $standardParams = array();
     private $staticEvents = array();
@@ -24,6 +25,12 @@ class EventsManager {
         add_action( 'wp_enqueue_scripts', array( $this, 'setupEventsParams' ),14 );
         add_action( 'wp_enqueue_scripts', array( $this, 'outputData' ),15 );
 		add_action( 'wp_footer', array( $this, 'outputNoScriptData' ), 10 );
+
+        // Classic hook for checkout page
+        add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
+        // Hook for Store API (passes WC_Order object instead of order_id)
+        add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
+
 	}
 
     public static function instance() {
@@ -173,6 +180,9 @@ class EventsManager {
 			"TrafficUtms"    => getUtms(),
 			"TrafficUtmsId"  => getUtmsId(),
 		);
+
+        $options['GATags']["ga_datalayer_type"] = GATags()->getOption('gtag_datalayer_type');
+        $options['GATags']["ga_datalayer_name"] = GATags()->getOption('gtag_datalayer_name');
         /**
          * @var EventsFactory[] $eventsFactory
          */
@@ -183,7 +193,7 @@ class EventsManager {
                 $options[$factory::getSlug()] = $factory->getOptions();
             }
         }
-
+        $options['cache_bypass'] = time();
 
         $data = array_merge( $data, $options );
 
@@ -267,6 +277,11 @@ class EventsManager {
         if(count($this->facebookServerEvents)>0 && Facebook()->enabled() && Facebook()->isServerApiEnabled() && !PYS()->isCachePreload()) {
             FacebookServer()->sendEventsAsync($this->facebookServerEvents);
             $this->facebookServerEvents = array();
+        }
+
+        if (isPinterestActive() && count($this->pinterestServerEvents) > 0 &&  Pinterest()->enabled() && Pinterest()->isServerApiEnabled() && !PYS()->isCachePreload()) {
+            PinterestServer()->sendEventsAsync($this->pinterestServerEvents);
+            $this->pinterestServerEvents = array();
         }
 
         // remove new user mark
@@ -366,9 +381,12 @@ class EventsManager {
         //save static event data
         $this->staticEvents[ $pixel->getSlug() ][ $event->getId() ][] = $eventData;
         // fire fb server api event
-        if($pixel->getSlug() == "facebook" && Facebook()->enabled()) {
-            if( $eventData['delay'] == 0 && !PYS()->getOption( "server_static_event_use_ajax" )) {
+        if( $eventData['delay'] == 0 && (!PYS()->getOption( "server_static_event_use_ajax" ) || !PYS()->getOption('server_event_use_ajax'))) {
+            if($pixel->getSlug() === "facebook" && Facebook()->enabled()) {
                 $this->facebookServerEvents[] = $event;
+            }
+            if(isPinterestActive() && $pixel->getSlug() === "pinterest" && Pinterest()->enabled()) {
+                $this->pinterestServerEvents[] = $event;
             }
         }
 
@@ -618,7 +636,30 @@ class EventsManager {
         <?php
 
     }
+    public function saveExternalIDInOrder($order_param) {
+        error_log("saveExternalIDInOrder");
+        // Determine whether the WC_Order object or order ID is passed
+        if ( $order_param instanceof WC_Order ) {
+            // If the order object is transferred
+            $order = $order_param;
+        } else {
+            // If order_id is passed
+            $order = wc_get_order( $order_param );
+        }
+        if (!$order && empty($order_param)) return;
 
+        $external_id = PYS()->get_pbid();
+
+        if (isWooCommerceVersionGte('3.0.0') && !empty($order)) {
+            // WooCommerce >= 3.0
+            $order->update_meta_data("external_id", $external_id);
+            $order->save();
+        } elseif ( ! empty( $order_param ) ) {
+            // WooCommerce < 3.0
+            update_post_meta($order_param, 'external_id', $external_id);
+        }
+
+    }
     static function isTrackExternalId(){
         return PYS()->getOption("send_external_id") && !apply_filters( 'pys_disable_externalID_by_gdpr', false ) && !apply_filters( 'pys_disable_all_cookie', false );
     }

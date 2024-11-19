@@ -16,13 +16,6 @@ if ( ! defined( 'ABSPATH' ) ) {
         General
     </div>
     <div class="card-body">
-        <div class="row mb-4">
-            <div class="col">
-                <?php GTM()->render_switcher_input( 'enabled' ); ?>
-                <h4 class="switcher-label">Enable GTM</h4>
-            </div>
-        </div>
-        <hr class="mb-3 mt-1">
          <div class="row">
             <div class="col">
                 <?php GTM()->render_switcher_input('container_code'); ?>
