@@ -117,20 +117,23 @@ class EnrichOrder {
 			$utms_id = getUtmsId( true );
 
 			$pys_browser_time = getBrowserTime();
-
-            $pys_landing = $pys_source = defined( 'REST_REQUEST' ) && REST_REQUEST ? 'REST API' : '';
-			if ( isset( $_REQUEST[ 'pys_landing' ] ) ) {
+			if ( $edd_subscription ) {
+				$pys_landing = '';
+			} elseif ( isset( $_REQUEST[ 'pys_landing' ] ) ) {
 				$pys_landing = sanitize_text_field( $_REQUEST[ 'pys_landing' ] );
 			} elseif ( isset( $_COOKIE[ 'pys_landing_page' ] ) || isset( $_SESSION[ 'LandingPage' ] ) ) {
 				$pys_landing = $_COOKIE[ 'pys_landing_page' ] ?? $_SESSION[ 'LandingPage' ];
+			} else {
+				$pys_landing = '';
 			}
-
 			if ( $edd_subscription ) {
 				$pys_source = 'recurring payment';
 			} elseif ( isset( $_REQUEST[ 'pys_source' ] ) ) {
 				$pys_source = sanitize_text_field( $_REQUEST[ 'pys_source' ] );
 			} elseif ( isset( $_COOKIE[ 'pysTrafficSource' ] ) || isset( $_SESSION[ 'TrafficSource' ] ) ) {
 				$pys_source = $_COOKIE[ 'pysTrafficSource' ] ?? $_SESSION[ 'TrafficSource' ];
+			} else {
+				$pys_source = '';
 			}
 
 			if ( $edd_subscription ) {

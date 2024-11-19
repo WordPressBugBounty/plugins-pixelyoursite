@@ -11,20 +11,12 @@ class ComposerStaticInitdaa5543e142760e462d1cb6eea8cb38e
         array (
             'URL\\' => 4,
         ),
-        'J' => 
-        array (
-            'Jaybizzle\\CrawlerDetect\\' => 24,
-        ),
     );
 
     public static $prefixDirsPsr4 = array (
         'URL\\' => 
         array (
             0 => __DIR__ . '/..' . '/glenscott/url-normalizer/src/URL',
-        ),
-        'Jaybizzle\\CrawlerDetect\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/jaybizzle/crawler-detect/src',
         ),
     );
 

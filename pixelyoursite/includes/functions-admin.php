@@ -106,11 +106,6 @@ function getAdminSecondaryNavTabs() {
             'url'  => buildAdminUrl( 'pixelyoursite', 'google_tags_settings' ),
             'name' => 'Google Tags Settings',
         ),
-        'gtm_tags_settings'   => array(
-            'url'  => buildAdminUrl( 'pixelyoursite', 'gtm_tags_settings' ),
-            'name' => 'GTM Tag Settings',
-        ),
-
     );
 
     $tabs = apply_filters( 'pys_admin_secondary_nav_tabs', $tabs );
@@ -124,11 +119,7 @@ function getAdminSecondaryNavTabs() {
         'url'  => buildAdminUrl( 'pixelyoursite', 'head_footer' ),
         'name' => 'Head & Footer',
     );
-    $tabs['hooks'] = array(
-        'url'  => buildAdminUrl( 'pixelyoursite', 'hooks' ),
-        'name' => 'Filter & Hook List',
-        'pos' => 50
-    );
+
     return $tabs;
 
 }
@@ -829,7 +820,7 @@ function renderDummyTagsFields( $tags = array() ) {
 
 function renderDummySelectInput( $value, $full_width = false ) {
 
-    $attr_width = $full_width ? 'width: 100%;max-width: 100%;' : '';
+    $attr_width = $full_width ? 'width: 100%;' : '';
 
     ?>
 

@@ -7,8 +7,6 @@
   "general_event_on_woo_enabled": "checkbox",
   "general_event_on_edd_enabled": "checkbox",
 
-  "enable_all_tracking_ids" : "checkbox",
-
   "cookie_duration": "number",
   "last_visit_duration": "number",
   "debug_enabled": "checkbox",
@@ -17,7 +15,6 @@
   "admin_permissions": "multi_select",
 
   "block_robot_enabled": "checkbox",
-  "exclude_blocked_robots": "multi_select",
   "block_ip_enabled": "checkbox",
   "blocked_ips": "multi_select",
 

@@ -1,10 +1,8 @@
 <?php
 
 namespace PixelYourSite\GA\Helpers;
-
-use PixelYourSite;
 use function PixelYourSite\GATags;
-use function PixelYourSite\isWPMLActive;
+use PixelYourSite;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -38,13 +36,6 @@ function renderCrossDomainDomain( $index = 0 ) {
 }
 
 function getWooProductContentId( $product_id ) {
-
-	if(isWPMLActive() && PixelYourSite\GATags()->getOption( 'woo_wpml_unified_id' )) {
-		$wpml_product_id = apply_filters('wpml_original_element_id', NULL, $product_id);
-		if ($wpml_product_id) {
-			$product_id = $wpml_product_id;
-		}
-	}
 
     if ( PixelYourSite\GATags()->getOption( 'woo_content_id' ) == 'product_sku' ) {
         $content_id = get_post_meta( $product_id, '_sku', true );

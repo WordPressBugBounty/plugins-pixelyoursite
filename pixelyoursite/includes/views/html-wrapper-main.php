@@ -82,9 +82,6 @@ include "html-popovers.php";
                             case 'wcf':
                                 include "html-main-wcf.php";
                                 break;
-                            case 'hooks':
-                                include "html-hooks.php";
-                                break;
 
                             case 'head_footer':
                                 /** @noinspection PhpIncludeInspection */
@@ -107,11 +104,6 @@ include "html-popovers.php";
                             case 'google_tags_settings':
                                 /** @noinspection PhpIncludeInspection */
                                 include PYS_FREE_PATH . '/modules/google_analytics/views/html-settings.php';
-                                break;
-
-                            case 'gtm_tags_settings':
-                                /** @noinspection PhpIncludeInspection */
-                                include PYS_FREE_PATH . '/modules/google_gtm/views/html-settings.php';
                                 break;
 
                             case 'superpack_settings':

@@ -33,18 +33,11 @@ $meta = $payment->get_meta();
                 </tr>
                 <tr >
                     <th>Landing Page:</th>
-                    <?php
-                    $landingPage = !empty($data['pys_landing']) ? $data['pys_landing'] : "No Landing Page";
-                    if (filter_var($landingPage, FILTER_VALIDATE_URL)) {
-                        echo '<td><a href="' . $landingPage . '" target="_blank">' . $landingPage . '</a></td>';
-                    } else {
-                        echo '<td>' . $landingPage . '</td>';
-                    }
-                    ?>
+                    <td><a href="<?=$data['pys_landing']; ?>" target="_blank" ><?=$data['pys_landing']; ?></a></td>
                 </tr>
                 <tr>
                     <th>Traffic source:</th>
-                    <td><?=!empty($data['pys_source']) ? $data['pys_source'] : "No Traffic source"?></td>
+                    <td><?=$data['pys_source']; ?></td>
                 </tr>
                 <?php
                 $utms = explode("|",$data['pys_utm']);
@@ -60,19 +53,14 @@ $meta = $payment->get_meta();
                     <td colspan="2" class="border"><span></span></td>
                 </tr>
                 <tr >
-                    <th>Landing Page:</th>
                     <?php
-                    $lastLanding = !empty($data['last_pys_landing']) ? $data['last_pys_landing'] : "No Landing Page";
-                    if (filter_var($lastLanding, FILTER_VALIDATE_URL)) {
-                        echo '<td><a href="' . $lastLanding . '" target="_blank">' . $lastLanding . '</a></td>';
-                    } else {
-                        echo '<td>' . $lastLanding . '</td>';
-                    }
-                    ?>
+                    $lastLanding = isset($data['last_pys_landing']) ? $data['last_pys_landing'] : ""; ?>
+                    <th>Landing Page:</th>
+                    <td><a href="<?=$lastLanding?>" target="_blank" ><?=$lastLanding?></a></td>
                 </tr>
                 <tr>
                     <th>Traffic source:</th>
-                    <td><?=!empty($data['last_pys_source']) ? $data['last_pys_source'] : "No Traffic source"?></td>
+                    <td><?= isset($data['last_pys_source']) ? $data['last_pys_source'] : ""?></td>
                 </tr>
                 <?php
                 if(!empty($data['last_pys_utm'])) {

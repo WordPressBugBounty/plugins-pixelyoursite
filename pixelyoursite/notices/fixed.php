@@ -69,22 +69,22 @@ function adminGetFixedNotices() {
                     'button_url' => 'https://www.youtube.com/watch?v=uXTpgFu2V-E'
                 ],
                 [
-                    'slug'  => 'free_block_1_message_2_v3',
-                    'title' => 'Google Tag Manager Support',
-                    'message' => 'NEW: Learn how to use GTM with PixelYourSite',
+                    'slug'  => 'free_block_1_message_2_v2',
+                    'title' => 'ChatGPT Code Interpreter',
+                    'message' => 'Learn how to use ChatGPT to understand your WooCommerce data',
                     'button_text' => 'Watch video',
-                    'button_url' => 'https://www.youtube.com/watch?v=qKJ3mmCgT3M',
+                    'button_url' => 'https://www.youtube.com/watch?v=FjGJYAdZEKc',
                 ],
                 [
-                    'slug'  => 'free_block_1_message_3_v2',
-                    'title' => 'Meta EMQ Score',
-                    'message' => 'What is EMQ and how you can improve it.',
-                    'button_text' => 'Learn more',
-                    'button_url' => 'https://www.pixelyoursite.com/facebook-event-match-quality-score',
+                    'slug'  => 'free_block_1_message_3_v1',
+                    'title' => 'Google Analytics 4 (GA4)',
+                    'message' => 'How to install GA4 on WordPress and WooCommerce and how to test your tag',
+                    'button_text' => 'Watch video',
+                    'button_url' => 'https://www.youtube.com/watch?v=fwegcsO-yrc',
                 ]
             ],
             'optoutEnabel' => true,
-            'optoutMessage' => "This is message 1 of a series of 3 notifications containing tips and tricks about how to use our plugin.",
+            'optoutMessage' => "This is message 1 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
             'optoutButtonText' => "Don't show me more tips"
         ],
         [
@@ -123,13 +123,107 @@ function adminGetFixedNotices() {
 
             ],
             'optoutEnabel' => true,
-            'optoutMessage' => "This is message 2 of a series of 3 notifications containing tips and tricks about how to use our plugin.",
+            'optoutMessage' => "This is message 2 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
             'optoutButtonText' => "Don't show me more tips"
+        ],
+        [
+            'order' => '3',
+            'wait' => 24,
+            'type' => 'event chain',
+            'enabelYoutubeLink' => true,
+            'enabelLogo' => true,
+            'color' => 'blue',
+            'multiMessage' => [
+                [
+                    'slug'  => 'free_block_3_message_1_v1',
+                    'message' => 'Improve META (Facebook) Event Match Quality (EMQ) score with form automatic data detection.',
+                    'title' => 'Improve your Meta EMQ score',
+                    'button_text' => 'Watch video',
+                    'button_url' => 'https://www.youtube.com/watch?v=snUKcsTbvCk',
+                ],
+
+            ],
+            'optoutEnabel' => true,
+            'optoutMessage' => "This is message 3 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
+            'optoutButtonText' => "Don't show me more tips"
+
+        ],
+        [
+            'order' => '4',
+            'wait' => 24,
+            'type' => 'event chain',
+            'enabelYoutubeLink' => true,
+            'enabelLogo' => true,
+            'multiMessage' => [
+                [
+                    'slug'  => 'free_block_4_message_1_v1',
+                    'title' => 'What WooCommerce products your ads sold',
+                    'message' => 'Meta (Facebook) doesn"t show you what products your ads sold, but there is an easy way to find out.',
+                    'button_text' => 'Watch this video',
+                    'button_url' => 'https://www.youtube.com/watch?v=b-eYdx9QK0Q',
+                ],
+            ],
+            'optoutEnabel' => true,
+            'optoutMessage' => "This is message 4 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
+            'optoutButtonText' => "Don't show me more tips"
+
         ],
 
 
         [
-            'order' => '3',
+            'order' => '5',
+            'wait' => 12,
+            'type' => 'event chain',
+            'enabelYoutubeLink' => true,
+            'enabelLogo' => true,
+            'multiMessage' => [
+                [
+                    'slug'  => 'free_block_5_message_1_v1',
+                    'title' => 'WooCommerce First-Party Reports',
+                    'message' => 'Discover what generates your WooCommerce orders with PixelYourSite Professional first-party reports. You can track Meta, Google, TikTok or any other campaigns with UTMs.',
+                    'button_text' => 'Watch this video',
+                    'button_url' => 'https://www.youtube.com/watch?v=4VpVf9llfkU',
+                ],
+            ],
+            'optoutEnabel' => true,
+            'optoutMessage' => "This is message 5 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
+            'optoutButtonText' => "Don't show me more tips"
+
+        ],
+
+
+        [
+            'order' => '6',
+            'wait' => 24,
+            'type' => 'event chain',
+            'enabelYoutubeLink' => true,
+            'enabelLogo' => true,
+            'multiMessage' => [
+                [
+                    'slug'  => 'free_block_6_message_1_v1',
+                    'title' => 'Install the TikTok Tag',
+                    'message' => 'Learn how you can install the TikTok Tag with PixelYourSite Professional. WooCommerce and Easy Digital Downloads support with e-commerce events tracking.',
+                    'button_text' => 'Watch video',
+                    'button_url' => 'https://www.youtube.com/watch?v=zkb67djRnd0',
+                ],
+                [
+                    'slug'  => 'free_block_6_message_2_v1',
+                    'title' => 'Test your TikTok Tag',
+                    'message' => 'Learn how you can test your TikTok tag.',
+                    'button_text' => 'Watch video',
+                    'button_url' => 'https://www.youtube.com/watch?v=WRFRsjXuyMY',
+                ],
+            ],
+            'optoutEnabel' => true,
+            'optoutMessage' => "This is message 6 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
+            'optoutButtonText' => "Don't show me more tips"
+
+        ],
+
+
+
+        [
+            'order' => '7',
             'wait' => 24,
             'type' => 'event chain',
             'enabelYoutubeLink' => true,
@@ -144,18 +238,59 @@ function adminGetFixedNotices() {
                 ],
                 [
                     'slug'  => 'free_block_7_message_2_v1',
-                    'title' => 'What WooCommerce products your ads sold',
-                    'message' => 'Meta doesn"t show you what products your ads sold, but there is an easy way to find out.',
+                    'title' => 'Multiple GA4 tags',
+                    'message' => 'Learn how you can implement multiple Google Analytics 4 (GA4) tags on your site.',
                     'button_text' => 'Watch video',
-                    'button_url' => 'https://www.youtube.com/watch?v=b-eYdx9QK0Q',
+                    'button_url' => 'https://www.youtube.com/watch?v=JUuss5sewxg',
                 ],
             ],
             'optoutEnabel' => true,
-            'optoutMessage' => "This is message 3 (the last one) of a series of 3 notifications containing tips and tricks about how to use our plugin.",
+            'optoutMessage' => "This is message 7 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
             'optoutButtonText' => "Don't show me more tips"
 
         ],
 
+
+        [
+            'order' => '8',
+            'wait' => 24,
+            'type' => 'event chain',
+            'enabelYoutubeLink' => true,
+            'enabelLogo' => true,
+            'multiMessage' => [
+                [
+                    'slug'  => 'free_block_8_message_1_v1',
+                    'title' => 'Don"t make this mistake when
+using a consent plugin!',
+                    'message' => 'Most sites have a consent plugin as required by GDPR, CCPA, or other regulations. But there is a common mistake that can ruin your tracking. Find out what it is and how to fix it.',
+                    'button_text' => 'Watch this video',
+                    'button_url' => 'https://www.youtube.com/watch?v=eo-dpuAqZNg',
+                ],
+            ],
+            'optoutEnabel' => true,
+            'optoutMessage' => "This is message 8 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
+            'optoutButtonText' => "Don't show me more tips"
+        ],
+
+		[
+            'order' => '9',
+            'wait' => 24,
+            'type' => 'event chain',
+            'enabelYoutubeLink' => true,
+            'enabelLogo' => true,
+            'multiMessage' => [
+                [
+                    'slug'  => 'free_block_9_message_1_v1',
+                    'title' => 'Google Consent Mode',
+                    'message' => 'Google Consent Mode can improve traking. It allows Google to track anonymus data for opted-out users and it works for Google Analytics and Google Ads tag.',
+                    'button_text' => 'Watch this video',
+                    'button_url' => 'https://www.youtube.com/watch?v=70oV41V7IIU',
+                ],
+            ],
+            'optoutEnabel' => false,
+            'optoutMessage' => "This is message 9 of a series of 9 notifications containing tips and tricks about how to use our plugin.",
+            'optoutButtonText' => "Don't show me more tips"
+        ],
 
 
 

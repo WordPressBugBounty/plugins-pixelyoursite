@@ -1159,7 +1159,7 @@ function getTrafficSource () {
         if (!$external) {
             $source = $cookie || $session ? $cookie ?? $session : 'direct';
         } else {
-            $source = ($cookie && $cookie === $referrer) || ($session && $session === $referrer) ? $cookie ?? $session : $referrer;
+            $source = $cookie && $cookie === $referrer || $session && $session === $referrer ? $cookie ?? $session : $referrer;
         }
 
         if ($source !== 'direct') {
@@ -1170,10 +1170,10 @@ function getTrafficSource () {
             } elseif ($source == $cookie || $source == $session){
                 return $source;
             } else {
-                return defined( 'REST_REQUEST' ) && REST_REQUEST ? 'REST API' : "direct";
+                return "direct";
             }
         } else {
-            return defined( 'REST_REQUEST' ) && REST_REQUEST ? 'REST API' : $source;
+            return $source;
         }
     } catch (\Exception $e) {
         return "direct";

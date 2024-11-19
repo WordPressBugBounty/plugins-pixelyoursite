@@ -39,7 +39,7 @@ class FormEventFluentForm extends Settings implements FormEventsFactory {
         return "fluentform";
     }
     public function getName() {
-        return "Fluent Form";
+        return "Fluentform";
     }
 
     function isEnabled()

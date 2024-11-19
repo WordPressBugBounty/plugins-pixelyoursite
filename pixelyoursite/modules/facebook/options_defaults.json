@@ -2,7 +2,7 @@
   "enabled": true,
   "pixel_id": "",
   "advanced_matching_enabled": false,
-  "remove_metadata": true,
+  "remove_metadata": false,
 
   "general_event_enabled": true,
   "comment_event_enabled": true,
@@ -14,8 +14,6 @@
   "woo_content_id_prefix": "",
   "woo_content_id_suffix": "",
   "woo_content_id_logic": "default",
-  "woo_wpml_unified_id": false,
-
   "woo_purchase_enabled": true,
   "woo_initiate_checkout_enabled": true,
   "woo_remove_from_cart_enabled": true,

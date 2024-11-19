@@ -56,7 +56,7 @@ class GA extends Settings implements Pixel {
 			$this->configured = $this->enabled()
                                 && count( $tracking_id ) > 0
                                 && !empty($tracking_id[0])
-			                    && ! apply_filters( 'pys_pixel_disabled', array(), $this->getSlug() );
+			                    && ! apply_filters( 'pys_pixel_disabled', false, $this->getSlug() );
 			
 		}
 		
@@ -608,7 +608,7 @@ class GA extends Settings implements Pixel {
         {
             foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
 
-                $product = wc_get_product(!empty($cart_item['variation_id'] && !GATags()->getOption('woo_variable_as_simple')) ? $cart_item['variation_id'] : $cart_item['product_id']);
+                $product = wc_get_product(!empty($cart_item['variation_id']) ? $cart_item['variation_id'] : $cart_item['product_id']);
 
                 if ($product) {
 
@@ -851,9 +851,6 @@ class GA extends Settings implements Pixel {
             $content_id = GA\Helpers\getWooProductContentId( $product_id );
 
 			$product = wc_get_product( $product_id );
-            if (GATags()->getOption('woo_variable_as_simple') && $product->is_type('variation')) {
-                $product = wc_get_product($product->get_parent_id());
-            }
             if(!$product) continue;
             $name = GATags()->getOption('woo_variations_use_parent_name') && $product->is_type('variation') ? $product->get_title() : $product->get_name();
 

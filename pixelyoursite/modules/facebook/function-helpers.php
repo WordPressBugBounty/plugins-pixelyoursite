@@ -4,7 +4,6 @@ namespace PixelYourSite\Facebook\Helpers;
 
 use PixelYourSite;
 use function PixelYourSite\get_persistence_user_data;
-use function PixelYourSite\isWPMLActive;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -201,13 +200,6 @@ function sanitizeAdvancedMatchingParam( $value, $key ) {
  * @return array
  */
 function getFacebookWooProductContentId( $product_id ) {
-
-	if(isWPMLActive() && PixelYourSite\Facebook()->getOption( 'woo_wpml_unified_id' )) {
-		$wpml_product_id = apply_filters('wpml_original_element_id', NULL, $product_id);
-		if ($wpml_product_id) {
-			$product_id = $wpml_product_id;
-		}
-	}
 
 	if ( PixelYourSite\Facebook()->getOption( 'woo_content_id' ) == 'product_sku' ) {
 		$content_id = get_post_meta( $product_id, '_sku', true );

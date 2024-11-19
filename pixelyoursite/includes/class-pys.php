@@ -1,7 +1,6 @@
 <?php
 
 namespace PixelYourSite;
-use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
@@ -29,8 +28,6 @@ final class PYS extends Settings implements Plugin {
      * @var PYS_Logger
      */
     private $logger;
-    private $containers;
-    private $crawlerDetect;
 	
 	public static function instance() {
 
@@ -114,23 +111,20 @@ final class PYS extends Settings implements Plugin {
 		}
 
         $this->logger = new PYS_Logger();
-        $this->containers = new gtmContainers();
-        $this->crawlerDetect = new CrawlerDetect();
+
     }
 
     public function init() {
 
-        $this->logger->init();
-
         $loggers = [
-            'meta' => [$this->logger, 'downloadLogFile'],
+            'meta' => [PYS()->getLog(), 'downloadLogFile'],
         ];
 
         $clearLoggers = [
-            'clear_plugin_logs' => [$this->logger, 'remove'],
+            'clear_plugin_logs' => [PYS()->getLog(), 'remove'],
         ];
 
-        if (isPinterestActive()) {
+        if (class_exists('Pinterest')) {
             $loggers['pinterest'] = [Pinterest()->getLog(), 'downloadLogFile'];
             $clearLoggers['clear_pinterest_logs'] = [Pinterest()->getLog(), 'remove'];
         }
@@ -155,10 +149,6 @@ final class PYS extends Settings implements Plugin {
                 wp_redirect(remove_query_arg($key, $actual_link));
                 exit;
             }
-        }
-
-        if ( isset( $_GET[ 'download_container' ] )) {
-            $this->containers->downloadLogFile($_GET[ 'download_container' ]);
         }
 
         register_post_type( 'pys_event', array(
@@ -194,7 +184,7 @@ final class PYS extends Settings implements Plugin {
 		    add_filter( 'facebook_for_woocommerce_integration_pixel_enabled', '__return_false' );
 	    }
 
-
+        $this->logger->init();
         if(Facebook()->getOption('test_api_event_code_expiration_at'))
         {
             foreach (Facebook()->getOption('test_api_event_code_expiration_at') as $key => $test_code_expiration_at)
@@ -374,9 +364,6 @@ final class PYS extends Settings implements Plugin {
 	 * @param Pixel|Settings $pixel
 	 */
     public function registerPixel( &$pixel ) {
-        if(!is_admin() && !PYS()->getOption('enable_all_tracking_ids') && $pixel->getSlug() != 'gtm'){
-            return;
-        }
         switch ($pixel->getSlug()) {
             case 'pinterest':
                 if(!isPinterestVersionIncompatible()){
@@ -544,22 +531,7 @@ final class PYS extends Settings implements Plugin {
     }
 
     function is_user_agent_bot(){
-        if (!PYS()->getOption('block_robot_enabled')) {
-            return false;
-        }
         if (!empty($_SERVER['HTTP_USER_AGENT'])) {
-
-            $userAgent = strtolower($_SERVER['HTTP_USER_AGENT']);
-            $excludedRobots = PYS()->getOption('exclude_blocked_robots');
-
-            if (!empty($excludedRobots)) {
-                foreach ($excludedRobots as $robot) {
-                    if (stripos($userAgent, strtolower($robot)) !== false) {
-                        return false;
-                    }
-                }
-            }
-
             $options = array(
                 'YandexBot', 'YandexAccessibilityBot', 'YandexMobileBot', 'YandexDirectDyn', 'YandexScreenshotBot',
                 'YandexImages', 'YandexVideo', 'YandexVideoParser', 'YandexMedia', 'YandexBlogs',
@@ -588,17 +560,17 @@ final class PYS extends Settings implements Plugin {
                 'Seomoz', 'BLEXBot', 'YisouSpider', '360Spider', 'AddThis', 'TweetmemeBot', 'ContextAd Bot',
                 'Screaming Frog SEO Spider', 'Nutch', 'Baiduspider-image', 'Panscient.com', 'Twitterbot',
                 'YoudaoBot', 'OpenSiteExplorer', 'Linkfluence', 'YaK', 'ContentKing', 'Spinn3r', 'PhantomJS',
-                'HeadlessChrome', 'Snapchat', 'Pingdom', 'Googlebot-Mobile', 'Barkrowler'
+                'HeadlessChrome', 'Snapchat', 'Pingdom', 'Googlebot-Mobile'
             );
 
             foreach($options as $row) {
-                if (stripos($userAgent, strtolower($row)) !== false) {
+                if (stripos(strtolower($_SERVER['HTTP_USER_AGENT']), strtolower($row)) !== false) {
                     return true;
                 }
             }
         }
 
-        return $this->crawlerDetect->isCrawler();
+        return false;
     }
 
     public function ajaxGetGdprFiltersValues() {

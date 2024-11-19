@@ -21,8 +21,7 @@
 #pys #pin_settings_switch:checked + .settings_content,
 #pys #gads_settings_switch:checked + .settings_content,
 #pys #gan_settings_switch:checked + .settings_content,
-#pys #fb_settings_switch:checked + .settings_content,
-#pys #gtm_settings_switch:checked + .settings_content{
+#pys #fb_settings_switch:checked + .settings_content {
     display: block;
 }
 
@@ -102,17 +101,4 @@
 }
 #pys #table-custom-events tr.disabled .event-actions a{
     color: #007bff;
-}
-
-#pys .networks .gtm-logo {
-    width: 13px;
-    height: 13px;
-    margin-right: 5px;
-    top: -1px;
-    position: relative;
-}
-#pys .custom-controls-blacklist .custom-control{margin-bottom:.75rem}
-
-#pys p#custom-param-message {
-    margin-top: 15px;
 }

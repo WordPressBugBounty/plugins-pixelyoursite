@@ -655,25 +655,7 @@ abstract class Settings {
 
 		<?php
 	}
-    public function render_checkbox_blacklist_input_array( $key, $label, $value, $disabled = false ) {
-
-        $attr_name  = "pys[$this->slug][$key][]";
-        $attr_values = (array)$this->getOption( $key );
-
-        $isChecked = in_array($value,$attr_values);
-        ?>
-
-        <label class="custom-control custom-checkbox">
-            <input type="checkbox" name="<?php esc_attr_e( $attr_name ); ?>" value="<?=$value?>"
-                   class="custom-control-input" <?php disabled( $disabled, true ); ?>
-                <?php echo $isChecked ? "checked" : ""?>>
-            <span class="custom-control-indicator"></span>
-            <span class="custom-control-description"><?php echo wp_kses_post( $label ); ?></span>
-        </label>
-
-        <?php
-
-    }
+	
 	/**
 	 * Sanitize text field value
 	 *

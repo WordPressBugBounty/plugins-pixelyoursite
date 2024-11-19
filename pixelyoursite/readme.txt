@@ -1,171 +1,260 @@
 ===PixelYourSite - Your smart PIXEL (TAG) & API Manager===
 Contributors: PixelYourSite
-Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, Google Consent Mode V2
+Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, GA4, Google Consent Mode V2
 Requires at least: 3.0.1
 Requires PHP: 5.4
-Tested up to: 6.7
-Stable tag: 10.0.0
+Tested up to: 6.6
+Stable tag: 9.7.2
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-Add your Meta Pixel (the old Facebook Pixel) with Conversion API support, Google Analytics (GA4) with Google Consent Mode support, or Google Tag Manager. The plugin also offers Head and Footer scripts with various options. 
+Add your Meta Pixel (old Facebook Pixel) with Conversion API events, Google Analytics (GA4) with Consent Mode support, and ANY script (Head & Footer).
 
 == Description ==
-**PixelYourSite Free Version: Complete Tracking Solution for the Meta Pixel, Google Analytics 4, and Google Tag Manager.**
+**Manage your Meta Pixel (Facebook Pixel), implement Facebook Conversion API, or add your Google Analytics 4 (GA4) with a single plugin. Add ANY other script (Head & Footer feature). The Pinterest Tag can be implemented via [paid add-on](https://www.pixelyoursite.com/pinterest-tag).**
 
-Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4, and Google Tag Manager into your WordPress site. Plus, use our simple Head and Footer script option to add any custom script you need for advanced tracking and optimization. The Pinterest Tag can be implemented via this [paid add-on](https://www.pixelyoursite.com/pinterest-tag). Similar paid add-on for the [Bing tag](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on)
+PixelYourSite's Automatic Events will track important actions and send them to all your configured pixels (searches, form submit, comments, downloads). Use these events to understand your visitors' behaviour inside Google Analytics, or to create audiences and conversions for Meta (Facebook), or Google.
 
-**PixelYourSite will help you:**
+You can fire your own events with zero coding.
 
-* Install the Meta Pixel with Conversion API support. 
+Google Consent Mode V2 support: [check this dedicated page for more details](https://www.pixelyoursite.com/google-consent-mode-v2-wordpress)
 
-* Install Google Analytics 4 (GA4).
+NEW: Google Tag Manager Server-Side Tagging BETA support: [more details here](https://www.pixelyoursite.com/google-server-side-tagging-with-pixelyoursite)
 
-* Install Google Tag Manager and push events into the data layer with ZERO coding (NEW).
+**WooCommerce** and **Easy Digital Downloads** are fully supported, with Facebook Dynamic Ads pixel setup and Google Analytics Enhanced Ecommerce.
 
-* Configure Google Consent Mode: [check this dedicated page for more details](https://www.pixelyoursite.com/google-consent-mode-v2-wordpress).
-
-* Configure Google Tag Manager Server-Side Tagging for our native GA4 script: [more details here](https://www.pixelyoursite.com/google-server-side-tagging-with-pixelyoursite).
-
-* Install any other scripts with our Head & Footer option. 
-
-
-**PixelYourSite & WooCommerce:**
-
-* All e-commerce speciffic events are automatically  fired.
-
-* All parameters required for dynamic ads (Meta or Google) are present.
-
-* Flexible options for product IDs (default IDs, or SKU).
-
-* The plugin can also use Facebook for WooCommerce product ID logic. You can use our advanced tracking and Facebook for WooCommerce catalogs.
-
-* Client data is used to improve Meta EMQ score for the API events.
-
-
-**PixelYourSite & Easy Digital Downloads:**
-
-* All e-commerce speciffic events are automatically  fired.
-
-* All parameters required for dynamic ads (Meta or Google) are present.
-
-* Client data is used to improve Meta EMQ score for the API events.
-
-
-**Track key actions with our automated events:**
-
-* Searches (search keywords are tracked as parameters).
-
-* Form submissions.
-
-* User signups.
-
-* User login.
-
-* Downloads (file names and type are tracked as parameters).
-
-* Comments.
-
-* Page scroll.
-
-* Time on page. 
-
-
-**Track other actions with your own events:** 
-
-* Configure any standard or custom event for Meta, GA4, or GTM.
-
-
-**Head & Footer functionality. Add your own scripts:**
-
-* On all pages. 
-
-* On speciffic pages.
-
-* On the WooCommerce order received page.
-
-* For all devices, for desktop, or mobile only. 
-
-
-**Consent & GDPR**:
-
-* The plugin integrates with some of the most popular consent solutions. 
-
-* It has consent filters allowing other consent plugins to control our scripts and cookies. 
-
-* It can fire GA4 tags with Google Consent Mode granted.
-
-* It's fully integrated with [ConsentMagic](https://www.pixelyoursite.com/plugins/consentmagic).
-
-
-**Google Tag Manager**
-
-PixelYourSite is known for its easy integration of the Meta Pixel, Google Analytics, TikTok (paid), Pinterest (paid add-on), and Bing (paid add-on). What makes it special is its new Google Tag Manager integration, pushing all events into the GTM data layer with no coding required.
-
-GTM Container Import: to simplify GTM setup we offer you a GTM Container Import file that will configure triggers for all our events and variables for all our parameters. Version 1.0 of this file comes with Google Analytics 4 tags pre-configured: [Watch this video to learn more](https://www.youtube.com/watch?v=qKJ3mmCgT3M).
-
-
-**Free training:** 
-
-We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this video about a Meta Events Manager option that can RUIN your conversion tracking:
+We have a YouTube channel called PixelYourSite where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this one about a Meta Events Manager option that can RUIN your conversion tracking:
 
 [youtube https://www.youtube.com/watch?v=4eMKGxT7qMk]
 
-
-
-**Key resources:**
-
+IMPORTANT:: Facebook Pixel Conversion API: [Learn how to enable and test Conversion API events](https://www.pixelyoursite.com/facebook-conversion-api-capi)
 
 Learn how to [verify your domain on Facebook](https://www.pixelyoursite.com/verify-domain-facebook)
 
-Learn how to handle [Google Consent Mode V2](https://www.pixelyoursite.com/google-consent-mode-v2-wordpress)
+Learn how to track key actions with [Automated Events](https://www.pixelyoursite.com/global-events)
 
-Learn how to improve [Meta EMQ Score](https://www.pixelyoursite.com/facebook-event-match-quality-score)
+NEW: Track and store traffic source, landing page, and UTMs for WooCommerce orders: [click to find more](https://www.pixelyoursite.com/woocommerce-first-party-reports)
 
-Learn how tot track [WordPress Forms](https://www.pixelyoursite.com/track-wordpress-forms)
+NEW: Track and store traffic source, landing page and UTMs for Easy Digital Downloads orders: [click to find more](https://www.pixelyoursite.com/easy-digital-downloads-first-party-reports)
 
-Learn more about [Automated Events](https://www.pixelyoursite.com/global-events)
+TRACK EVERYTHING WITH A SINGLE PLUGIN:
 
-Learn more about [Native WooCommerce Reports](https://www.pixelyoursite.com/woocommerce-first-party-reports)
+* The Meta Pixel (Facebook Pixel): one click install
 
-Learn how to [analyse PixelYourSite data with ChatGPT](https://www.pixelyoursite.com/pixelyoursite-and-chatgpt)
+* Facebook Conversion API: add a token and we send all events using CAPI
 
-Learn how to [setup GTM server side tagging with the native GA4 integration](https://www.pixelyoursite.com/google-server-side-tagging-with-pixelyoursite)
+* Google Consent Mode V2
+
+* Google Analytics 4: for details, watch [this video](https://www.youtube.com/watch?v=fwegcsO-yrc)
+
+* ANY script: add any other script with our flexible Head & Footer option
+
+* The Pinterest Tag: via [paid add-on](https://www.pixelyoursite.com/pinterest-tag)
+
+* Google Ads (formerly AdWords) [pro feature](https://www.pixelyoursite.com/google-ads-tag)
+
+* Microsoft (BING) UET tag [paid add-on](https://www.pixelyoursite.com/bing-tag)
+
+* Learn how to track both UA and GA4 properties at the same time (paid feature): [watch video](https://www.youtube.com/watch?v=JUuss5sewxg)
+
+* Learn how to fire multiple Facebook Pixels with CAPI support (paid feature): [watch video](https://www.youtube.com/watch?v=oTYnsu99By8)
 
 
 
-**Even more features with our paid plugins:**
+FANTASTIC WOOCOMMERCE INTEGRATION:
+
+* Meta Pixel (Facebook Pixel): every e-commerce related event is fired automatically. Conversion value is tracked for each event. All the events are 
+
+* Dynamic Product Ads ready (content_ids and content_type parameters always present).
+
+* Facebook Conversion API: every e-commerce event is sent using CAPI.
+
+* Google Analytics: Enhanced Ecommerce implementation.
+
+* GA4: Monetisation data.
+
+* Head & Footer scripts: you can insert scripts on the WooCommerce “order-received” page.
+
+* Pinterest e-commerce events with paid add-on.
+
+* TikTok e-commerce events with the paid version of the plugin.
 
 
-PixelYourSite development is supported by our paying customers. We've turned [PixelYourSite Professional](https://www.pixelyoursite.com/plugins/pixelyoursite-professional) into a powerful tracking tool. Alongside it, we offer a range of plugins, like the [WooCommerce Feed Plugin](https://www.pixelyoursite.com/plugins/product-catalog-feed-for-woocommerce) and our consent management solution, [ConsentMagic](https://www.pixelyoursite.com/plugins/consentmagic).
 
 
-The list of paid feature is long and growing:
+EASY DIGITAL DOWNLOADS INTEGRATION:
+
+The EDD integration works just like the WooCommerce integration, with full Dynamic Product Ads Facebook Pixel Support, Google Analytics Enhanced Ecommerce, and Pinterest Tag e-commerce events.
 
 
-* Support for Google Ads tags.
 
-* Support for TikTok tags.
+TRACK KEY ACTIONS WITH AUTOMATED EVENTS:
 
-* Pinterest and Bing support via paid add-ons. 
+The AUTOMATED EVENTS capture important actions like form submit, comments, downloads, page scroll, and time on page. Use them to measure your users' behaviour inside Google Analytics, or to create custom audiences and conversions on Meta (Facebook), and Google Analytics. 
 
-* More automated events, tracking even more key actions. 
 
-* More parameters for our events, including landing page, traffic source, or UTMs tracking.
 
-* More triggers for your own events: Clicks on links and CSS Selectors, Number of Page Views, Mouse over CSS Selectors, Embedded video views, Email link click, Page scroll, Post type, and direct integrations with various Form plugins plus Elementor forms.
+FIRE YOUR OWN EVENTS:
 
-* Better tracking of user data for an improved EMQ score, including the ability to get user data from forms, or URLs.
+You can easily configure your own events and send them to all or just some of the networks (Facebook, Google, Pinterest).
 
-* Improved tracking of WooCommerce and EDD purchases.
+You can fire standard or custom events using triggers like:
 
-* Support for multiple tags.
+* URL contains.
 
-* The possibility to configure where to fire or hide a particular tag based on flexible conditions. 
+* URL equals.
 
-* Native WooCommerce and EDD reporting.
+* Delay event: fire after X seconds.
 
-* ... and many more!
+
+
+**CONSENT, GDPR, CCPA SUPPORT:**
+
+
+PixelYourSite is fully integrated with [ConsentMagic.com](https://www.consentmagic.com)
+
+And it works with some of the most popular “cookie consent” plugins.
+
+
+Additionally we offer filters that developers can use to create their own custom integrations. These filters can control the way each pixel works.
+
+Google Consent Mode V2 support.
+
+
+
+FACEBOOK FOR WOOCOMMERCE INTEGRATION:
+
+You can use Facebook for WooCommerce plugin along with PixelYourSite. This will let you benefit from all our advanced pixel features and still have a Facebook page shop.
+
+When Facebook for WooCommerce is detected, the plugin will offer you the option to use their ID logic for all the WooCommerce specific events. This will ensure product matching between your site and their Product Catalog.
+
+[More details in this dedicated article](https://www.pixelyoursite.com/facebook-for-woocommerce-pixelyoursite)
+
+
+
+OTHER USEFUL FEATURES:
+
+* Facebook Manual Advanced Matching.
+
+* Google Analytics cross-domain measurement.
+
+* Disable noscript.
+
+* Track key actions with the automatic events.
+
+
+**EVEN MORE FEATURES WITH THE PRO VERSION:**
+
+
+[PixelYourSite Pro](https://www.pixelyoursite.com/) is used by thousands of businesses already and will offer you some extraordinary features.
+
+
+Full PixelYourSite Professional and **CartFlows** integration: [watch video for details](https://www.pixelyoursite.com/cartflows-and-pixelyoursite)
+
+
+TikTok Tag support with [PixelYourSite Professional](https://www.pixelyoursite.com/tiktok-tag-pixelyoursite).
+
+
+
+EVEN MORE AUTOMATED EVENTS:
+
+You can capture clicks on internal or external links, embedded video views, clicks on phone numbers or emails, user signups, logins, clicks on AdSense ads.
+
+
+
+EVEN MORE EVENTS’ TRIGGERS:
+
+On top of the free triggers (URL equals and URL contains), the pro version will let you fire more complex events:
+
+
+* Clicks on CSS Selector: you can target virtually any clicks, like buttons, images etc.
+
+* Mouse over CSS Selector
+
+* Page Scroll: you can fire an event when any or a particular page is scrolled down to a percent.
+
+
+
+EVEN MORE FACEBOOK EVENTS PARAMETERS:
+
+The pro version will track a vast amount of data for each event, like the traffic source, UTMs, your visitor’s browser’s time (hour, day, month).
+
+These parameters can be used for [Custom Audiences or Custom Conversions](https://www.pixelyoursite.com/facebook-pixel-plugin/custom-audiences-conversions)
+
+
+
+EVEN MORE GOOGLE ANALYTICS FEATURES:
+
+More triggers for Google Events.
+
+On top of the free version data, [the pro version](https://www.pixelyoursite.com/google-analytics) will track a number of useful Custom Dimensions.
+
+Browser’s hour, day, and month. They are useful if you sell globally and what to know at what time your visitors take a particular action (their time, not your server’s or Google Analytics time).
+Dynamic Remarketing vertical custom dimensions (Retail or Custom vertical). Useful if you want to configure dynamic remarketing via your Analytics account.
+
+
+
+EVEN MORE HEAD & FOOTER OPTIONS:
+
+The pro version [Head & Footer](https://www.pixelyoursite.com/head-footer-scripts) lets you use dynamic values: [id], [title], [categories], [email], [first_name], [last_name].
+
+For WooCommerce you’ll have some additional dynamic values: [order_number], [order_subtotal], [order_total], [currency].
+
+
+
+EVEN MORE WOOCOMMERCE FEATURES:
+
+* Identify your most valuable customers with our Advanced Marketing Events. Useful to create Facebook Lookalikes or Google Similar Audiences.
+
+* CSV Export for Facebook Custom Audiences with Lifetime Value. Useful for Facebook LTV Lookalikes.
+
+* Super flexible events value configuration (include/exclude tax and shipping, use full price or a price percent for each event).
+
+* Track the Lifetime Value for your customers as Purchase event parameter.
+
+* Lots of extra parameters for the Facebook Purchase event. Useful to create advanced Custom Audiences.
+
+* Fire the Purchase event on transaction only.
+
+* Track WooCommerce affiliate buttons clicks.
+
+* Track WooCommerce PayPal Standard clicks.
+
+* [Google Ads Dynamic Remarketing parameters](https://www.pixelyoursite.com/google-ads-tag)
+
+
+For more info on how the pro version can help you with your Facebook Pixel, [visit this WooCommerce  - Facebook Pixel page](https://www.pixelyoursite.com/facebook-pixel-plugin/woocommerce-facebook-pixel)
+
+
+
+GOOGLE ADS TAG (FORMER ADWORDS):
+
+* The Pro version will implement the [Google Ads Tag](https://www.pixelyoursite.com/google-ads-tag) with Dynamic Retargeting support for WooCommerce and Easy Digital Downloads.
+
+* Each Global event will be sent to Google Ads too, and you can configure Google Ads conversions.
+
+* Add conversion label to any WooCommerce or EDD event.
+
+* Enhanced Conversions.
+
+
+
+NOT ENOUGH? GET MORE WITH THE SUPER PACK:
+
+With the [Super Pack](https://www.pixelyoursite.com/super-pack) you get 5 extra add-ons:
+
+* Multiple pixels: add multiple Facebook pixels, Google Analytics, or Google Ads tags
+
+* Remove a pixel from a particular page
+
+* Dynamic parameters for events
+
+* WooCommerce custom “thank you pages”
+AMP support
+
+
+The super pack comes as a free bonus with our [Advanced and Agency licenses](https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro).
+
 
 
 DON’T MISS:
@@ -382,32 +471,6 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
-
-= PixelYourSite 10.0.0 =
-
-October 29, 2024
-
-This is a major update, it's highly recommended to clear all your caches.
-
-* New integration with Google Tag Manager.
-
-* GTM Container import file. Version 1.0 of the file will configure triggers for all our events, variables for all our parameters, and GA4 tags. You must edit the GA4 ID variable. 
-
-* Improve capabilities to block bots from triggering events. 
-
-* An option to exclude bots from being blocked based on user-agent name. Useful for websites using cache pre-load options.
-
-* A new option to disable all native tags directly from the main page. 
-
-* Various small UI changes to reflect recent changes in the paid version. 
-
-* New video links. 
-
-* Video notifications updated and simplified. We reduced the number of notifications from 9 to 3. Users that already saw them, might see a single new one about the new GTM features and Meta EMQ score. 
-
-* Declaring compatibility with the recent WooCommerce version. 
-
-
 
 = PixelYourSite 9.7.2 =
 
