@@ -44,7 +44,7 @@ class GATags extends Settings {
         if($this->isEnabled){
             if(!is_admin() && $this->getOption('gtag_datalayer_type') !== 'disable') {
                 add_action( 'wp_head', array($this,'pys_wp_header_top'), 1, 0 );
-                add_action('wp_head', array($this,'start_output_buffer'), 1);
+                add_action('template_redirect', array($this,'start_output_buffer'), 0);
                 add_action('wp_footer', array($this,'end_output_buffer'), 100);
             }
 
@@ -134,7 +134,11 @@ class GATags extends Settings {
     public function start_output_buffer() {
         ob_start([$this, 'modify_analytics_datalayer']);
     }
-    public function end_output_buffer() { ob_end_flush(); }
+    public function end_output_buffer() {
+        if (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+    }
 }
 
 /**

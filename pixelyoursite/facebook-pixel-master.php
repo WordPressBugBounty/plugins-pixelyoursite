@@ -3,8 +3,8 @@
 /**
  * Plugin Name: PixelYourSite
  * Plugin URI: http://www.pixelyoursite.com/
- * Description: The <strong>Meta Pixel with Conversion API support</strong>, <strong>Google Analytics 4</strong>, and <strong>Google Tag Manager (NEW!)</strong> with <strong>ZERO CODING</strong>. Track key actions with our Automated Events, or fire your own events using flexible triggers. WooCommerce and EDD are fully integrated. Insert custom scripts with our Head & Footer option. Add the <strong>Pinterest</strong> or <strong>Bing Tags</strong> with paid add-ons. Fully integrated with <strong>ConsentMagic</strong> and other consent plugins.
- * Version: 10.0.1
+ * Description: Meta Pixel & CAPI, GA4, and GTM support with ZERO CODING. Track events, WooCommerce/EDD ready, with Pinterest & Bing add-ons, plus consent support.
+ * Version: 10.0.1.1
  * Author: PixelYourSite
  * Author URI: http://www.pixelyoursite.com
  * License: GPLv3
