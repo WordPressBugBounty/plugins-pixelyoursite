@@ -82,7 +82,13 @@ use PixelYourSite\Facebook\Helpers;
                     Your clients will NOT get this info.</small>
             </div>
         </div>
-
+        <div class="row mt-2">
+            <div class="col">
+                <?php PYS()->render_switcher_input( 'woo_enabled_display_data_to_orders' ); ?>
+                <h4 class="switcher-label">Display the tracking data on the order's page</h4>
+                <small class="form-check">Show the <i>landing page, traffic source,</i> and <i>UTMs</i> on the order's edit page.</small>
+            </div>
+        </div>
         <div class="row mt-2">
             <div class="col">
                 <?php PYS()->render_switcher_input( 'woo_enabled_save_data_to_user',false,true ); ?>

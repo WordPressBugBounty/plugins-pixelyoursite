@@ -21,7 +21,9 @@ class GATags extends Settings {
 
 	private $googleBusinessVertical;
 
-	public static function instance() {
+    private $buffer_level;
+
+    public static function instance() {
 
 		if ( is_null( self::$_instance ) ) {
 			self::$_instance = new self();
@@ -45,7 +47,11 @@ class GATags extends Settings {
             if(!is_admin() && $this->getOption('gtag_datalayer_type') !== 'disable') {
                 add_action( 'wp_head', array($this,'pys_wp_header_top'), 1, 0 );
                 add_action('template_redirect', array($this,'start_output_buffer'), 0);
-                add_action('wp_footer', array($this,'end_output_buffer'), 100);
+                add_action('shutdown', function() {
+                    if (ob_get_level() > 0) {
+                        ob_end_flush();
+                    }
+                }, 0);
             }
 
         }
@@ -130,15 +136,11 @@ class GATags extends Settings {
         return $buffer;
     }
 
-// Включение буферизации вывода и фильтрации
     public function start_output_buffer() {
+        $this->buffer_level = ob_get_level();
         ob_start([$this, 'modify_analytics_datalayer']);
     }
-    public function end_output_buffer() {
-        if (ob_get_level() > 0) {
-            ob_end_flush();
-        }
-    }
+
 }
 
 /**

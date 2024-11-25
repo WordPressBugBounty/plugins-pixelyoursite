@@ -71,6 +71,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <small class="form-text">Save the <i>landing page, UTMs, client's browser's time, day, and month, the number of orders, lifetime value, and average order</i>. You can view this data when you edit an order. With the professional version you can view it under the <a href="<?=admin_url("admin.php?page=pixelyoursite_edd_reports")?>">Easy Digital Downloads Reports</a> section.</small>
             </div>
         </div>
+        <div class="row mt-2">
+            <div class="col">
+                <?php PYS()->render_switcher_input( 'edd_enabled_display_data_to_orders' ); ?>
+                <h4 class="switcher-label">Display the tracking data on the order's page</h4>
+                <small class="form-check">Show the <i>landing page, traffic source,</i> and <i>UTMs</i> on the order's edit page.</small>
+            </div>
+        </div>
         <div class="row mt-3">
             <div class="col">
                 <?php PYS()->render_switcher_input( 'edd_enabled_save_data_to_user',false,true ); ?>

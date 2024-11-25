@@ -3,9 +3,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 use function PixelYourSite\isWooUseHPStorage;
+use function PixelYourSite\PYS;
 
+if(!PYS()->getOption('woo_enabled_display_data_to_orders') || !isset($orderId)) return;
 include_once "function-helper.php";
-if(!isset($orderId)) return;
 $order = wc_get_order($orderId);
 $data = array();
 $dataAnalytics = array();

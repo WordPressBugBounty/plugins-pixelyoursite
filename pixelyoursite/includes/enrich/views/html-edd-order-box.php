@@ -1,8 +1,10 @@
 <?php
 include_once "function-helper.php";
 
+use function PixelYourSite\PYS;
 $payment      = new EDD_Payment( $payment_id );
 
+if(!PYS()->getOption('edd_enabled_display_data_to_orders') || !isset($payment)) return;
 $meta = $payment->get_meta();
 
 ?>

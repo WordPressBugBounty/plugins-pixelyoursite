@@ -37,6 +37,7 @@
   "woo_view_content_value_option": "radio",
   "woo_view_content_value_global": "number",
   "woo_enabled_save_data_to_orders": "checkbox",
+  "woo_enabled_display_data_to_orders": "checkbox",
   "woo_add_enrich_to_admin_email": "checkbox",
 
   "edd_add_to_cart_on_button_click": "checkbox",
@@ -54,6 +55,7 @@
   "edd_view_content_value_option": "radio",
   "edd_view_content_value_global": "number",
   "edd_enabled_save_data_to_orders": "checkbox",
+  "edd_enabled_display_data_to_orders": "checkbox",
 
   "custom_events_enabled": "checkbox",
 
