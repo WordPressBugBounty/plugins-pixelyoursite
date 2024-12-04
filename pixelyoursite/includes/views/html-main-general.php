@@ -410,6 +410,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </p>
                             <hr>
                             <?php $containers = new gtmContainers();
+                            $download_template_nonce = wp_create_nonce('download_template_nonce');
                             if(!empty($containers)):
                                 ?>
                                 <p>
@@ -420,7 +421,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     if (!$container['enable'] || empty($container['file_name'])) continue;
                                     ?>
                                     <p>
-                                        <a href="<?php echo esc_url( buildAdminUrl( 'pixelyoursite', 'containers' ) ); ?>&download_container=<?php echo $container['file_name'];?>" target="_blank" download><?php echo $container['show_name']; ?></a><?php echo !empty($container['description']) ? ' - '.$container['description'] : '';?>
+                                        <a href="<?php echo esc_url( add_query_arg(['download_container' => $container['file_name'], '_wpnonce_template_logs' => $download_template_nonce],buildAdminUrl( 'pixelyoursite', 'containers' ))); ?>" target="_blank"><?php echo $container['show_name']; ?></a><?php echo !empty($container['description']) ? ' - '.$container['description'] : '';?>
                                     </p>
                                     <?php
                                 } ?>

@@ -103,6 +103,21 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                     <?php foreach ( CustomEventFactory::get() as $event ) : ?>
 
                         <?php
+                        $trigger_type = $event->getTriggerType();
+                        $triggers = $event->getTriggers();
+                        if ( !empty( $triggers ) ) {
+                            $trigger_type = $triggers[0]->getTriggerType();
+                            switch ( $trigger_type ) {
+
+                                case 'page_visit':
+                                    $event_types = 'Page Visit';
+                                    break;
+
+                                case 'home_page':
+                                    $event_types = 'Home Page Visit';
+                                    break;
+                            }
+                        }
 
                         /** @var CustomEvent $event */
 
@@ -136,7 +151,16 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                             ),
                             '_wpnonce' => wp_create_nonce( 'pys_remove_event' ),
                         ) );
+                        $event_type = 'Page Visit';
+                        switch ( $trigger_type ) {
+                            case 'page_visit':
+                                $event_type = 'Page Visit';
+                                break;
 
+                            case 'home_page':
+                                $event_type = 'Home Page Visit';
+                                break;
+                        }
                         ?>
 
                         <tr data-post_id="<?php esc_attr_e( $event->getPostId() ); ?>"
@@ -162,7 +186,7 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                                     text-danger">Remove</a>
                                 </span>
                             </td>
-                            <td>Page Visit</td>
+                            <td><?php echo wp_kses_post( $event_types); ?></td>
                             <td class="networks">
                                 <?php if ( Facebook()->enabled() && $event->isFacebookEnabled() ) : ?>
                                     <i class="fa fa-facebook-square"></i>

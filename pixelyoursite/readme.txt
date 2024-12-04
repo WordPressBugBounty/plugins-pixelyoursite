@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.0.1.2
+Stable tag: 10.0.2
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -382,6 +382,18 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 10.0.2 =
+
+December 4, 2024
+
+* New events trigger that allows you to easily track the home page.
+
+* Fixing possible issues with GTM scripts controls.
+
+* Fixing a bug with the GTM container template download resulting in an empty file. 
+
+* Security enhancements. 
 
 = PixelYourSite 10.0.1.2 =
 

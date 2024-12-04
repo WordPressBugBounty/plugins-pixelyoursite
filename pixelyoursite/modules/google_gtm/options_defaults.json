@@ -7,6 +7,7 @@
   "pixel_lang": "",
   "track_user_id": false,
   "gtm_id": "",
+  "gtm_just_data_layer": false,
 
   "gtm_dataLayer_name": "dataLayer",
   "gtm_container_domain": "www.googletagmanager.com",

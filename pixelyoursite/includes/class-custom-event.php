@@ -190,7 +190,8 @@ class CustomEvent {
         'view_item_list',
         'view_promotion'
     );
-
+    private $triggers = array();
+    private $triggerEventTypes = array();
 	private $data = array(
 		'delay'        => null,
 		'trigger_type' => 'page_visit',
@@ -282,11 +283,27 @@ class CustomEvent {
 
 			$this->post_id = $post_id;
 			$this->title   = get_the_title( $post_id );
-			
-			$data = get_post_meta( $post_id, '_pys_event_data', true );
-			$this->data = is_array( $data ) ? $data : array();
 
-			$state = get_post_meta( $post_id, '_pys_event_state', true );
+            $data = get_post_meta( $post_id, '_pys_event_data', true );
+            $triggers = get_post_meta( $post_id, '_pys_event_triggers', true );
+
+            if ( $triggers !== '' ) {
+                $this->triggers = !empty( $triggers ) ? unserialize( $triggers ) : array();
+            } elseif ( !empty( $data ) ) {
+                $trigger_type = $data[ 'trigger_type' ];
+                $trigger_event = new TriggerEvent( $trigger_type, 0 );
+                if ( in_array( $trigger_type, TriggerEvent::$allowedTriggers ) ) {
+                    $trigger_event->migrateTriggerData( $trigger_type, $data );
+                    $this->triggers = array( $trigger_event );
+                } else {
+                    $this->triggers = array();
+                }
+            }
+
+            $this->data = is_array( $data ) ? $data+$this->data : $this->data;
+
+
+            $state = get_post_meta( $post_id, '_pys_event_state', true );
 			$this->enabled = $state == 'active' ? true : false;
 
 		}
@@ -321,41 +338,84 @@ class CustomEvent {
 		$state = isset( $args['enabled'] ) && $args['enabled'] ? 'active' : 'paused';
 		$this->enabled = $state == 'active' ? true : false;
 		update_post_meta( $this->post_id, '_pys_event_state', $state );
-		
+
+        $trigger_types = array(
+            'page_visit',
+            'home_page'
+        );
+
+        $this->triggers = array();
 		// trigger type
-		$this->data['trigger_type'] = 'page_visit';
+        $old_data = array(
+            'conditional_number_visit',
+            'number_visit',
+            'triggers',
+            'post_type_value',
+            'video_view_data',
+            'video_view_urls',
+            'video_view_triggers',
+            'video_view_play_trigger',
+            'video_view_disable_watch_video',
+            'disabled_form_action',
+            'forms',
+            'delay',
+            'url_filters'
+        );
+        foreach ( $old_data as $datum ) {
+            if ( isset( $this->data[ $datum ] ) ) {
+                unset( $this->data[ $datum ] );
+            }
+        }
 
-		// delay
-		$this->data['delay'] = isset( $args['delay'] ) && $args['delay'] ? (int) $args['delay'] : null;
+        if ( !empty( $args[ 'triggers' ] ) ) {
+            foreach ( $args[ 'triggers' ] as $data_trigger ) {
 
-		/**
-		 * TRIGGERS
-		 */
+                if ( isset( $data_trigger[ 'cloned_event' ] ) ) {
+                    continue;
+                }
 
-		// reset old triggers
-		$this->data['triggers'] = array();
+                $saving_trigger = false;
 
-		// page visit triggers
-		if ( $this->trigger_type == 'page_visit' && isset( $args['page_visit_triggers'] )
-		     && is_array( $args['page_visit_triggers'] ) ) {
+                // trigger type
+                $trigger_type = isset( $data_trigger[ 'trigger_type' ] ) && in_array( $data_trigger[ 'trigger_type' ], $trigger_types ) ? sanitize_text_field( $data_trigger[ 'trigger_type' ] ) : 'page_visit';
 
-			foreach ( $args['page_visit_triggers'] as $trigger ) {
+                $trigger = new TriggerEvent( $trigger_type );
 
-				if ( ! empty( $trigger['value'] ) ) {
+                // delay
+                $delay = ( $trigger_type == 'page_visit' || $trigger_type == 'home_page' ) && isset( $data_trigger[ 'delay' ] ) && $data_trigger[ 'delay' ] ? (int) sanitize_text_field( $data_trigger[ 'delay' ] ) : null;
+                $trigger->updateParam( 'delay', $delay );
 
-					$this->data['triggers'][] = array(
-						'rule'  => $trigger['rule'] == 'contains' ? 'contains' : 'match',
-						'value' => $trigger['value'],
-					);
+                if ( $trigger_type === 'home_page' ) {
+                    $saving_trigger = true;
+                }
 
-				}
+                /**
+                 * TRIGGERS
+                 */
+                $event_triggers = array();
 
-			}
+                // page visit triggers
+                if ( $trigger_type == 'page_visit' && isset( $data_trigger[ 'page_visit_triggers' ] ) && is_array( $data_trigger[ 'page_visit_triggers' ] ) ) {
 
-		}
-		
-		// reset old url filters
-		$this->data['url_filters'] = array();
+                    foreach ( $data_trigger[ 'page_visit_triggers' ] as $page_visit_trigger ) {
+                        if ( !empty( $page_visit_trigger[ 'value' ] ) ) {
+                            $event_triggers[] = array(
+                                'rule'  => sanitize_text_field( $page_visit_trigger[ 'rule' ] ),
+                                'value' => sanitize_text_field( $page_visit_trigger[ 'value' ] ),
+                            );
+                        }
+                    }
+                }
+
+                if ( !empty( $event_triggers ) || $saving_trigger ) {
+                    $trigger->updateParam( 'triggers', $event_triggers );
+                    $trigger->updateParam( 'index', $index );
+
+                    $this->triggers[] = $trigger;
+                    $index++;
+                }
+            }
+        }
 
 		/**
 		 * FACEBOOK
@@ -537,7 +597,7 @@ class CustomEvent {
         $this->data['bing_event_value'] = !empty($args['bing_event_value']) ? sanitize_text_field($args['bing_event_value']) : null;
 
         update_post_meta( $this->post_id, '_pys_event_data', $this->data );
-
+        update_post_meta( $this->post_id, '_pys_event_triggers', addslashes( serialize( $this->triggers ) ) );
 	}
 
 	public function enable() {
@@ -593,10 +653,9 @@ class CustomEvent {
 	public function getTriggerType() {
 		return $this->trigger_type;
 	}
-
-	public function getDelay() {
-		return $this->delay;
-	}
+    public function getTriggers() {
+        return $this->triggers;
+    }
 
 	/**
 	 * @return array
@@ -996,5 +1055,16 @@ class CustomEvent {
         }
     }
 
+    public function getDelay () {
+        $delay = null;
+        if (!empty($this->triggers)) {
+            $delays = array();
+            foreach ( $this->triggers as $trigger ) {
+                $delays[] = $trigger->getParam('delay');
+            }
+            $delay = max($delays);
+        }
 
+        return $delay;
+    }
 }

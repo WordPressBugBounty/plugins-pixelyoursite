@@ -62,11 +62,19 @@ class CustomEventFactory {
 		}
 
 		$results = array();
-		
+
 		foreach ( get_posts( $args ) as $post ) {
 		    $customEvent = new CustomEvent( $post->ID );
-		    if ( $customEvent->getTriggerType() == 'page_visit' ) {
-                $results[ $post->ID ] = $customEvent;
+            $triggers = $customEvent->getTriggers();
+            if ( !empty( $triggers ) ) {
+                foreach ( $triggers as $trigger ) {
+                    $trigger_type = $trigger->getTriggerType();
+
+                    if ( $trigger_type == 'page_visit' || $trigger_type == 'home_page') {
+                        $results[ $post->ID ] = $customEvent;
+                        break;
+                    }
+                }
             }
 		}
 		

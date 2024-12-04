@@ -52,38 +52,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                 <small class="form-text">This name will be used in the GTM data layer for the custom parameters object.</small>
 			</div>
 		</div>
-	</div>
-</div>
-
-<div class="card card-static">
-    <div class="card-header">
-        Event Trigger
-    </div>
-    <div class="card-body">
-        <div class="row mb-3">
-            <div class="col form-inline">
-				<label>Fire event when</label>
-	            <?php Events\renderTriggerTypeInput( $event, 'trigger_type' ); ?>
-                <div class="triger_post_type form-inline" style="display: none">
-                    <?php Events\renderPostTypeSelect( $event, 'post_type_value' ); ?>
-                </div>
-                <div class="event-delay form-inline" >
-                    <label>with delay</label>
-                    <?php Events\renderNumberInput( $event, 'delay', '0' ); ?>
-                    <label>seconds</label>
-                </div>
-                <div class="triger_number_page_visit form-inline">
-                    <?php renderDummySelectInput( '=', true ); ?>
-                </div>
-                <div class="triger_number_page_visit form-inline">
-                    <?php renderDummyNumberInput(3 ); ?>
-                    <label>visited page</label>
-                    <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
+        <div class="row mt-3">
             <div class="col form-inline" id="fire_event_once">
                 <?php Events\renderSwitcherInput( $event, 'enable_time_window',true ); ?>
                 <label>Fire this event only once in</label>
@@ -92,42 +61,94 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                 <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
             </div>
         </div>
+	</div>
+</div>
 
+<div class="card card-static">
+    <div class="card-header">
+        Event Trigger
+    </div>
+    <div class="pys_triggers_wrapper">
 
-        <div id="page_visit_panel" class="event_triggers_panel" data-trigger_type="page_visit" style="display: none;">
-            <div class="row mt-3 event_trigger" data-trigger_id="0" style="display: none;">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-4">
-                            <select class="form-control-sm" name="" autocomplete="off" style="width: 100%;">
-                                <option value="contains">URL Contains</option>
-                                <option value="match">URL Match</option>
-                                <option value="param_contains"  disabled="disabled">URL Parameters Contains (PRO)</option>
-                                <option value="param_match"  disabled="disabled">URL Parameters Match (PRO)</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <input name="" placeholder="Enter URL" class="form-control" type="text">
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm remove-row">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
-                        </div>
+        <div class="card-body trigger_group">
+            <?php
+            $event_triggers = $event->getTriggers();
+            $main_trigger = [];
+
+            if ( !empty( $event_triggers ) ) {
+                foreach ($event_triggers as $event_trigger) {
+                    $trigger_type = $event_trigger->getTriggerType();
+                    if ($trigger_type === 'page_visit' || $trigger_type === 'home_page') {
+                        $main_trigger = $event_trigger;
+                        break;
+                    }
+                }
+            }
+            elseif(empty( $event_triggers ) && empty($main_trigger) ){
+                $main_trigger = new TriggerEvent();
+            }
+            ?>
+            <div class="row mb-3">
+                <div class="col form-inline">
+                    <label>Fire event when</label>
+                    <?php Events\renderTriggerTypeInput( $main_trigger, 'trigger_type' ); ?>
+                    <div class="triger_post_type form-inline" style="display: none">
+                        <?php Events\renderPostTypeSelect( $main_trigger, 'post_type_value' ); ?>
+                    </div>
+                    <div class="event-delay form-inline" >
+                        <label>with delay</label>
+                        <?php Events\renderTriggerNumberInput( $main_trigger, 'delay', '0' ); ?>
+                        <label>seconds</label>
+                    </div>
+                    <div class="triger_number_page_visit form-inline">
+                        <?php renderDummySelectInput( '=', true ); ?>
+                    </div>
+                    <div class="triger_number_page_visit form-inline">
+                        <?php renderDummyNumberInput(3 ); ?>
+                        <label>visited page</label>
+                        <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
                     </div>
                 </div>
             </div>
 
-            <?php foreach ( $event->getPageVisitTriggers() as $key => $trigger ) : ?>
 
-                <?php $trigger_id = $key + 1; ?>
 
-                <div class="row mt-3 event_trigger" data-trigger_id="<?php echo $trigger_id; ?>">
+
+            <div id="page_visit_panel" class="event_triggers_panel" data-trigger_type="page_visit" style="display: none;">
+                <div class="row mt-3 event_trigger" data-trigger_id="0" style="display: none;">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col-4">
+                                <select class="form-control-sm" name="" autocomplete="off" style="width: 100%;">
+                                    <option value="contains">URL Contains</option>
+                                    <option value="match">URL Match</option>
+                                    <option value="param_contains"  disabled="disabled">URL Parameters Contains (PRO)</option>
+                                    <option value="param_match"  disabled="disabled">URL Parameters Match (PRO)</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <input name="" placeholder="Enter URL" class="form-control" type="text">
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm remove-row">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <?php
+                $trigger = $main_trigger->getPageVisitTriggers()[0] ?? ['rule' => 'contains', 'value' => ''];
+
+                ?>
+
+                <div class="row mt-3 event_trigger" data-trigger_id="0">
                     <div class="col">
                         <div class="row">
                             <div class="col-4">
                                 <select class="form-control-sm"
-                                        name="pys[event][page_visit_triggers][<?php echo $trigger_id; ?>][rule]"
+                                        name="<?php echo esc_attr( "pys[event][triggers][0][page_visit_triggers][0][rule]" ); ?>"
                                         autocomplete="off" style="width: 100%;">
                                     <option value="contains" <?php selected( $trigger['rule'], 'contains' ); ?>>URL Contains</option>
                                     <option value="match"  <?php selected( $trigger['rule'], 'match' ); ?>>URL Match</option>
@@ -137,7 +158,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                             </div>
                             <div class="col-6">
                                 <input type="text" placeholder="Enter URL" class="form-control"
-                                       name="pys[event][page_visit_triggers][<?php echo $trigger_id; ?>][value]"
+                                       name="<?php echo esc_attr( "pys[event][triggers][0][page_visit_triggers][0][value]" ); ?>"
                                        value="<?php esc_attr_e( $trigger['value'] ); ?>">
                             </div>
                             <div class="col-2">
@@ -149,326 +170,324 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     </div>
                 </div>
 
-            <?php endforeach; ?>
-
-            <div class="insert-marker"></div>
-            <div class="mt-3">
-                <small>You can also use <b>*</b> as the trigger URL on all pages</small>
-            </div>
-            <div class="row mt-3">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-primary add-event-trigger" type="button">Add another
-                        URL</button>
+                <div class="insert-marker"></div>
+                <div class="mt-3">
+                    <small>You can also use <b>*</b> as the trigger URL on all pages</small>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-primary add-event-trigger" type="button">Add another
+                            URL</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div id="number_page_visit_panel" class="event_triggers_panel" data-trigger_type="number_page_visit" style="display: none;">
-            <div class="row mt-3 event_trigger" data-trigger_id="0" style="display: none;">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-4">
-                            <?php renderDummySelectInput( 'Any URL`s', true ); ?>
+            <div id="number_page_visit_panel" class="event_triggers_panel" data-trigger_type="number_page_visit" style="display: none;">
+                <div class="row mt-3 event_trigger" data-trigger_id="0" style="display: none;">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col-4">
+                                <?php renderDummySelectInput( 'Any URL`s', true ); ?>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm remove-row">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm remove-row">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
+                    </div>
+                </div>
+
+                <div class="insert-marker"></div>
+                <div class="mt-3">
+                    <small>You can also use <b>*</b> as the trigger URL on all pages</small>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
+                            URL</button>
+                    </div>
+                </div>
+            </div>
+            <div id="url_click_panel" class="event_triggers_panel" style="display: none;">
+                <div class="row mt-3">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col">
+                                <p>This is a PRO trigger. <a
+                                            href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
+                                            target="_blank">Upgrade to get all the benefits</a>.</p>
+                            </div>
                         </div>
+                        <div class="row">
+                            <div class="col-4">
+                                <?php renderDummySelectInput( 'URL Contains', true ); ?>
+                            </div>
+                            <div class="col-6">
+                                <?php renderDummyTextInput( 'Enter URL' ); ?>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm btn-disabled">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3 mb-5">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
+                            URL</button>
                     </div>
                 </div>
             </div>
 
-            <div class="insert-marker"></div>
-            <div class="mt-3">
-                <small>You can also use <b>*</b> as the trigger URL on all pages</small>
-            </div>
-
-            <div class="row mt-3">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                        URL</button>
+            <div id="css_click_panel" class="event_triggers_panel" style="display: none;">
+                <div class="row mt-3">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col-10">
+                                <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm btn-disabled">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3 mb-5">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
+                            selector</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div id="url_click_panel" class="event_triggers_panel" style="display: none;">
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="row">
+
+            <div id="css_mouseover_panel" class="event_triggers_panel" style="display: none;">
+                <div class="row mt-3">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col-10">
+                                <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm btn-disabled">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3 mb-5">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
+                            selector</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="scroll_pos_panel" class="event_triggers_panel" style="display: none;">
+                <div class="row mt-3">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col-3">
+                                <?php renderDummyNumberInput(); ?>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm btn-disabled">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3 mb-5">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
+                            threshold</button>
+                    </div>
+                </div>
+            </div>
+            <?php $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
+            foreach ($eventsFormFactory as $activeFormPlugin) : ?>
+                <div id="<?php echo $activeFormPlugin->getSlug(); ?>_panel" class="event_triggers_panel" data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>" style="display: none;">
+
+                    <?php if ( $activeFormPlugin->getSlug() == "elementor_form" ) : ?>
+
+                        <div class="row mt-3 event_trigger" data-trigger_id="0">
+                            <div class="col">
+                                <div class="row">
+                                    <div class="col-10">
+                                        <small class="form-text mb-1">Enter Elementor form pages URL</small>
+                                        <?php renderDummySelectInput('Elementor form pages URL', true ); ?>
+                                    </div>
+                                    <div class="col-2 d-flex align-items-center pt-3">
+                                        <button class="btn btn-sm btn-block btn-disabled" type="button">Scan forms</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pys_video_view_triggers" data-trigger_id="0">
+                            <div class="row mt-3 event_trigger" data-trigger_id="0">
+                                <div class="col">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <small class="form-text mb-1">Select forms</small>
+                                            <?php renderDummySelectInput('Select forms', true ); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3 event_trigger" data-trigger_id="0">
+                                <div class="col">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <?php renderDummySwitcher(); ?>
+                                            <h4 class="switcher-label">Disable the Form event for the same forms</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php else : ?>
+
+                        <div class="row mt-3 event_trigger" data-trigger_id="0">
+                            <div class="col">
+                                <?php renderDummySelectInput('Forms'); ?>
+                            </div>
+
+                        </div>
+                        <small class="form-text">Select Forms to Trigger the Event.</small>
+
+                    <?php endif; ?>
+                </div>
+            <?php
+            endforeach;
+            ?>
+            <div id="url_filter_panel" class="event_triggers_panel" style="display: none;">
+                <div class="row mt-3">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col-10">
+                                <?php renderDummyTextInput( 'Enter URL' ); ?>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm btn-disabled">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add URL filter</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="embedded_video_view" class="event_triggers_panel" data-trigger_type="video_view"
+                 style="display: none;">
+                <div class="row mt-3 event_trigger" data-trigger_id="0">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col-10">
+                                <small class="form-text mb-1">Enter video pages URL</small>
+                                <?php renderDummySelectInput('Video pages URL', true ); ?>
+                            </div>
+                            <div class="col-2 d-flex align-items-center pt-3">
+                                <button class="btn btn-sm btn-block btn-disabled" type="button">Scan videos</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pys_video_view_triggers" data-trigger_id="0">
+                    <div class="row mt-3 event_trigger" data-trigger_id="0">
                         <div class="col">
-                            <p>This is a PRO trigger. <a
-                                        href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
-                                        target="_blank">Upgrade to get all the benefits</a>.</p>
+                            <div class="row">
+                                <div class="col-12">
+                                    <small class="form-text mb-1">Select videos</small>
+                                    <?php renderDummySelectInput('Select videos', true ); ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-4">
-                            <?php renderDummySelectInput( 'URL Contains', true ); ?>
-                        </div>
-                        <div class="col-6">
-                            <?php renderDummyTextInput( 'Enter URL' ); ?>
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm btn-disabled">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3 mb-5">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                        URL</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="css_click_panel" class="event_triggers_panel" style="display: none;">
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-10">
-                            <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm btn-disabled">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3 mb-5">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                        selector</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="css_mouseover_panel" class="event_triggers_panel" style="display: none;">
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-10">
-                            <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm btn-disabled">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3 mb-5">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                        selector</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="scroll_pos_panel" class="event_triggers_panel" style="display: none;">
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-3">
-                            <?php renderDummyNumberInput(); ?>
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm btn-disabled">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3 mb-5">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                        threshold</button>
-                </div>
-            </div>
-        </div>
-        <?php $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
-        foreach ($eventsFormFactory as $activeFormPlugin) : ?>
-            <div id="<?php echo $activeFormPlugin->getSlug(); ?>_panel" class="event_triggers_panel" data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>" style="display: none;">
-
-                <?php if ( $activeFormPlugin->getSlug() == "elementor_form" ) : ?>
 
                     <div class="row mt-3 event_trigger" data-trigger_id="0">
                         <div class="col">
                             <div class="row">
-                                <div class="col-10">
-                                    <small class="form-text mb-1">Enter Elementor form pages URL</small>
-									<?php renderDummySelectInput('Elementor form pages URL', true ); ?>
-                                </div>
-                                <div class="col-2 d-flex align-items-center pt-3">
-                                    <button class="btn btn-sm btn-block btn-disabled" type="button">Scan forms</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pys_video_view_triggers" data-trigger_id="0">
-                        <div class="row mt-3 event_trigger" data-trigger_id="0">
-                            <div class="col">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <small class="form-text mb-1">Select forms</small>
-										<?php renderDummySelectInput('Select forms', true ); ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mt-3 event_trigger" data-trigger_id="0">
-                            <div class="col">
-                                <div class="row">
-                                    <div class="col-12">
-										<?php renderDummySwitcher(); ?>
-                                        <h4 class="switcher-label">Disable the Form event for the same forms</h4>
+                                <div class="col-12 d-flex">
+                                    <div class="mb-0 mt-2 mr-2">Select trigger </div>
+                                    <div class="form-inline">
+                                        <?php renderDummySelectInput( 'Play' ); ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                <?php else : ?>
 
                     <div class="row mt-3 event_trigger" data-trigger_id="0">
                         <div class="col">
-                            <?php renderDummySelectInput('Forms'); ?>
-                        </div>
-
-                    </div>
-                    <small class="form-text">Select Forms to Trigger the Event.</small>
-
-                <?php endif; ?>
-            </div>
-        <?php
-        endforeach;
-        ?>
-        <div id="url_filter_panel" class="event_triggers_panel" style="display: none;">
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-10">
-                            <?php renderDummyTextInput( 'Enter URL' ); ?>
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm btn-disabled">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-disabled" type="button">Add URL filter</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="embedded_video_view" class="event_triggers_panel" data-trigger_type="video_view"
-             style="display: none;">
-            <div class="row mt-3 event_trigger" data-trigger_id="0">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-10">
-                            <small class="form-text mb-1">Enter video pages URL</small>
-							<?php renderDummySelectInput('Video pages URL', true ); ?>
-                        </div>
-                        <div class="col-2 d-flex align-items-center pt-3">
-                            <button class="btn btn-sm btn-block btn-disabled" type="button">Scan videos</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pys_video_view_triggers" data-trigger_id="0">
-                <div class="row mt-3 event_trigger" data-trigger_id="0">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-12">
-                                <small class="form-text mb-1">Select videos</small>
-								<?php renderDummySelectInput('Select videos', true ); ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mt-3 event_trigger" data-trigger_id="0">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-12 d-flex">
-                                <div class="mb-0 mt-2 mr-2">Select trigger </div>
-                                <div class="form-inline">
-									<?php renderDummySelectInput( 'Play' ); ?>
+                            <div class="row">
+                                <div class="col-12">
+                                    <?php PYS()->renderDummyCheckbox('Disable the automatic WatchVideo events for the video'); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="row mt-3 event_trigger" data-trigger_id="0">
+            <div id="email_link_panel" class="event_triggers_panel" data-trigger_type="email_link"
+                 style="display: none;">
+                <div class="row mt-3">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col">
+                                <p>This is a PRO trigger. <a
+                                            href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
+                                            target="_blank">Upgrade to get all the benefits</a>.</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-4">
+                                <?php renderDummySelectInput( 'Link Match', true ); ?>
+                            </div>
+                            <div class="col-6">
+                                <?php renderDummyTextInput( 'Enter Link' ); ?>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm btn-disabled">
+                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3 mb-5">
+                    <div class="col-4">
+                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
+                            link</button>
+                    </div>
+                </div>
+
+                <div class="row mt-3" data-trigger_id="0">
                     <div class="col">
                         <div class="row">
                             <div class="col-12">
-								<?php PYS()->renderDummyCheckbox('Disable the automatic WatchVideo events for the video'); ?>
+                                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label">Disable the default Email event for the same action</h4>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div id="email_link_panel" class="event_triggers_panel" data-trigger_type="email_link"
-             style="display: none;">
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="row">
-                        <div class="col">
-                            <p>This is a PRO trigger. <a
-                                        href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
-                                        target="_blank">Upgrade to get all the benefits</a>.</p>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4">
-							<?php renderDummySelectInput( 'Link Match', true ); ?>
-                        </div>
-                        <div class="col-6">
-							<?php renderDummyTextInput( 'Enter Link' ); ?>
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-sm btn-disabled">
-                                <i class="fa fa-trash-o" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3 mb-5">
-                <div class="col-4">
-                    <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                        link</button>
-                </div>
-            </div>
-
-            <div class="row mt-3" data-trigger_id="0">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-12">
-							<?php renderDummySwitcher(); ?>
-                            <h4 class="switcher-label">Disable the default Email event for the same action</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
     <hr class="m-0">
     <div id="pys-add-trigger" class="mt-4 mb-4 d-flex flex-column">
@@ -485,6 +504,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
             </div>
         </div>
     </div>
+
 </div>
 
 <?php if ( Facebook()->enabled() ) : ?>

@@ -54,15 +54,33 @@ class EventsCustom extends EventsFactory {
      */
     function isReadyForFire($event)
     {
-        switch ($event->getTriggerType()) {
+        $event_triggers = $event->getTriggers();
+        $isReady = array();
+        if ( !empty( $event_triggers ) ) {
+            foreach ($event_triggers as $event_trigger) {
+                $trigger_type = $event_trigger->getTriggerType();
+                switch ($trigger_type) {
 
-            case 'page_visit': {
-                $triggers = $event->getPageVisitTriggers();
-                return !empty( $triggers ) && compareURLs( $triggers );
+                    case 'page_visit':
+                    {
+                        $triggers = $event_trigger->getPageVisitTriggers();
+                        $isTriggerReady = !empty( $triggers ) && compareURLs( $triggers );
+                        $event_trigger->setTriggerStatus( $isTriggerReady );
+                        $isReady[] = $isTriggerReady;
+                        break;
+                    }
+                    case 'home_page':
+                    {
+                        $isTriggerReady = is_front_page();
+                        $event_trigger->setTriggerStatus( $isTriggerReady );
+                        $isReady[] = $isTriggerReady;
+                        break;
+                    }
+
+                }
             }
-
         }
-        return false;
+        return in_array( true, $isReady );
     }
     /**
      * @param CustomEvent $event
@@ -70,15 +88,28 @@ class EventsCustom extends EventsFactory {
      */
     function getEvent($event)
     {
-
-        switch ($event->getTriggerType()) {
-            case 'page_visit': {
-                $singleEvent = new SingleEvent('custom_event',EventTypes::$STATIC,'custom');
-                $singleEvent->args = $event;
-                $singleEvent->addPayload(["custom_event_post_id" => $event->__get('post_id')]);
-                return $singleEvent;
+        $event_triggers = $event->getTriggers();
+        $eventObject = null;
+        if ( !empty( $event_triggers ) ) {
+            foreach ( $event_triggers as $event_trigger ) {
+                if ( $event_trigger->getTriggerStatus() ) {
+                    $trigger_type = $event_trigger->getTriggerType();
+                    switch ($trigger_type) {
+                        case 'page_visit':
+                        case 'home_page':
+                        {
+                            $singleEvent = new SingleEvent('custom_event',EventTypes::$STATIC,'custom');
+                            $singleEvent->args = $event;
+                            $singleEvent->addPayload(["custom_event_post_id" => $event->__get('post_id')]);
+                            $delay = $event->getDelay();
+                            if ( $delay > 0 ) {
+                                $singleEvent->addPayload( [ "delay" => $delay ] );
+                            }
+                            return $singleEvent;
+                        }
+                    }
+                }
             }
-
         }
     }
 }

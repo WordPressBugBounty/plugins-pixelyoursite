@@ -48,17 +48,15 @@ class GTM extends Settings implements Pixel {
     }
 
     public function enabled() {
-        return $this->getOption( 'enabled' );
+        $enabled = $this->getOption( 'enabled' ) && ($this->getOption( 'gtm_id' ) || $this->getOption( 'gtm_just_data_layer' ));
+        return $enabled;
     }
 
     public function configured() {
 
         if ( $this->configured === null ) {
 
-            $tracking_id = $this->getPixelIDs() ;
             $this->configured = $this->enabled()
-                && count( $tracking_id ) > 0
-                && !empty($tracking_id[0])
                 && ! apply_filters( 'pys_pixel_disabled', array(), $this->getSlug() );
 
         }

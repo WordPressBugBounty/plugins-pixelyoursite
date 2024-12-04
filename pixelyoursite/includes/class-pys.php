@@ -119,46 +119,58 @@ final class PYS extends Settings implements Plugin {
 
     public function init() {
 
-        $this->logger->init();
+        if (current_user_can( 'manage_pys' ) ) {
+            $this->logger->init();
 
-        $loggers = [
-            'meta' => [$this->logger, 'downloadLogFile'],
-        ];
+            $loggers = [
+                'meta' => [$this->logger, 'downloadLogFile'],
+            ];
 
-        $clearLoggers = [
-            'clear_plugin_logs' => [$this->logger, 'remove'],
-        ];
+            $clearLoggers = [
+                'clear_plugin_logs' => [$this->logger, 'remove'],
+            ];
 
-        if (isPinterestActive()) {
-            $loggers['pinterest'] = [Pinterest()->getLog(), 'downloadLogFile'];
-            $clearLoggers['clear_pinterest_logs'] = [Pinterest()->getLog(), 'remove'];
-        }
-
-        if (isset($_GET['download_logs']) && array_key_exists($_GET['download_logs'], $loggers)) {
-            $logger = $loggers[$_GET['download_logs']];
-            if (is_callable($logger)) {
-                call_user_func($logger);
-            } elseif (is_callable([$logger[0], $logger[1]])) {
-                call_user_func([$logger[0], $logger[1]]);
+            if (isPinterestActive()) {
+                $loggers['pinterest'] = [Pinterest()->getLog(), 'downloadLogFile'];
+                $clearLoggers['clear_pinterest_logs'] = [Pinterest()->getLog(), 'remove'];
             }
-        }
 
-        foreach ($clearLoggers as $key => $logger) {
-            if (isset($_GET[$key]) && (is_callable($logger) || (is_callable([$logger[0], $logger[1]]) && method_exists($logger[0], $logger[1])))) {
+            if (isset($_GET['download_logs']) && array_key_exists($_GET['download_logs'], $loggers)) {
+                if (!isset($_GET['_wpnonce_download_logs']) || !wp_verify_nonce($_GET['_wpnonce_download_logs'], 'download_logs_nonce')) {
+                    wp_die(__('Invalid nonce', 'pixelyoursite'));
+                }
+                $logger = $loggers[$_GET['download_logs']];
                 if (is_callable($logger)) {
                     call_user_func($logger);
-                } else {
+                } elseif (is_callable([$logger[0], $logger[1]])) {
                     call_user_func([$logger[0], $logger[1]]);
                 }
-                $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-                wp_redirect(remove_query_arg($key, $actual_link));
-                exit;
+            }
+
+            foreach ($clearLoggers as $key => $logger) {
+                if (isset($_GET[$key]) && (is_callable($logger) || (is_callable([$logger[0], $logger[1]]) && method_exists($logger[0], $logger[1])))) {
+                    if (!isset($_GET['_wpnonce_clear_logs']) || !wp_verify_nonce($_GET['_wpnonce_clear_logs'], 'clear_logs_nonce')) {
+                        wp_die(__('Invalid nonce', 'pixelyoursite'));
+                    }
+                    if (is_callable($logger)) {
+                        call_user_func($logger);
+                    } else {
+                        call_user_func([$logger[0], $logger[1]]);
+                    }
+                    $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+                    wp_redirect(remove_query_arg($key, $actual_link));
+                    exit;
+                }
+            }
+
+            if ( isset( $_GET[ 'download_container' ] )) {
+                if (!isset($_GET['_wpnonce_template_logs']) || !wp_verify_nonce($_GET['_wpnonce_template_logs'], 'download_template_nonce')) {
+                    wp_die(__('Invalid nonce', 'pixelyoursite'));
+                }
+                $this->containers->downloadLogFile($_GET[ 'download_container' ]);
             }
         }
 
-        if ( isset( $_GET[ 'download_container' ] )) {
-            $this->containers->downloadLogFile($_GET[ 'download_container' ]);
-        }
 
         register_post_type( 'pys_event', array(
             'public' => false,

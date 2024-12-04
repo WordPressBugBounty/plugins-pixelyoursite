@@ -7,6 +7,7 @@
   "pixel_lang": "array_v",
   "track_user_id": "checkbox",
   "gtm_id": "array",
+  "gtm_just_data_layer": "checkbox",
 
   "gtm_dataLayer_name": "text",
   "gtm_container_domain": "text",

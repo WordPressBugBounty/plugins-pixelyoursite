@@ -181,7 +181,29 @@ function renderNumberInput( &$event, $key, $placeholder = null ) {
 	<?php
 
 }
+/**
+ * @param CustomEvent $event
+ * @param string      $key
+ * @param string      $placeholder
+ */
+function renderTriggerNumberInput( $trigger, $key, $placeholder = null, $default = null ) {
 
+    $i = $trigger->getTriggerIndex();
+    $attr_name = "pys[event][triggers][$i][$key]";
+    $attr_id    = 'pys_event_' . $i . '_' . $key;
+    $attr_value = $trigger->getParam( $key );
+
+    ?>
+
+    <input type="number" name="<?php esc_attr_e( $attr_name ); ?>"
+           id="<?php esc_attr_e( $attr_id ); ?>"
+           value="<?php !empty($attr_value) ? esc_attr_e( $attr_value ) : esc_attr_e($default); ?>"
+           placeholder="<?php esc_attr_e( $placeholder ); ?>"
+           min="0" class="form-control">
+
+    <?php
+
+}
 /**
  * @param CustomEvent $event
  * @param string $key
@@ -262,31 +284,63 @@ function renderSelectInput( &$event, $key, $options, $full_width = false ) {
 	<?php
 }
 
+
+/**
+ * @param CustomEvent $event
+ * @param string      $key
+ * @param array       $options
+ */
+function renderTriggerSelectInput( $trigger, $key, $options, $full_width = false , $classes = '') {
+    $i = $trigger->getTriggerIndex();
+    $attr_name  = "pys[event][triggers][$i][$key]";
+    $attr_id    = 'pys_event_' . $i . '_' . $key;
+    $attr_value = $trigger->getParam($key);
+
+    $attr_width = $full_width ? 'width: 100%;' : '';
+
+    ?>
+
+    <select class="form-control-sm <?=$classes?>" id="<?php esc_attr_e( $attr_id ); ?>"
+            name="<?php esc_attr_e( $attr_name ); ?>" autocomplete="off" style="<?php esc_attr_e( $attr_width ); ?>">
+        <?php foreach ( $options as $option_key => $option_value ) : ?>
+            <option value="<?php echo esc_attr( $option_key ); ?>" <?php selected( $option_key,
+                esc_attr( $attr_value ) ); ?> <?php disabled( $option_key,
+                'disabled' ); ?>><?php echo esc_attr( $option_value ); ?></option>
+        <?php endforeach; ?>
+    </select>
+
+    <?php
+}
 /**
  * @param CustomEvent $event
  * @param string      $key
  */
-function renderTriggerTypeInput( &$event, $key ) {
+function renderTriggerTypeInput( $trigger, $key ) {
 
 	$options = array(
 		'page_visit'        => 'Page visit',
-		'number_page_visit' => 'Number of Page Visits - PRO',
-		'url_click'         => 'Click on HTML link - PRO',
-		'css_click'         => 'Click on CSS selector - PRO',
-		'css_mouseover'     => 'Mouse over CSS selector - PRO',
-		'scroll_pos'        => 'Page Scroll - PRO',
-		'post_type'         => 'Post type - PRO',
-		'video_view'        => 'Embedded Video View - PRO',
-		'email_link'        => 'Email Link - PRO',
+        'home_page'         => 'Home page',
 	);
+    $pro_options = array(
+        'number_page_visit' => 'Number of Page Visits - PRO',
+        'url_click'         => 'Click on HTML link - PRO',
+        'css_click'         => 'Click on CSS selector - PRO',
+        'css_mouseover'     => 'Mouse over CSS selector - PRO',
+        'scroll_pos'        => 'Page Scroll - PRO',
+        'post_type'         => 'Post type - PRO',
+        'video_view'        => 'Embedded Video View - PRO',
+        'email_link'        => 'Email Link - PRO',
+    );
     $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
     foreach ($eventsFormFactory as $activeFormPlugin) :
         $options[$activeFormPlugin->getSlug()] = $activeFormPlugin->getName().' - PRO';
     endforeach;
 
-	asort( $options );
+	asort( $pro_options );
 
-	renderSelectInput( $event, $key, $options );
+    $options = array_merge($options,$pro_options);
+
+    renderTriggerSelectInput( $trigger, $key, $options, false, 'pys_event_trigger_type' );
 
 }
 /**
@@ -294,7 +348,7 @@ function renderTriggerTypeInput( &$event, $key ) {
  * @param string      $key
  */
 
-function renderPostTypeSelect(&$event, $key) {
+function renderPostTypeSelect($trigger,  $key) {
     $types = get_post_types(null,"objects ");
 
     $options = array();
@@ -302,7 +356,7 @@ function renderPostTypeSelect(&$event, $key) {
         $options[$type->name]=$type->label;
     }
 
-    renderSelectInput( $event, $key, $options );
+    renderTriggerSelectInput( $trigger, $key, $options );
 }
 /**
  * @param CustomEvent $event
