@@ -52,6 +52,7 @@
   "automatic_event_comment_enabled":  "checkbox",
   "automatic_event_scroll_enabled":  "checkbox",
   "automatic_event_time_on_page_enabled":  "checkbox",
+  "automatic_event_404_enabled": "checkbox",
   "automatic_event_search_enabled":  "checkbox",
 
   "disable_noscript": "checkbox",

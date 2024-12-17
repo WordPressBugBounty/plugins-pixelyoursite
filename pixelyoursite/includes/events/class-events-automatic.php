@@ -15,6 +15,7 @@ class EventsAutomatic extends EventsFactory {
         'automatic_event_login' ,
         'automatic_event_download' ,
         'automatic_event_comment' ,
+        'automatic_event_404' ,
 
         'automatic_event_scroll' ,
         'automatic_event_time_on_page' ,
@@ -102,6 +103,9 @@ class EventsAutomatic extends EventsFactory {
                 }
                 return false;
             }
+            case 'automatic_event_404':{
+                return  PYS()->getOption( $event."_enabled") && is_404();
+            }
             case 'automatic_event_search' : {
                 return  PYS()->getOption( $event."_enabled") && is_search();
             }
@@ -142,6 +146,7 @@ class EventsAutomatic extends EventsFactory {
                 $payload["time_on_page"] = PYS()->getOption('automatic_event_time_on_page_value');
 
             }break;
+            case "automatic_event_404":
             case "automatic_event_search":
             case "automatic_event_signup":
             case "automatic_event_login": {

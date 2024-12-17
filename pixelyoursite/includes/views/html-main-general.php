@@ -745,7 +745,18 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <p><strong>Event name: </strong>TimeOnPage</p>
             </div>
         </div>
-
+        <div class="card">
+            <div class="card-header has_switch">
+                <?php PYS()->render_switcher_input('automatic_event_404_enabled'); ?>Track 404 pages <?php cardCollapseBtn(); ?>
+            </div>
+            <div class="card-body">
+                <?php
+                enableEventForEachPixel('automatic_event_404', false, true, false, true, false, false, false);
+                ?>
+                <br/>
+                <p><strong>Event name: </strong>404</p>
+            </div>
+        </div>
         <div class="card">
             <div class="card-header has_switch">
                 <?php PYS()->render_switcher_input('automatic_event_search_enabled'); ?>Track searches <?php cardCollapseBtn(); ?>

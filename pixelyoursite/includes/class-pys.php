@@ -31,8 +31,10 @@ final class PYS extends Settings implements Plugin {
     private $logger;
     private $containers;
     private $crawlerDetect;
-	
-	public static function instance() {
+
+    public $general_domain = '';
+
+    public static function instance() {
 
 		if ( is_null( self::$_instance ) ) {
 			self::$_instance = new self();
@@ -115,6 +117,7 @@ final class PYS extends Settings implements Plugin {
         $this->logger = new PYS_Logger();
         $this->containers = new gtmContainers();
         $this->crawlerDetect = new CrawlerDetect();
+        $this->general_domain = $this->get_wp_cookie_domain();
     }
 
     public function init() {
@@ -1086,7 +1089,22 @@ final class PYS extends Settings implements Plugin {
 	function edd_recurring_payment( $payment_id ) {
 		EnrichOrder()->edd_save_subscription_meta( $payment_id );
 	}
+    public function get_wp_cookie_domain() {
+        // Getting the site URL
+        $site_url = get_site_url();
 
+        // Parse domain from URL
+        $host = parse_url($site_url, PHP_URL_HOST);
+
+        // Remove the subdomain, if there is one, leaving the main domain
+        $parts = explode('.', $host);
+        if (count($parts) > 2) {
+            $domain = '.' . $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
+        } else {
+            $domain = '.' . $host;
+        }
+        return $domain;
+    }
 }
 
 /**

@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.0.2
+Stable tag: 10.0.3
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -107,9 +107,9 @@ GTM Container Import: to simplify GTM setup we offer you a GTM Container Import 
 
 **Free training:** 
 
-We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this video about a Meta Events Manager option that can RUIN your conversion tracking:
+We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this to learn how to install the Meta Pixel with Conversion API support, how to test it, and how to improve your Event Match Quality score (EMQ):
 
-[youtube https://www.youtube.com/watch?v=4eMKGxT7qMk]
+[https://www.youtube.com/watch?v=fAwsayYLo5s]
 
 
 
@@ -382,6 +382,15 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 10.0.3 =
+
+December 17, 2024
+
+* New options allow control of how tracking works for subdomains-domain environments (our native landing page, traffic source, and UTMs tracking). The free version tracks this data for WooCommerce and EDD orders. The pro version tracks it as events parameters too, and makes it available in dedicated reports.
+
+* A new event that tracks 404 errors – Google Analytics (default ON) and GTM (default OFF). 
+
 
 = PixelYourSite 10.0.2 =
 

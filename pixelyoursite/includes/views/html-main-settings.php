@@ -62,10 +62,18 @@ include "html-popovers.php";
                                     <label>external_id expire days for cookie:</label>
                                     <?php PYS()->render_number_input( 'external_id_expire', '', false, 365, 1); ?>
                                 </div>
-
-                                <hr>
                             </div>
                         </div>
+                        <div class="row mt-3">
+                            <div class="col">
+                                <div class="form-inline">
+                                    <?php PYS()->render_switcher_input( 'track_cookie_for_subdomains' ); ?>
+                                    <h4 class="switcher-label">Track domains and subdomains together</h4>
+                                </div>
+                                <small class="mt-1">Enable this option if you want unified tracking for our native landing pages, traffic sources, and UTMs data. When there are different installations, this option must be enabled on both the domain and the subdomain.</small>
+                            </div>
+                        </div>
+                        <hr>
                         <div class="row mb-3">
                             <div class="col">
                                 <?php PYS()->render_switcher_input( 'debug_enabled' ); ?>

@@ -176,6 +176,11 @@ class GA extends Settings implements Pixel {
                 $event->addPayload(["name" => "login"]);
                 $isActive = $this->getOption($event->getId().'_enabled');
             } break;
+            case 'automatic_event_404' :{
+                $event->addPayload(["name" => "404"]);
+
+                $isActive = $this->getOption($event->getId().'_enabled');
+            } break;
             case 'automatic_event_search' :{
                 $event->addPayload(["name" => "search"]);
                 $event->addParams([

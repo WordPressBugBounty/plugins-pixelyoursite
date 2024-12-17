@@ -98,6 +98,7 @@
   "automatic_event_adsense_enabled": "checkbox",
   "automatic_event_scroll_enabled": "checkbox",
   "automatic_event_time_on_page_enabled": "checkbox",
+  "automatic_event_404_enabled": "checkbox",
   "automatic_event_search_enabled": "checkbox",
 
   "woo_enable_list_shop" : "checkbox",

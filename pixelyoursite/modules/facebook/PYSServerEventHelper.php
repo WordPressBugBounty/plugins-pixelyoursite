@@ -39,7 +39,7 @@ class ServerEventHelper {
         if (!self::getFbp() && (!isset($eventParams['_fbp']) || !$eventParams['_fbp']) && !headers_sent()) {
             self::setFbp('fb.1.' . time() . '.' . rand(1000000000, 9999999999));
             if(!headers_sent()){
-                setcookie("_fbp", self::getFbp(), 2147483647,'/');
+                setcookie("_fbp", self::getFbp(), 2147483647,'/', PYS()->general_domain);
             }
         }
 
@@ -48,7 +48,7 @@ class ServerEventHelper {
             if($fbclid){
                 self::setFbc('fb.1.' . time() . '.' . $fbclid );
                 if(!headers_sent()){
-                    setcookie("_fbc", self::$fbc, 2147483647,'/');
+                    setcookie("_fbc", self::$fbc, 2147483647,'/', PYS()->general_domain);
                 }
             }
         }

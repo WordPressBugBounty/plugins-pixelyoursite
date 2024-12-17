@@ -82,6 +82,10 @@ if (!String.prototype.trim) {
     let gtm_variables = {};
     let gtm_datalayername = "dynamicVariable";
 
+    var domain = '';
+    if(options.hasOwnProperty("track_cookie_for_subdomains") && options.track_cookie_for_subdomains) {
+        domain = getRootDomain(true);
+    }
 
     var dummyPinterest = function () {
 
@@ -446,8 +450,8 @@ if (!String.prototype.trim) {
                     let duration = options.last_visit_duration * 60000
                     var now = new Date();
                     now.setTime(now.getTime() + duration);
-                    Cookies.set('pys_session_limit', true,{ expires: now })
-                    Cookies.set('pys_start_session', true);
+                    Cookies.set('pys_session_limit', true,{ expires: now, path: '/',domain: domain })
+                    Cookies.set('pys_start_session', true,{path: '/',domain: domain});
                 }
                 if (options.gdpr.ajax_enabled && !options.gdpr.consent_magic_integration_enabled) {
 
@@ -494,7 +498,7 @@ if (!String.prototype.trim) {
                             if (res.data && res.data.pbid != false && options.send_external_id) {
                                 if(!(options.cookie.disabled_all_cookie || options.cookie.externalID_disabled_by_api)){
                                     var expires = parseInt(options.external_id_expire || 180);
-                                    Cookies.set('pbid', res.data.pbid, { expires: expires, path: '/' });
+                                    Cookies.set('pbid', res.data.pbid, { expires: expires, path: '/',domain: domain });
                                 }
 
                                 if(options.hasOwnProperty('facebook')) {
@@ -509,7 +513,7 @@ if (!String.prototype.trim) {
                 } else if (Cookies.get('pbid') && Facebook.isEnabled()){
                     if(Facebook.advancedMatching() && Facebook.advancedMatching().external_id && !(options.cookie.disabled_all_cookie || options.cookie.externalID_disabled_by_api)){
                         let expires = parseInt(options.external_id_expire || 180);
-                        Cookies.set('pbid', Facebook.advancedMatching().external_id, { expires: expires, path: '/' });
+                        Cookies.set('pbid', Facebook.advancedMatching().external_id, { expires: expires, path: '/',domain: domain });
                     }
                 }
 
@@ -522,7 +526,7 @@ if (!String.prototype.trim) {
 
                         if(!options.cookie.disabled_first_visit_cookie)
                         {
-                            Cookies.set('pys_first_visit', true, { expires: expires });
+                            Cookies.set('pys_first_visit', true, { expires: expires, path: '/',domain: domain });
                         }
                         else {
                             Cookies.remove('pys_first_visit')
@@ -530,7 +534,7 @@ if (!String.prototype.trim) {
 
                         if(!options.cookie.disabled_trafficsource_cookie)
                         {
-                            Cookies.set('pysTrafficSource', getTrafficSource(), { expires: expires });
+                            Cookies.set('pysTrafficSource', getTrafficSource(), { expires: expires,path: '/',domain: domain });
                         }
                         else {
                             Cookies.remove('pysTrafficSource')
@@ -538,7 +542,7 @@ if (!String.prototype.trim) {
 
                         if(!options.cookie.disabled_landing_page_cookie)
                         {
-                            Cookies.set('pys_landing_page',landing,{ expires: expires });
+                            Cookies.set('pys_landing_page',landing,{ expires: expires,path: '/',domain: domain });
                         }
                         else {
                             Cookies.remove('pys_landing_page')
@@ -548,7 +552,7 @@ if (!String.prototype.trim) {
                         {
                             $.each(utmTerms, function (index, name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires });
+                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
                                 } else {
                                     Cookies.remove('pys_' + name)
                                 }
@@ -564,7 +568,7 @@ if (!String.prototype.trim) {
                         {
                             $.each(utmId,function(index,name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires });
+                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
                                 } else {
                                     Cookies.remove('pys_' + name)
                                 }
@@ -581,7 +585,7 @@ if (!String.prototype.trim) {
                     if(isNewSession && (!options.cookie.disabled_all_cookie)) {
                         if(!options.cookie.disabled_trafficsource_cookie)
                         {
-                            Cookies.set('last_pysTrafficSource', getTrafficSource(), { expires: expires });
+                            Cookies.set('last_pysTrafficSource', getTrafficSource(), { expires: expires,path: '/',domain: domain });
                         }
                         else {
                             Cookies.remove('last_pysTrafficSource')
@@ -589,7 +593,7 @@ if (!String.prototype.trim) {
 
                         if(!options.cookie.disabled_landing_page_cookie)
                         {
-                            Cookies.set('last_pys_landing_page',landing,{ expires: expires });
+                            Cookies.set('last_pys_landing_page',landing,{ expires: expires,path: '/',domain: domain });
                         }
                         else {
                             Cookies.remove('last_pys_landing_page')
@@ -599,7 +603,7 @@ if (!String.prototype.trim) {
                         {
                             $.each(utmTerms, function (index, name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires });
+                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
                                 } else {
                                     Cookies.remove('last_pys_' + name)
                                 }
@@ -615,7 +619,7 @@ if (!String.prototype.trim) {
                         {
                             $.each(utmId,function(index,name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires });
+                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
                                 } else {
                                     Cookies.remove('last_pys_' + name)
                                 }
@@ -1747,11 +1751,11 @@ if (!String.prototype.trim) {
 
                 let expires = parseInt(options.cookie_duration);
                 if(!Cookies.get('_fbp')) {
-                    Cookies.set('_fbp',genereateFbp(),  { expires: expires });
+                    Cookies.set('_fbp',genereateFbp(),  { expires: expires,path: '/',domain: domain });
                 }
 
                 if(getUrlParameter('fbclid')) {
-                    Cookies.set('_fbc',genereateFbc(),  { expires: expires });
+                    Cookies.set('_fbc',genereateFbc(),  { expires: expires,path: '/',domain: domain });
                 }
                 // initialize pixel
                 options.facebook.pixelIds.forEach(function (pixelId) {
@@ -3384,4 +3388,10 @@ function getCookieYes(key) {
             {}
         );
     return value;
+}
+
+function getRootDomain(useSubdomain = false) {
+    const hostname = window.location.hostname; // Get the current hostname
+    const rootDomain = tldjs.getDomain(hostname); // Use tldjs to extract the root domain
+    return rootDomain && (useSubdomain == true) ? '.' + rootDomain : hostname; // Add leading dot for cookies
 }

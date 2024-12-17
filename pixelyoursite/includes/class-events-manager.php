@@ -48,16 +48,19 @@ class EventsManager {
         wp_enqueue_script( 'jquery-bind-first' );
 
         wp_register_script( 'js-cookie-pys', PYS_FREE_URL . '/dist/scripts/js.cookie-2.1.3.min.js', array(), '2.1.3' );
+        wp_register_script( 'js-tld', PYS_FREE_URL . '/dist/scripts/tld.min.js', array( 'jquery' ), '2.3.1' );
+
         wp_enqueue_script( 'js-cookie-pys' );
+        wp_enqueue_script( 'js-tld' );
 
         if ( PYS()->getOption( 'compress_front_js' )){
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.bundle.js',
-                array( 'jquery','js-cookie-pys', 'jquery-bind-first' ), PYS_FREE_VERSION );
+                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION );
         }
         else
         {
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.js',
-                array( 'jquery','js-cookie-pys', 'jquery-bind-first' ), PYS_FREE_VERSION );
+                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION );
         }
 
 
@@ -101,6 +104,7 @@ class EventsManager {
             "ajaxForServerStaticEvent"         => PYS()->getOption( 'server_static_event_use_ajax' ),
 			"send_external_id"                 => PYS()->getOption( 'send_external_id' ),
 			"external_id_expire"               => PYS()->getOption( 'external_id_expire' ),
+            "track_cookie_for_subdomains"      => PYS()->getOption( 'track_cookie_for_subdomains' ),
 			"google_consent_mode"              => $google_consent_mode
 		);
 

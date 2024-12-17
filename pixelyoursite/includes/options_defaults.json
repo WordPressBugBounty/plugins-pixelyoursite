@@ -130,6 +130,7 @@
   "automatic_event_comment_enabled": true,
   "automatic_event_scroll_enabled": true,
   "automatic_event_time_on_page_enabled": true,
+  "automatic_event_404_enabled": true,
   "automatic_event_search_enabled": true,
 
   "automatic_event_download_extensions": [
@@ -152,6 +153,7 @@
   "send_external_id": true,
   "external_id_expire": 180,
   "external_id_use_transient": true,
+  "track_cookie_for_subdomains": true,
   "server_event_use_ajax": true,
   "server_static_event_use_ajax": true,
   "google_consent_mode": true,

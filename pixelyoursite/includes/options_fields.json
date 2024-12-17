@@ -128,6 +128,7 @@
   "automatic_event_comment_enabled":  "checkbox",
   "automatic_event_scroll_enabled":  "checkbox",
   "automatic_event_time_on_page_enabled":  "checkbox",
+  "automatic_event_404_enabled": "checkbox",
   "automatic_event_search_enabled":  "checkbox",
 
   "automatic_event_download_extensions": "tag_select",
@@ -141,6 +142,7 @@
   "send_external_id": "checkbox",
   "external_id_expire": "number",
   "external_id_use_transient": "checkbox",
+  "track_cookie_for_subdomains": "checkbox",
   "server_event_use_ajax" : "checkbox",
   "server_static_event_use_ajax": "checkbox",
   "google_consent_mode": "checkbox",

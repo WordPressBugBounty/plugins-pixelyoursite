@@ -52,6 +52,7 @@
   "automatic_event_comment_enabled": true,
   "automatic_event_scroll_enabled": true,
   "automatic_event_time_on_page_enabled": true,
+  "automatic_event_404_enabled": true,
   "automatic_event_search_enabled": true,
 
   "disable_noscript" : false,

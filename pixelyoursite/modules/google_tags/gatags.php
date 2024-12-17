@@ -123,7 +123,13 @@ class GATags extends Settings {
                 return $matches[0] . '&l=' . $dataLayerName;
             }
         }, $buffer);
-
+        $buffer = preg_replace_callback(
+            '/window\.dataLayer\s*=\s*window\.dataLayer\s*\|\|\s*\[\];/s',
+            function($matches)  use ($dataLayerName) {
+                return str_replace('dataLayer', $dataLayerName, $matches[0]);
+            },
+            $buffer
+        );
         $buffer = preg_replace_callback(
             '/gtag\((.*?)\);/s',
             function($matches)  use ($dataLayerName) {

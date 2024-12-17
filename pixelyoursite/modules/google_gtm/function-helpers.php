@@ -269,6 +269,7 @@ function getTriggerType($event_id) {
         case 'automatic_event_video':
         case 'automatic_event_signup':
         case 'automatic_event_login':
+        case 'automatic_event_404':
         case 'automatic_event_search':
         case 'automatic_event_tel_link':
         case 'automatic_event_email_link':

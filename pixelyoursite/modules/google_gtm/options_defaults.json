@@ -101,6 +101,7 @@
   "automatic_event_adsense_enabled": true,
   "automatic_event_scroll_enabled": true,
   "automatic_event_time_on_page_enabled": true,
+  "automatic_event_404_enabled": false,
   "automatic_event_search_enabled": true,
 
   "woo_enable_list_shop" : true,
