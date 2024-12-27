@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.0.3
+Stable tag: 10.0.3.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -14,6 +14,12 @@ Add your Meta Pixel (the old Facebook Pixel) with Conversion API support, Google
 **PixelYourSite Free Version: Complete Tracking Solution for the Meta Pixel, Google Analytics 4, and Google Tag Manager.**
 
 Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4, and Google Tag Manager into your WordPress site. Plus, use our simple Head and Footer script option to add any custom script you need for advanced tracking and optimization. The Pinterest Tag can be implemented via this [paid add-on](https://www.pixelyoursite.com/pinterest-tag). Similar paid add-on for the [Bing tag](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on)
+
+**Free training:** 
+
+We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this to learn how to install the Meta Pixel with Conversion API support, how to test it, and how to improve your Event Match Quality score (EMQ):
+
+[youtube https://www.youtube.com/watch?v=fAwsayYLo5s]
 
 **PixelYourSite will help you:**
 
@@ -103,14 +109,6 @@ Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4
 PixelYourSite is known for its easy integration of the Meta Pixel, Google Analytics, TikTok (paid), Pinterest (paid add-on), and Bing (paid add-on). What makes it special is its new Google Tag Manager integration, pushing all events into the GTM data layer with no coding required.
 
 GTM Container Import: to simplify GTM setup we offer you a GTM Container Import file that will configure triggers for all our events and variables for all our parameters. Version 1.0 of this file comes with Google Analytics 4 tags pre-configured: [Watch this video to learn more](https://www.youtube.com/watch?v=qKJ3mmCgT3M).
-
-
-**Free training:** 
-
-We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this to learn how to install the Meta Pixel with Conversion API support, how to test it, and how to improve your Event Match Quality score (EMQ):
-
-[https://www.youtube.com/watch?v=fAwsayYLo5s]
-
 
 
 **Key resources:**
@@ -382,6 +380,12 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 10.0.3.1 =
+
+December 27, 2024
+
+* Small code changes to ensure that Google tags installed by third-party solutions are in no way affected by the plugin when no Google tag ID is present in the settings. 
 
 = PixelYourSite 10.0.3 =
 
