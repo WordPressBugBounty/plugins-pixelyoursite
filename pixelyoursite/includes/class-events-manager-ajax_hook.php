@@ -128,7 +128,7 @@ class AjaxHookEventManager {
 
             // prepare event data
             $eventData = $event->getData();
-            $eventData = EventsManager::filterEventParams($eventData,"woo");
+            $eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
 
             $dataList[$pixel->getSlug()] = $eventData;
 

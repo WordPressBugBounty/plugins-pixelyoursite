@@ -128,6 +128,9 @@ class EventsAutomatic extends EventsFactory {
 
             case "automatic_event_form": {
                 $payload['name'] = 'Form';
+                if(isPhotoCartActive() && (has_shortcode(get_post_field('post_content', get_the_ID()), 'sunshine_checkout'))) {
+                    $payload['delay'] = 1;
+                }
             }break;
             case "automatic_event_download": {
                 $payload['name'] = 'Download';

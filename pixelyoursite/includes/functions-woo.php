@@ -65,12 +65,7 @@ function getWooProductPriceToDisplay( $product_id, $qty = 1 ) {
             $variation = wc_get_product($variation_id); // Creating a Variation Instance
 
             if ($variation && is_a($variation, 'WC_Product')) { // Check if $variation is a valid product object
-                $args = array(
-                    'price' => $variation->get_price(),
-                    'qty'   => 1
-                );
-
-                $productPrice = wc_get_price_excluding_tax($variation, $args);
+                $productPrice = current( $prices['price'] ); // Getting the price of the variation
             } else {
                 // Handle the case where no valid variation is found
                 // For example, fallback to the parent product's price or set a default price

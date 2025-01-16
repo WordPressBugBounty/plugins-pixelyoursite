@@ -322,6 +322,8 @@ function renderTriggerTypeInput( $trigger, $key ) {
         'home_page'         => 'Home page',
 	);
     $pro_options = array(
+        'add_to_cart'       => 'WooCommerce add to cart - PRO',
+        'purchase'          => 'WooCommerce purchase - PRO',
         'number_page_visit' => 'Number of Page Visits - PRO',
         'url_click'         => 'Click on HTML link - PRO',
         'css_click'         => 'Click on CSS selector - PRO',

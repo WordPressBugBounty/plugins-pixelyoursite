@@ -187,7 +187,13 @@ function isWPMLActive() {
 
     return is_plugin_active( 'sitepress-multilingual-cms/sitepress.php' );
 }
+function isPhotoCartActive() {
+    if ( ! function_exists( 'is_plugin_active' ) ) {
+        include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+    }
 
+    return is_plugin_active( 'sunshine-photo-cart/sunshine-photo-cart.php' );
+}
 /**
  * Clean variables using sanitize_text_field. Arrays are cleaned recursively.
  * Non-scalar values are ignored.
@@ -1284,4 +1290,23 @@ function get_persistence_user_data( $em, $fn, $ln, $tel ) {
 		'ln'  => $ln,
 		'tel' => $tel
 	);
+}
+
+function getAllMetaEventParamName(){
+    $metaEventParamName = array(
+        'event_url'=>'Event URL',
+        'landing_page'=>'Landing Page URL',
+        'post_id'=>'Post ID',
+        'post_title'=>'Post Title',
+        'post_type'=>'Post Type',
+        'page_title' => 'Page Title',
+        'content_name'=>'Content Name',
+        'content_type'=>'Content Type',
+        'categories'=>'Categories',
+        'tags'=>'Tags',
+        'user_role'=>'User Role',
+        'plugin'=>'Plugin',
+    );
+
+    return $metaEventParamName;
 }

@@ -136,18 +136,26 @@ function adminGetFixedNotices() {
             'enabelLogo' => true,
             'multiMessage' => [
                 [
-                    'slug'  => 'free_block_7_message_1_v1',
+                    'slug'  => 'free_block_3_message_1_v1',
                     'title' => 'Multiple Meta tags with CAPI support',
                     'message' => 'Learn how you can add multiple Meta (Facebook) tags with Conversion API support.',
                     'button_text' => 'Watch video',
                     'button_url' => 'https://www.youtube.com/watch?v=HM98mGZshvc',
                 ],
                 [
-                    'slug'  => 'free_block_7_message_2_v1',
+                    'slug'  => 'free_block_3_message_2_v1',
                     'title' => 'What WooCommerce products your ads sold',
                     'message' => 'Meta doesn"t show you what products your ads sold, but there is an easy way to find out.',
                     'button_text' => 'Watch video',
                     'button_url' => 'https://www.youtube.com/watch?v=b-eYdx9QK0Q',
+                ],
+
+                [
+                    'slug'  => 'free_block_3_message_3_v1',
+                    'title' => 'Medical Content - Meta Tracking',
+                    'message' => 'Meta has restrictions for MEDICAL content. Learn how to adapt!',
+                    'button_text' => 'Learn more',
+                    'button_url' => 'https://www.pixelyoursite.com/medical-site-meta-tracking',
                 ],
             ],
             'optoutEnabel' => true,

@@ -31,6 +31,8 @@ class TriggerEvent {
     public static $allowedTriggers = array(
         'page_visit',
         'home_page',
+        'add_to_cart',
+        'purchase',
         'number_page_visit',
         'url_click',
         'css_click',

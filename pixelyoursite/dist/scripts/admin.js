@@ -286,6 +286,7 @@ jQuery( document ).ready(function($) {
             $("#embedded_video_view").hide();
             $("#elementor_form").hide();
         } else {
+            $("#url_filter_panel").hide();
             $(".triger_post_type").hide();
             $("#embedded_video_view").hide();
             $("#elementor_form").hide();

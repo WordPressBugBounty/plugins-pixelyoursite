@@ -74,5 +74,7 @@
   "automatic_event_time_on_page_enabled":  "checkbox",
   "automatic_event_search_enabled":  "checkbox",
 
-  "disable_noscript": "checkbox"
+  "disable_noscript": "checkbox",
+  "enabled_medical": "checkbox",
+  "do_not_track_medical_param": "multi_select"
 }

@@ -310,6 +310,46 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     </div>
                 </div>
             </div>
+            <div id="add_to_cart_panel" class="event_triggers_panel" data-trigger_type="add_to_cart" style="display: none;">
+                <div class="row mt-3">
+                    <div class="col switcher_event_track_value_and_currency">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="switcher-label">Track value and currency <?php renderProBadge(); ?></h4>
+                        <p><?php _e('We will add value and currency parameters, similar to the default WooCommerce add to cart event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col">
+                        <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Add To Cart event with a custom event. Don\'t configure an add to cart event with this trigger, the plugin fires such an event automatically.', 'pys');?></h4>
+                    </div>
+                </div>
+            </div>
+            <div id="purchase_panel" class="event_triggers_panel" data-trigger_type="purchase" style="display: none;">
+                <div class="row mt-3 event_trigger" data-trigger_id="0">
+                    <div class="col switcher_event_transaction_only_action">
+                        <?php renderDummySwitcher();?>
+                        <h4 class="switcher-label">Fire this event for transaction only <?php renderProBadge(); ?></h4>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col switcher_event_track_transaction_ID">
+                        <?php renderDummySwitcher();?>
+                        <h4 class="switcher-label">Track transaction ID <?php renderProBadge(); ?></h4>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col switcher_event_track_value_and_currency">
+                        <?php renderDummySwitcher();?>
+                        <h4 class="switcher-label">Track value and currency <?php renderProBadge(); ?></h4>
+                        <p><?php _e('We will add value and currency parameters, similar to the default WooCommerce Purchase event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col">
+                        <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Purchase event with a custom event. Don\'t configure a Purchase event with this trigger, the plugin fires such an event automatically. ', 'pys');?></h4>
+                    </div>
+                </div>
+            </div>
             <?php $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
             foreach ($eventsFormFactory as $activeFormPlugin) : ?>
                 <div id="<?php echo $activeFormPlugin->getSlug(); ?>_panel" class="event_triggers_panel" data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>" style="display: none;">

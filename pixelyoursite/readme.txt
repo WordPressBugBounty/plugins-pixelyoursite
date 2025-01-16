@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.0.3.1
+Stable tag: 10.0.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -380,6 +380,23 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 10.0.4 =
+
+January 16, 2025
+
+* New Meta settings allow you to disable event parameters that can track Protected Health Information (PHI). Recommended for websites with medical content. 
+
+* Fixing some possible issues with WooCommerce events values when taxes are used. 
+
+* Fixing a possible issue with Sunshine Photo Cart Checkout
+
+* Fixing a possible issue with Cookiebot. 
+
+* Fixing a small problem with GTM scripts when the option is turned OFF. 
+
+* Updating the UI to reflect pro triggers for WooCommerce websites. 
+
 
 = PixelYourSite 10.0.3.1 =
 

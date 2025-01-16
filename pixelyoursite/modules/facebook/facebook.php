@@ -94,6 +94,8 @@ class Facebook extends Settings implements Pixel {
             'serverApiEnabled'    => $this->isServerApiEnabled() && count($this->getApiToken()) > 0,
             'wooCRSendFromServer' => $this->getOption("woo_complete_registration_send_from_server") && $this->getOption("woo_complete_registration_fire_every_time"),
 		    'send_external_id'          => $this->getOption('send_external_id'),
+            'enabled_medical'          => $this->getOption('enabled_medical'),
+            'do_not_track_medical_param' => $this->getOption('do_not_track_medical_param'),
         );
 		
 	}

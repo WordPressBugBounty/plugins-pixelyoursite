@@ -30,7 +30,7 @@ class EventsManager {
         add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
         // Hook for Store API (passes WC_Order object instead of order_id)
         add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
-
+        add_filter( 'script_loader_tag', array( $this, 'add_data_attribute_to_script' ), 10, 3 );
 	}
 
     public static function instance() {
@@ -41,6 +41,14 @@ class EventsManager {
 
         return self::$_instance;
 
+
+    }
+    function add_data_attribute_to_script( $tag, $handle, $src ) {
+        $array_scripts = array('js-cookie-pys', 'jquery-bind-first', 'js-tld', 'pys');
+        if ( 'js-cookie-pys' === $handle && isCookiebotPluginActivated()) {
+            $tag = str_replace( 'src=', 'data-cookieconsent="true" src=', $tag );
+        }
+        return $tag;
     }
 	public function enqueueScripts() {
 
@@ -331,7 +339,7 @@ class EventsManager {
     function addDynamicEvent($event,$pixel,$slug) {
 
         $eventData = $event->getData();
-        $eventData = $this::filterEventParams($eventData,$slug);
+        $eventData = $this::filterEventParams($eventData,$slug,['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
 
         if($event->getId() == 'edd_remove_from_cart' || $event->getId() == 'woo_remove_from_cart')  {
             $this->dynamicEvents[ $event->getId() ][ $event->args['key'] ][ $pixel->getSlug() ] = $eventData;
@@ -343,7 +351,7 @@ class EventsManager {
     function addTriggerEvent($event,$pixel,$slug) {
 
         $eventData = $event->getData();
-        $eventData = $this->filterEventParams($eventData,$slug);
+        $eventData = $this->filterEventParams($eventData,$slug,['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
         //save static event data
         if($event->getId() == "custom_event") {
             $eventId = $event->args->getPostId();
@@ -368,7 +376,7 @@ class EventsManager {
         $event->addPayload(['eventID'=>$this->uniqueId[$event_getId]]);
 
         $eventData = $event->getData();
-        $eventData = $this::filterEventParams($eventData,$slug);
+        $eventData = $this::filterEventParams($eventData,$slug,['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
         // send only for FB Server events
         if(Facebook()->enabled() && $pixel->getSlug() == "facebook" &&
             ($event->getId() == "woo_complete_registration") &&
@@ -396,7 +404,7 @@ class EventsManager {
 
     }
 
-    static function filterEventParams($data,$slug)
+    static function filterEventParams($data,$slug,$context = null)
     {
 
         if(!PYS()->getOption('enable_content_name_param')) {
@@ -440,6 +448,12 @@ class EventsManager {
             }
         }
 
+        if(isset($context) && isset($context['pixel']) && $context['pixel'] === 'facebook' && Facebook()->getOption('enabled_medical')) {
+            foreach (Facebook()->getOption('do_not_track_medical_param') as $param) {
+                unset($data['params'][$param]);
+            }
+        }
+
         return $data;
     }
 
@@ -448,11 +462,11 @@ class EventsManager {
     function isGdprPluginEnabled() {
         return apply_filters( 'pys_disable_by_gdpr', false ) ||
             apply_filters( 'pys_disable_facebook_by_gdpr', false ) ||
-            isCookiebotPluginActivated() && PYS()->getOption( 'gdpr_cookiebot_integration_enabled' ) ||
-            isConsentMagicPluginActivated() && PYS()->getOption( 'consent_magic_integration_enabled' ) ||
-            isRealCookieBannerPluginActivated() && PYS()->getOption( 'gdpr_real_cookie_banner_integration_enabled' ) ||
-            isCookieNoticePluginActivated() && PYS()->getOption( 'gdpr_cookie_notice_integration_enabled' ) ||
-            isCookieLawInfoPluginActivated() && PYS()->getOption( 'gdpr_cookie_law_info_integration_enabled' );
+            (isCookiebotPluginActivated() && PYS()->getOption('gdpr_cookiebot_integration_enabled')) ||
+            (isConsentMagicPluginActivated() && PYS()->getOption('consent_magic_integration_enabled')) ||
+            (isRealCookieBannerPluginActivated() && PYS()->getOption('gdpr_real_cookie_banner_integration_enabled')) ||
+            (isCookieNoticePluginActivated() && PYS()->getOption('gdpr_cookie_notice_integration_enabled')) ||
+            (isCookieLawInfoPluginActivated() && PYS()->getOption('gdpr_cookie_law_info_integration_enabled'));
     }
 
 
@@ -492,7 +506,7 @@ class EventsManager {
             foreach ($events as $event) {
                 // prepare event data
                 $eventData = $event->getData();
-                $eventData = EventsManager::filterEventParams($eventData,"woo");
+                $eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
 
                 $params[$pixel->getSlug()] = $eventData; // replace data!!(now use only one event)
             }
@@ -562,7 +576,7 @@ class EventsManager {
                 foreach ($events as $event) {
                     // prepare event data
                     $eventData = $event->getData();
-                    $eventData = EventsManager::filterEventParams($eventData,"woo");
+                    $eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
 
                     $params[ $product_id ][ $pixel->getSlug() ] = $eventData; // replace (use only one event for product)
                 }
@@ -617,7 +631,7 @@ class EventsManager {
                 $events = $pixel->generateEvents( $event );
                 foreach ($events as $singleEvent) {
                     $eventData = $singleEvent->getData();
-                    $eventData = EventsManager::filterEventParams($eventData,"edd");
+                    $eventData = EventsManager::filterEventParams($eventData,"edd",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
                     /**
                      * Format is pysEddProductData[ id ][ id ] or pysEddProductData[ id ] [ id_1, id_2, ... ]
                      */
