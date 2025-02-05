@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '10.0.4' );
+define( 'PYS_FREE_VERSION', '10.1.0' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '5.4.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '3.4.0' );
 define( 'PYS_FREE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
@@ -47,13 +47,16 @@ require_once PYS_FREE_PATH.'/includes/class-fixed-notices.php';
 require_once PYS_FREE_PATH.'/includes/class-pixel.php';
 require_once PYS_FREE_PATH.'/includes/class-settings.php';
 require_once PYS_FREE_PATH.'/includes/class-plugin.php';
+require_once PYS_FREE_PATH.'/includes/class-consent.php';
 
 require_once PYS_FREE_PATH.'/includes/class-events-manager-ajax_hook.php';
 require_once PYS_FREE_PATH.'/includes/class-pys.php';
 require_once PYS_FREE_PATH.'/includes/class-events-manager.php';
 require_once PYS_FREE_PATH.'/includes/class-custom-event.php';
 require_once PYS_FREE_PATH.'/includes/class-custom-event-factory.php';
-require_once PYS_FREE_PATH.'/includes/class-trigger-event.php';
+require_once PYS_FREE_PATH.'/includes/events/CustomEventClasses/class-settings-custom-event.php';
+require_once PYS_FREE_PATH.'/includes/events/CustomEventClasses/class-trigger-event.php';
+require_once PYS_FREE_PATH.'/includes/events/CustomEventClasses/class-conditional-event.php';
 require_once PYS_FREE_PATH.'/modules/facebook/facebook.php';
 require_once PYS_FREE_PATH.'/modules/facebook/facebook-server.php';
 require_once PYS_FREE_PATH.'/modules/google_analytics/ga.php';

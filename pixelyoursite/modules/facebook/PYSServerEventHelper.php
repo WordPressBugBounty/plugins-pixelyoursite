@@ -36,22 +36,24 @@ class ServerEventHelper {
             ->setClientIpAddress(self::getIpAddress())
             ->setClientUserAgent(self::getHttpUserAgent());
 
-        if (!self::getFbp() && (!isset($eventParams['_fbp']) || !$eventParams['_fbp']) && !headers_sent()) {
-            self::setFbp('fb.1.' . time() . '.' . rand(1000000000, 9999999999));
-            if(!headers_sent()){
-                setcookie("_fbp", self::getFbp(), 2147483647,'/', PYS()->general_domain);
-            }
-        }
+		if ( Consent()->checkConsent( 'facebook' ) ) {
+			if ( !self::getFbp() && ( !isset( $eventParams[ '_fbp' ] ) || !$eventParams[ '_fbp' ] ) && !headers_sent() ) {
+				self::setFbp( 'fb.1.' . time() . '.' . rand( 1000000000, 9999999999 ) );
+				if ( !headers_sent() ) {
+					setcookie( "_fbp", self::getFbp(), 2147483647, '/', PYS()->general_domain );
+				}
+			}
 
-        if (!self::getFbc() && self::getUrlParameter('fbclid')) {
-            $fbclid = self::getUrlParameter('fbclid');
-            if($fbclid){
-                self::setFbc('fb.1.' . time() . '.' . $fbclid );
-                if(!headers_sent()){
-                    setcookie("_fbc", self::$fbc, 2147483647,'/', PYS()->general_domain);
-                }
-            }
-        }
+			if ( !self::getFbc() && self::getUrlParameter( 'fbclid' ) ) {
+				$fbclid = self::getUrlParameter( 'fbclid' );
+				if ( $fbclid ) {
+					self::setFbc( 'fb.1.' . time() . '.' . $fbclid );
+					if ( !headers_sent() ) {
+						setcookie( "_fbc", self::$fbc, 2147483647, '/', PYS()->general_domain );
+					}
+				}
+			}
+		}
 
         $fbp = '';
         $fbc = '';
@@ -99,6 +101,12 @@ class ServerEventHelper {
             ->setCustomData($customData)
             ->setUserData($user_data);
 
+		if ( Facebook()->getLDUMode() ) {
+			$event
+			->setDataProcessingOptions( [ 'LDU' ] )
+			->setDataProcessingOptionsCountry( 0 )
+			->setDataProcessingOptionsState( 0 );
+		}
 
         return $event;
     }

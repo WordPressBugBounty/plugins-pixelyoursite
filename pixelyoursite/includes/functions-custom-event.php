@@ -124,6 +124,34 @@ function renderGAParamInput( $key, $val ) {
     <?php
 
 }
+
+/**
+ * Output radio input
+ *
+ * @param      $key
+ * @param      $value
+ * @param      $label
+ * @param bool $disabled
+ */
+function render_radio_input( &$event, $key, $value, $label, $disabled = false, $with_pro_badge = false ) {
+
+    $attr_name = "pys[event][$key]";
+    $attr_value = $event->$key;
+
+    ?>
+
+    <label class="custom-control custom-radio">
+        <input type="radio" name="<?php esc_attr_e( $attr_name ); ?>" <?php disabled( $disabled, true ); ?>
+               class="custom-control-input" <?php checked( $attr_value, $value ); ?>
+               value="<?php esc_attr_e( $value ); ?>">
+        <span class="custom-control-indicator"></span>
+        <span class="custom-control-description"><?php echo wp_kses_post( $label ); ?></span>
+    </label>
+
+    <?php
+
+}
+
 /**
  * Output checkbox input
  *
@@ -159,6 +187,7 @@ function render_checkbox_input( &$event, $key, $label, $disabled = false ) {
     <?php
 
 }
+
 /**
  * @param CustomEvent $event
  * @param string      $key
@@ -189,8 +218,8 @@ function renderNumberInput( &$event, $key, $placeholder = null ) {
 function renderTriggerNumberInput( $trigger, $key, $placeholder = null, $default = null ) {
 
     $i = $trigger->getTriggerIndex();
-    $attr_name = "pys[event][triggers][$i][$key]";
-    $attr_id    = 'pys_event_' . $i . '_' . $key;
+    $attr_name = "pys[event][triggers][0][$key]";
+    $attr_id    = 'pys_event_0_' . $key;
     $attr_value = $trigger->getParam( $key );
 
     ?>
@@ -292,8 +321,8 @@ function renderSelectInput( &$event, $key, $options, $full_width = false ) {
  */
 function renderTriggerSelectInput( $trigger, $key, $options, $full_width = false , $classes = '') {
     $i = $trigger->getTriggerIndex();
-    $attr_name  = "pys[event][triggers][$i][$key]";
-    $attr_id    = 'pys_event_' . $i . '_' . $key;
+    $attr_name  = "pys[event][triggers][0][$key]";
+    $attr_id    = 'pys_event_0_' . $key;
     $attr_value = $trigger->getParam($key);
 
     $attr_width = $full_width ? 'width: 100%;' : '';
@@ -320,6 +349,8 @@ function renderTriggerTypeInput( $trigger, $key ) {
 	$options = array(
 		'page_visit'        => 'Page visit',
         'home_page'         => 'Home page',
+        'scroll_pos'        => 'Page Scroll',
+        'post_type'         => 'Post type',
 	);
     $pro_options = array(
         'add_to_cart'       => 'WooCommerce add to cart - PRO',
@@ -328,8 +359,6 @@ function renderTriggerTypeInput( $trigger, $key ) {
         'url_click'         => 'Click on HTML link - PRO',
         'css_click'         => 'Click on CSS selector - PRO',
         'css_mouseover'     => 'Mouse over CSS selector - PRO',
-        'scroll_pos'        => 'Page Scroll - PRO',
-        'post_type'         => 'Post type - PRO',
         'video_view'        => 'Embedded Video View - PRO',
         'email_link'        => 'Email Link - PRO',
     );

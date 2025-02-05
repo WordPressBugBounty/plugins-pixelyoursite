@@ -102,6 +102,10 @@ class AjaxHookEventManager {
         $dataList = [];
         foreach ( PYS()->getRegisteredPixels() as $pixel ) {
 
+			if ( !Consent()->checkConsent( $pixel->getSlug() ) ) {
+				continue;
+			}
+
             if( !empty($variation_id)
                 && $variation_id > 0
                 && (($pixel->getSlug() == 'ga' && !GATags()->getOption( 'woo_variable_as_simple')) ||

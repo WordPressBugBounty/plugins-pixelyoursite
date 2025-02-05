@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         <div class="row align-items-center mb-3">
             <div class="col-2  py-2">
-                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/facebook-small-square.png">
+                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/facebook-small-square.svg">
             </div>
             <div class="col-6">
                 Your Meta Pixel (formerly Facebook Pixel)
@@ -124,7 +124,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
             <div class="row align-items-center mb-3">
                 <div class="col-2 py-2">
-                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/analytics-square-small.png">
+                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/analytics-square-small.svg">
                 </div>
                 <div class="col-6">
                     Your Google Analytics
@@ -297,7 +297,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         <div class="row align-items-center">
             <div class="col-2 py-4">
-                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-ads-square-small.png">
+                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-ads-square-small.svg">
             </div>
             <div class="col-10">
                 Add the Google Ads tag with the <a
@@ -324,7 +324,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <hr>
         <div class="row align-items-center">
             <div class="col-2 py-4">
-                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/tiktok-logo.png">
+                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/tiktok-logo.svg">
             </div>
             <div class="col-10">
                 Add the TikTok tag with the <a
@@ -351,7 +351,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <div class="card-body">
             <div class="row align-items-center mb-3 py-2">
                 <div class="col-2">
-                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/gtm-square-small.png">
+                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/gtm-square-small.svg">
                 </div>
                 <div class="col-6">
                     Your GTM Tag
@@ -494,22 +494,18 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="card-body">
         <div class="row">
             <div class="col">
-
+                <p><a href="https://www.youtube.com/watch?v=wUsqwomsYMo" target="_blank">RECENT: Conditions: Improved Event Tracking - Meta, Google, TikTok, GTM (5:09) - watch now</a></p>
+                <p><a href="https://www.youtube.com/watch?v=kWozitdarSA" target="_blank">RECENT: How to use Custom Events for Meta Ads (7:49)</a></p>
+                <p><a href="https://www.youtube.com/watch?v=7BNHWbLbbdg" target="_blank">RECENT: Meta Limited Data Use - Privacy Options for USA States - WordPress (6:17 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=bEK3qaaRvNg" target="_blank">Google Tag Manager and PixelYourSite (7:48 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=uXTpgFu2V-E" target="_blank">How to configure Facebook Conversion API (2:51 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=DZzFP4pSitU" target="_blank">Meta Pixel (formerly Facebook Pixel), CAPI, and PixelYourSite MUST WATCH (8:19) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=QqAIO1ONc0I" target="_blank">How to test Facebook Conversion API (10:16 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=kEp5BDg7dP0" target="_blank">How to fire EVENTS with PixelYourSite (22:28) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=EvzGMAvBnbs" target="_blank">How to create Meta (Facebook) Custom Audiences & Lookalikes based on Events & Parameters (21:53) - watch now</a></p>
-                <p>
-                <a href="https://www.youtube.com/watch?v=w97FATUy7ok" target="_blank">How to configure Custom Conversions on Meta (Facebook) based on Events & Parameters (11:03) - watch now
-                    </a>
-                </p>
-
-                <p><a href="https://www.youtube.com/watch?v=snUKcsTbvCk" target="_blank">Improve META (Facebook) EMQ score
-                        with form automatic data detection (11:48) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=c4Hrb8WK5bw" target="_blank">
-                        Fire a LEAD event on form submit - WordPress & PixelYourSite (5:58) - watch video</a></p>
+                <p><a href="https://www.youtube.com/watch?v=w97FATUy7ok" target="_blank">How to configure Custom Conversions on Meta (Facebook) based on Events & Parameters (11:03) - watch now</a></p>
+                <p><a href="https://www.youtube.com/watch?v=snUKcsTbvCk" target="_blank">Improve META (Facebook) EMQ score with form automatic data detection (11:48) - watch now</a></p>
+                <p><a href="https://www.youtube.com/watch?v=c4Hrb8WK5bw" target="_blank">Fire a LEAD event on form submit - WordPress & PixelYourSite (5:58) - watch video</a></p>
             </div>
         </div>
         <div class="row">

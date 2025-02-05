@@ -78,26 +78,25 @@ class Facebook extends Settings implements Pixel {
 			return apply_filters("pys_facebook_ids", array($id)); // return first id only
         }
 	}
-	
+
 	public function getPixelOptions() {
-		
 		return array(
-			'pixelIds'            => $this->getPixelIDs(),
-			'advancedMatching'    => $this->getOption( 'advanced_matching_enabled' ) ? Helpers\getAdvancedMatchingParams() : array(),
-            'advancedMatchingEnabled'   => $this->getOption( 'advanced_matching_enabled' ),
-            'removeMetadata'      => $this->getOption( 'remove_metadata' ),
-			'contentParams'       => getTheContentParams(),
-			'commentEventEnabled' => $this->getOption( 'comment_event_enabled' ),
-			'wooVariableAsSimple' => $this->getOption( 'woo_variable_as_simple' ),
-            'downloadEnabled' => $this->getOption( 'download_event_enabled' ),
-            'formEventEnabled' => $this->getOption( 'form_event_enabled' ),
-            'serverApiEnabled'    => $this->isServerApiEnabled() && count($this->getApiToken()) > 0,
-            'wooCRSendFromServer' => $this->getOption("woo_complete_registration_send_from_server") && $this->getOption("woo_complete_registration_fire_every_time"),
-		    'send_external_id'          => $this->getOption('send_external_id'),
-            'enabled_medical'          => $this->getOption('enabled_medical'),
-            'do_not_track_medical_param' => $this->getOption('do_not_track_medical_param'),
-        );
-		
+			'pixelIds'                   => $this->getPixelIDs(),
+			'advancedMatching'           => $this->getOption( 'advanced_matching_enabled' ) ? Helpers\getAdvancedMatchingParams() : array(),
+			'advancedMatchingEnabled'    => $this->getOption( 'advanced_matching_enabled' ),
+			'removeMetadata'             => $this->getOption( 'remove_metadata' ),
+			'contentParams'              => getTheContentParams(),
+			'commentEventEnabled'        => $this->getOption( 'comment_event_enabled' ),
+			'wooVariableAsSimple'        => $this->getOption( 'woo_variable_as_simple' ),
+			'downloadEnabled'            => $this->getOption( 'download_event_enabled' ),
+			'formEventEnabled'           => $this->getOption( 'form_event_enabled' ),
+			'serverApiEnabled'           => $this->isServerApiEnabled() && count( $this->getApiToken() ) > 0,
+			'wooCRSendFromServer'        => $this->getOption( "woo_complete_registration_send_from_server" ) && $this->getOption( "woo_complete_registration_fire_every_time" ),
+			'send_external_id'           => $this->getOption( 'send_external_id' ),
+			'enabled_medical'            => $this->getOption( 'enabled_medical' ),
+			'do_not_track_medical_param' => $this->getOption( 'do_not_track_medical_param' ),
+			'meta_ldu'                   => $this->getLDUMode(),
+		);
 	}
 
     public function updateOptions( $values = null ) {
@@ -203,6 +202,7 @@ class Facebook extends Settings implements Pixel {
                 $eventData = $this->getPageViewEventParams();
                 if($eventData) {
                     $isActive = true;
+					$event->addPayload( [ "ajaxFire" => !Consent()->checkConsent( 'facebook' ) ] );
                     $this->addDataToEvent($eventData,$event);
                 }
             } break;
@@ -428,6 +428,7 @@ class Facebook extends Settings implements Pixel {
 			return;
 		}
 
+		$ldu = $this->getLDUMode();
 		$eventsManager = PYS()->getEventsManager();
 
 		foreach ( $eventsManager->getStaticEvents( 'facebook' ) as $eventId => $events ) {
@@ -441,7 +442,16 @@ class Facebook extends Settings implements Pixel {
 						'noscript' => 1,
 					);
 
-					foreach ( $event['params'] as $param => $value ) {
+					$params = $event[ 'params' ];
+					if ( $ldu ) {
+						$params = array_merge( $params, array(
+							'vdpo'  => 'LDU',
+							'dpoco' => 0,
+							'dpost' => 0
+						) );
+					}
+
+					foreach ( $params as $param => $value ) {
                         if(is_array($value))
                             $value = json_encode($value);
 						@$args[ 'cd[' . $param . ']' ] = urlencode( $value );
@@ -1330,6 +1340,10 @@ class Facebook extends Settings implements Pixel {
 
         return $sanitized;
     }
+
+	public function getLDUMode() {
+		return apply_filters( 'pys_meta_ldu_mode', false );
+	}
 }
 
 /**

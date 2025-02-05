@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.0.4
+Stable tag: 10.1.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -101,6 +101,8 @@ We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel
 
 * It can fire GA4 tags with Google Consent Mode granted.
 
+* Dedicated filter that enables Meta Limited Data Use.
+
 * It's fully integrated with [ConsentMagic](https://www.pixelyoursite.com/plugins/consentmagic).
 
 
@@ -152,6 +154,8 @@ The list of paid feature is long and growing:
 * More parameters for our events, including landing page, traffic source, or UTMs tracking.
 
 * More triggers for your own events: Clicks on links and CSS Selectors, Number of Page Views, Mouse over CSS Selectors, Embedded video views, Email link click, Page scroll, Post type, and direct integrations with various Form plugins plus Elementor forms.
+
+* More events triggers on top of the ones available in the free version (URL filters, Device, User role): URL parameters, Landing page, Source.
 
 * Better tracking of user data for an improved EMQ score, including the ability to get user data from forms, or URLs.
 
@@ -301,6 +305,9 @@ There are several triggers you can use:
 
 *URL includes (supports delay)
 *URL equals (supports delay)
+*Home page
+*Page scroll
+*Post type
 *Click on HTML link (pro)
 *Click on CSS Selector (pro)
 *Mouse over CSS Selector (pro)
@@ -380,6 +387,25 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 10.1.0 =
+
+February 5, 2025
+
+* New events triggers: Home page, Page scroll, Post type.
+
+* New events conditions: URL Contains, URL Match, Device, User role.
+
+* A new filter for Meta Limited Data Use. Developers of consent solutions can use it to control LDU for our Meta pixel and CAPI events. This filter is already used by ConsentMagic (our consent plugin) when the LDU option is enabled. ConsentMagic has a LDU consent rule targeting supported US states. 
+
+* Vide links updates.
+
+* We replaced internal used images with the SVG format.
+
+* Fixing a possible error with /includes/class-custom-event.php around line 292
+
+* Fixing possible issues and code improvements. 
+
 
 = PixelYourSite 10.0.4 =
 

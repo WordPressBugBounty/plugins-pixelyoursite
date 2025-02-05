@@ -163,7 +163,8 @@ use PixelYourSite\Facebook\Helpers;
                 <p>Same Facebook (Meta) pixel or Google tag on multiple WooCommerce websites? (4:43) - <a href="https://www.youtube.com/watch?v=3Ugwlq1EVO4" target="_blank">watch now</a></p>
                 <p>WooCommerce First-Party Reports: Track UTMs, Traffic Source, Landing Page (13:15) - <a href="https://www.youtube.com/watch?v=4VpVf9llfkU" target="_blank">watch video</a></p>
                 <p>Find out your ads PROFIT - Meta, Google, TikTok, Pinterest, etc (5:48) - <a href="https://www.youtube.com/watch?v=ydqyp-iW9Ko" target="_blank">watch video</a></p>
-            </div>
+								<p>RECENT: Medical Content on WooCommerce? Use Custom Events Instead of Standard Events! (6:39) - <a href="https://www.youtube.com/watch?v=xjSIRKZ-Dss" target="_blank">watch video</a></p>
+						</div>
         </div>
     </div>
 </div>

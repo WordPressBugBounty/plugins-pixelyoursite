@@ -110,7 +110,7 @@ class NoticesFixed {
         ?>
         <div class="notice notice-info is-dismissible pys-promo-fixed-notice pys-fixed-notice <?php echo (isset($notice['enabelDismiss']) && $notice['enabelDismiss']==false)? 'notice-disable-dismiss' : ''; ?>" data-slug="<?=$notice['slug']; ?>">
             <div class="logo-notice">
-                <img src="<?php echo PYS_FREE_URL; ?>/dist/images/logo-original.png" alt="plugin logo"/>
+                <img src="<?php echo PYS_FREE_URL; ?>/dist/images/logo-original.svg" alt="plugin logo"/>
             </div>
             <div class="notice-content">
                 <div class="notice-item">
@@ -165,7 +165,7 @@ class NoticesFixed {
             <div class="notice_content">
                 <?php if(isset($group['enabelLogo']) && $group['enabelLogo']!=false) :?>
                     <div class="logo-notice">
-                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/logo-original.png" alt="plugin logo"/>
+                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/logo-original.svg" alt="plugin logo"/>
                     </div>
                 <?php endif; ?>
                 <div class="notice-content">

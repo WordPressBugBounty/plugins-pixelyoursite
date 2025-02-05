@@ -2,8 +2,6 @@
 
 namespace PixelYourSite;
 
-use PixelYourSite\Events;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -74,11 +72,17 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
             <?php
             $event_triggers = $event->getTriggers();
             $main_trigger = [];
-
+            $trigger_types = array(
+                'page_visit',
+                'home_page',
+                'scroll_pos',
+                'post_type',
+            );
             if ( !empty( $event_triggers ) ) {
                 foreach ($event_triggers as $event_trigger) {
+
                     $trigger_type = $event_trigger->getTriggerType();
-                    if ($trigger_type === 'page_visit' || $trigger_type === 'home_page') {
+                    if (in_array($trigger_type, $trigger_types)) {
                         $main_trigger = $event_trigger;
                         break;
                     }
@@ -172,7 +176,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
 
                 <div class="insert-marker"></div>
                 <div class="mt-3">
-                    <small>You can also use <b>*</b> as the trigger URL on all pages</small>
+                    <small>You can use <b>*</b> to trigger an event on all pages.</small>
                 </div>
                 <div class="row mt-3">
                     <div class="col-4">
@@ -199,7 +203,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
 
                 <div class="insert-marker"></div>
                 <div class="mt-3">
-                    <small>You can also use <b>*</b> as the trigger URL on all pages</small>
+                    <small>You can use <b>*</b> to trigger an event on all pages.</small>
                 </div>
 
                 <div class="row mt-3">
@@ -289,20 +293,26 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
             </div>
 
             <div id="scroll_pos_panel" class="event_triggers_panel" style="display: none;">
-                <div class="row mt-3">
+
+                <?php
+                $trigger = $main_trigger->getScrollPosTriggers()[0] ?? ['value' => 0];
+
+                ?>
+
+                <div class="row mt-3 event_trigger" data-trigger_id="0">
                     <div class="col">
                         <div class="row">
                             <div class="col-3">
-                                <?php renderDummyNumberInput(); ?>
+                                <input type="number" min="0" max="100" class="form-control"
+                                       name='<?php echo esc_attr( "pys[event][triggers][0][scroll_pos_triggers][0][value]" ); ?>'
+                                       value="<?php esc_attr_e( (int) $trigger[ 'value' ] ); ?>">
                             </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm btn-disabled">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
+
                         </div>
                     </div>
                 </div>
+
+                <div class="insert-marker"></div>
                 <div class="row mt-3 mb-5">
                     <div class="col-4">
                         <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
@@ -310,6 +320,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     </div>
                 </div>
             </div>
+
             <div id="add_to_cart_panel" class="event_triggers_panel" data-trigger_type="add_to_cart" style="display: none;">
                 <div class="row mt-3">
                     <div class="col switcher_event_track_value_and_currency">
@@ -545,6 +556,69 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
         </div>
     </div>
 
+</div>
+
+
+<div class="card card-static card-conditions">
+    <div class="card-header">
+        Conditions
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col">
+                <?php Events\renderSwitcherInput( $event, 'conditions_enabled' ); ?>
+                <h4 class="switcher-label">Enable conditions</h4>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col">
+                <h4>Logic</h4>
+                <div class="form-inline">
+                    <?php Events\render_radio_input( $event, 'conditions_logic', 'AND', 'AND' ); ?>
+                    <?php Events\render_radio_input( $event, 'conditions_logic', 'OR', 'OR' ); ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="pys_conditions_wrapper">
+        <?php
+        $event_conditions = $event->getConditions();
+        if ( !empty( $event_conditions ) ) :
+            foreach ( $event_conditions as $event_condition ) :
+                $i = $event_condition->getConditionIndex();
+                $trigger_type = $event_condition->getConditionType();
+                $event_condition->renderConditionalBlock(true);
+                break;
+            endforeach;
+        endif;
+        ?>
+    </div>
+    <hr class="m-0">
+    <div id="pys-add-condition" class="mt-4 mb-4">
+        <div class="row d-flex justify-content-center">
+            <div class="col-6 justify-content-center">
+                <button class="btn btn-block btn-grey add-condition" type="button"><?php _e('Add another Condition', 'pys'); ?></button>
+            </div>
+        </div>
+        <div class="row d-flex justify-content-center mt-2">
+            <div class="col-6 d-flex justify-content-center">
+                <?php renderProBadge(); ?>
+            </div>
+        </div>
+    </div>
+    <div id="pys_add_event_condition" style="display: none;">
+
+        <?php
+        $new_condition = new ConditionalEvent('url_filters');
+        $new_condition_index = $new_condition->getConditionIndex();
+        ?>
+
+        <input type="hidden" name="<?php echo esc_attr( "pys[event][conditions][$new_condition_index][cloned_event]" ); ?>"
+               value="1">
+        <?php $new_condition->renderConditionalBlock();?>
+        <?php $new_condition->renderConditionalsPanel();?>
+
+    </div>
 </div>
 
 <?php if ( Facebook()->enabled() ) : ?>

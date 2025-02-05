@@ -77,7 +77,7 @@ class Pinterest extends Settings implements Pixel {
 	    ?>
         <div class="row align-items-center">
             <div class="col-2 py-4">
-                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/pinterest-square-small.png">
+                <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/pinterest-square-small.svg">
             </div>
             <div class="col-10">
                 Add the Pinterest tag with our <a href="https://www.pixelyoursite.com/pinterest-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"

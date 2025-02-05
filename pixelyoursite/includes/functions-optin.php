@@ -122,7 +122,7 @@ function adminRenderOptinNotices() {
     </style>
 
     <div class="notice <?php echo $dismissable ? 'is-dismissible' : ''; ?> pys-optin-notice pys-notice-wrapper">
-        <img src="<?php echo PYS_FREE_URL . '/dist/images/pys-square-logo-small.png'; ?>" class="pys-notice-logo">
+        <img src="<?php echo PYS_FREE_URL . '/dist/images/logo-original.svg'; ?>" class="pys-notice-logo">
         <div class="pys-notice-content">
             <h4><?php echo $header; ?></h4>
             <form style="display: flex;">

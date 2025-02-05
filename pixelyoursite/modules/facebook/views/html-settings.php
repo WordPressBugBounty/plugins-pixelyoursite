@@ -29,12 +29,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <p><small>Remove Facebook default events</small></p>
 			</div>
 		</div>
-		<div class="row mb-3">
+		<div class="row">
 			<div class="col">
 				<?php Facebook()->render_switcher_input( 'disable_noscript' ); ?>
 				<h4 class="switcher-label">Disable noscript</h4>
 			</div>
 		</div>
+
         <!--
         <div class="row">
             <div class="col">

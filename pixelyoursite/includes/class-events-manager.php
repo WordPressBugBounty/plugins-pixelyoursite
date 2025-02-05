@@ -82,7 +82,6 @@ class EventsManager {
             'triggerEvents'         => $this->triggerEvents,
             'triggerEventTypes'     => $this->triggerEventTypes,
         );
-
 		// collect options for configured pixel
 		foreach ( PYS()->getRegisteredPixels() as $pixel ) {
 			/** @var Pixel|Settings $pixel */
@@ -286,14 +285,25 @@ class EventsManager {
         }
 
 
-        if(count($this->facebookServerEvents)>0 && Facebook()->enabled() && Facebook()->isServerApiEnabled() && !PYS()->isCachePreload()) {
-            FacebookServer()->sendEventsAsync($this->facebookServerEvents);
-            $this->facebookServerEvents = array();
+        if( count($this->facebookServerEvents ) > 0
+            && Facebook()->enabled()
+            && Facebook()->isServerApiEnabled()
+            && !PYS()->isCachePreload()
+			&& Consent()->checkConsent( 'facebook' )
+        ) {
+			FacebookServer()->sendEventsAsync( $this->facebookServerEvents );
+			$this->facebookServerEvents = array();
         }
 
-        if (isPinterestActive() && count($this->pinterestServerEvents) > 0 &&  Pinterest()->enabled() && Pinterest()->isServerApiEnabled() && !PYS()->isCachePreload()) {
-            PinterestServer()->sendEventsAsync($this->pinterestServerEvents);
-            $this->pinterestServerEvents = array();
+        if ( isPinterestActive()
+            && count($this->pinterestServerEvents) > 0
+            &&  Pinterest()->enabled()
+            && Pinterest()->isServerApiEnabled()
+            && !PYS()->isCachePreload()
+			&& Consent()->checkConsent( 'pinterest' )
+        ) {
+			PinterestServer()->sendEventsAsync( $this->pinterestServerEvents );
+			$this->pinterestServerEvents = array();
         }
 
         // remove new user mark
@@ -359,7 +369,10 @@ class EventsManager {
             $eventId = $event->getId();
         }
         $this->triggerEvents[ $eventId ][ $pixel->getSlug() ] = $eventData;
-        $this->triggerEventTypes[ $eventData['trigger_type'] ][ $eventId ] = $eventData['trigger_value'];
+        if ( !empty( $event->args ) ) {
+            $this->triggerEventTypes = array_replace_recursive( $this->triggerEventTypes, $event->args->__get( 'triggerEventTypes' ) );
+        }
+
     }
 
     /**
@@ -655,7 +668,6 @@ class EventsManager {
 
     }
     public function saveExternalIDInOrder($order_param) {
-        error_log("saveExternalIDInOrder");
         // Determine whether the WC_Order object or order ID is passed
         if ( $order_param instanceof WC_Order ) {
             // If the order object is transferred

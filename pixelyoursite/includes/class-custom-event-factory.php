@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class CustomEventFactory {
 
+
 	public static function create( $args ) {
 
 		// create event post object
@@ -37,6 +38,13 @@ class CustomEventFactory {
 	 * @return array
 	 */
 	public static function get( $state = 'any', $post_id = null ) {
+
+        $trigger_types = array(
+            'page_visit',
+            'home_page',
+            'scroll_pos',
+            'post_type',
+        );
 
 		$limit = isset( $post_id ) ? 1 : -1;
 
@@ -70,7 +78,7 @@ class CustomEventFactory {
                 foreach ( $triggers as $trigger ) {
                     $trigger_type = $trigger->getTriggerType();
 
-                    if ( $trigger_type == 'page_visit' || $trigger_type == 'home_page') {
+                    if ( in_array($trigger_type, $trigger_types)) {
                         $results[ $post->ID ] = $customEvent;
                         break;
                     }

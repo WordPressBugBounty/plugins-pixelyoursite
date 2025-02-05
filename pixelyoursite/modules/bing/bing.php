@@ -72,7 +72,7 @@ class Bing extends Settings implements Pixel {
 
             <div class="row align-items-center">
                 <div class="col-2 py-4">
-                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/microsoft-small-square.png">
+                    <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/microsoft-small-square.svg">
                 </div>
                 <div class="col-10">
                     <h4 class="label">Microsoft the UET Tag (Bing) with <a href="https://www.pixelyoursite.com/bing-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing" target="_blank">this pro add-on.</a></h4>

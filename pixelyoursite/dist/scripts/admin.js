@@ -1,6 +1,255 @@
 
-jQuery(document).ready(function(c){function n(e){var t=c("#"+e.data("target"));e.val()===e.data("value")?t.removeClass("form-control-hidden"):t.addClass("form-control-hidden")}function e(){"price"===c('input[name="pys[core][woo_event_value]"]:checked').val()?c(".woo-event-value-option").hide():c(".woo-event-value-option").show()}function t(){"price"===c('input[name="pys[core][edd_event_value]"]:checked').val()?c(".edd-event-value-option").hide():c(".edd-event-value-option").show()}function a(){var e=c(".pys_event_trigger_type").val(),t="#"+e+"_panel";c(".event_triggers_panel").hide(),c(t).show(),"page_visit"===e?c("#url_filter_panel").hide():c("#url_filter_panel").show();var n=c(t),a=n.data("trigger_type");0===c(".event_trigger",n).length-1&&s(n,a)}function s(e,t){var n=c(".event_trigger",e),a=c(n[0]).clone(!0),s=c(n[n.length-1]).data("trigger_id")+1,i="pys[event]["+t+"_triggers]["+s+"]";a.data("trigger_id",s),c("select",a).attr("name",i+"[rule]"),c("input",a).attr("name",i+"[value]"),a.css("display","block"),a.insertBefore(c(".insert-marker",e))}function i(){"page_visit"===c(".pys_event_trigger_type").val()?c(".event-delay").css("display","flex"):c(".event-delay").css("display","none"); "number_page_visit"===c(".pys_event_trigger_type").val()?c(".triger_number_page_visit").css("display","flex"):c(".triger_number_page_visit").css("display","none")}function o(){c("#pys_event_facebook_enabled").is(":checked")?c("#facebook_panel").show():c("#facebook_panel").hide()}function r(){"CustomEvent"===c("#pys_event_facebook_event_type").val()?c(".facebook-custom-event-type").css("visibility","visible"):c(".facebook-custom-event-type").css("visibility","hidden")}function p(){c("#pys_event_facebook_params_enabled").is(":checked")?c("#facebook_params_panel").show():c("#facebook_params_panel").hide()}function _(){var e=c("#pys_event_facebook_event_type").val();c("#facebook_params_panel").removeClass().addClass(e)}function l(){"custom"===c("#pys_event_facebook_params_currency").val()?c(".facebook-custom-currency").css("visibility","visible"):c(".facebook-custom-currency").css("visibility","hidden")}function v(){c("#pys_event_pinterest_enabled").is(":checked")?c("#pinterest_panel").show():c("#pinterest_panel").hide()}function u(){"CustomEvent"===c("#pys_event_pinterest_event_type").val()?c(".pinterest-custom-event-type").css("visibility","visible"):c(".pinterest-custom-event-type").css("visibility","hidden")}function d(){c("#pys_event_pinterest_params_enabled").is(":checked")?c("#pinterest_params_panel").show():c("#pinterest_params_panel").hide()}function y(){var e=c("#pys_event_pinterest_event_type").val();c("#pinterest_params_panel").removeClass().addClass(e)}function m(){"custom"===c("#pys_event_pinterest_params_currency").val()?c(".pinterest-custom-currency").css("visibility","visible"):c(".pinterest-custom-currency").css("visibility","hidden")}function f(){c("#pys_event_ga_ads_enabled").is(":checked")?c("#analytics_panel").show():c("#analytics_panel").hide()}function h(){"_custom"===c("#pys_event_ga_ads_event_action").val() || "CustomEvent"===c("#pys_event_ga_ads_event_action").val()?c("#ga-ads-custom-action").css("visibility","visible"):c("#ga-ads-custom-action").css("visibility","hidden")}function g(){c("#pys_event_bing_enabled").is(":checked")?c("#bing_panel").show():c("#bing_panel").hide()}c(function(){c('[data-toggle="pys-popover"]').popover({container:"#pys",html:!0,content:function(){return c("#pys-"+c(this).data("popover_id")).html()}})}),c(".pys-pysselect2").pysselect2(),c(".pys-tags-pysselect2").pysselect2({tags:!0,tokenSeparators:[","," "]}),c("select.controls-visibility").on("change",function(e){n(c(this))}).each(function(e,t){n(c(t))}),c(".card-collapse").on("click",function(){var e=c(this).closest(".card").children(".card-body");e.hasClass("show")?e.hide().removeClass("show"):e.show().addClass("show")}),c(".collapse-control .custom-switch-input").on('change',function(){var e=c(this),t=c("."+e.data("target"));0<t.length&&(e.prop("checked")?t.show():t.hide())}).trigger("change"),e(),c('input[name="pys[core][woo_event_value]"]').on('change',function(){e()}),t(),c('input[name="pys[core][edd_event_value]"]').on('change',function(){t()}),c("#pys_select_all_events").on('change',function(){c(this).prop("checked")?c(".pys-select-event").prop("checked","checked"):c(".pys-select-event").prop("checked",!1)}),i(),a(),c(".pys_event_trigger_type").on('change',function(){i(),a()}),c(".add-event-trigger").on("click",function(){var e=c(this).closest(".event_triggers_panel");s(e,e.data("trigger_type"))}),c(".remove-row").on("click",function(e){c(this).closest(".row.event_trigger, .row.facebook-custom-param, .row.pinterest-custom-param").remove()}),o(),r(),p(),_(),l(),c("#pys_event_facebook_enabled").on("click",function(){o()}),c("#pys_event_facebook_event_type").on('change',function(){r(),_()}),c("#pys_event_facebook_params_enabled").on("click",function(){p()}),c("#pys_event_facebook_params_currency").on('change',function(){l()}),c(".add-facebook-parameter").on("click",function(){var e=c("#facebook_params_panel"),t=c(".facebook-custom-param",e),n=c(t[0]).clone(!0),a=c(t[t.length-1]).data("param_id")+1,s="pys[event][facebook_custom_params]["+a+"]";n.data("param_id",a),c("input.custom-param-name",n).attr("name",s+"[name]"),c("input.custom-param-value",n).attr("name",s+"[value]"),n.css("display","flex"),n.insertBefore(c(".insert-marker",e))}),v(),u(),d(),y(),m(),c("#pys_event_pinterest_enabled").on("click",function(){v()}),c("#pys_event_pinterest_event_type").on('change',function(){u(),y()}),c("#pys_event_pinterest_params_enabled").on("click",function(){d()}),c("#pys_event_pinterest_params_currency").on('change',function(){m()}),c(".add-pinterest-parameter").on("click",function(){var e=c("#pinterest_params_panel"),t=c(".pinterest-custom-param",e),n=c(t[0]).clone(!0),a=c(t[t.length-1]).data("param_id")+1,s="pys[event][pinterest_custom_params]["+a+"]";n.data("param_id",a),c("input.custom-param-name",n).attr("name",s+"[name]"),c("input.custom-param-value",n).attr("name",s+"[value]"),n.css("display","flex"),n.insertBefore(c(".insert-marker",e))}),f(),h(),c("#pys_event_ga_ads_enabled").on("click",function(){f()}),c("#pys_event_ga_ads_event_action").on('change',function(){h()}),g(),c("#pys_event_bing_enabled").on("click",function(){g()})});
+jQuery(document).ready(function($) {
+    function toggleVisibility(element) {
+        var target = $("#" + element.data("target"));
+        element.val() === element.data("value") ? target.removeClass("form-control-hidden") : target.addClass("form-control-hidden");
+    }
 
+    function toggleWooEventValueOption() {
+        $('input[name="pys[core][woo_event_value]"]:checked').val() === "price" ? $(".woo-event-value-option").hide() : $(".woo-event-value-option").show();
+    }
+
+    function toggleEddEventValueOption() {
+        $('input[name="pys[core][edd_event_value]"]:checked').val() === "price" ? $(".edd-event-value-option").hide() : $(".edd-event-value-option").show();
+    }
+
+    function toggleEventTriggersPanel() {
+        var eventType = $(".pys_event_trigger_type").val();
+        var panelId = "#" + eventType + "_panel";
+        $(".event_triggers_panel").hide();
+        $(panelId).show();
+        eventType === "page_visit" ? $("#url_filter_panel").hide() : $("#url_filter_panel").show();
+        var panel = $(panelId);
+        var triggerType = panel.data("trigger_type");
+        if ($(".event_trigger", panel).length === 0) {
+            addEventTrigger(panel, triggerType);
+        }
+    }
+
+    function addEventTrigger(panel, triggerType) {
+        var triggers = $(".event_trigger", panel);
+        var newTrigger = $(triggers[0]).clone(true);
+        var newTriggerId = $(triggers[triggers.length - 1]).data("trigger_id") + 1;
+        var namePrefix = "pys[event][" + triggerType + "_triggers][" + newTriggerId + "]";
+        newTrigger.data("trigger_id", newTriggerId);
+        $("select", newTrigger).attr("name", namePrefix + "[rule]");
+        $("input", newTrigger).attr("name", namePrefix + "[value]");
+        newTrigger.css("display", "block");
+        newTrigger.insertBefore($(".insert-marker", panel));
+    }
+
+    function toggleEventDelay() {
+        var eventType = $(".pys_event_trigger_type").val();
+        eventType === "page_visit" ? $(".event-delay").css("display", "flex") : $(".event-delay").css("display", "none");
+        eventType === "number_page_visit" ? $(".triger_number_page_visit").css("display", "flex") : $(".triger_number_page_visit").css("display", "none");
+    }
+
+    function toggleFacebookPanel() {
+        $("#pys_event_facebook_enabled").is(":checked") ? $("#facebook_panel").show() : $("#facebook_panel").hide();
+    }
+
+    function toggleFacebookCustomEventType() {
+        $("#pys_event_facebook_event_type").val() === "CustomEvent" ? $(".facebook-custom-event-type").css("visibility", "visible") : $(".facebook-custom-event-type").css("visibility", "hidden");
+    }
+
+    function toggleFacebookParamsPanel() {
+        $("#pys_event_facebook_params_enabled").is(":checked") ? $("#facebook_params_panel").show() : $("#facebook_params_panel").hide();
+    }
+
+    function updateFacebookParamsPanelClass() {
+        var eventType = $("#pys_event_facebook_event_type").val();
+        $("#facebook_params_panel").removeClass().addClass(eventType);
+    }
+
+    function toggleFacebookCustomCurrency() {
+        $("#pys_event_facebook_params_currency").val() === "custom" ? $(".facebook-custom-currency").css("visibility", "visible") : $(".facebook-custom-currency").css("visibility", "hidden");
+    }
+
+    function togglePinterestPanel() {
+        $("#pys_event_pinterest_enabled").is(":checked") ? $("#pinterest_panel").show() : $("#pinterest_panel").hide();
+    }
+
+    function togglePinterestCustomEventType() {
+        $("#pys_event_pinterest_event_type").val() === "CustomEvent" ? $(".pinterest-custom-event-type").css("visibility", "visible") : $(".pinterest-custom-event-type").css("visibility", "hidden");
+    }
+
+    function togglePinterestParamsPanel() {
+        $("#pys_event_pinterest_params_enabled").is(":checked") ? $("#pinterest_params_panel").show() : $("#pinterest_params_panel").hide();
+    }
+
+    function updatePinterestParamsPanelClass() {
+        var eventType = $("#pys_event_pinterest_event_type").val();
+        $("#pinterest_params_panel").removeClass().addClass(eventType);
+    }
+
+    function togglePinterestCustomCurrency() {
+        $("#pys_event_pinterest_params_currency").val() === "custom" ? $(".pinterest-custom-currency").css("visibility", "visible") : $(".pinterest-custom-currency").css("visibility", "hidden");
+    }
+
+    function toggleAnalyticsPanel() {
+        $("#pys_event_ga_ads_enabled").is(":checked") ? $("#analytics_panel").show() : $("#analytics_panel").hide();
+    }
+
+    function toggleGaAdsCustomAction() {
+        var eventAction = $("#pys_event_ga_ads_event_action").val();
+        eventAction === "_custom" || eventAction === "CustomEvent" ? $("#ga-ads-custom-action").css("visibility", "visible") : $("#ga-ads-custom-action").css("visibility", "hidden");
+    }
+
+    function toggleBingPanel() {
+        $("#pys_event_bing_enabled").is(":checked") ? $("#bing_panel").show() : $("#bing_panel").hide();
+    }
+
+    $(function() {
+        $('[data-toggle="pys-popover"]').popover({
+            container: "#pys",
+            html: true,
+            content: function() {
+                return $("#pys-" + $(this).data("popover_id")).html();
+            }
+        });
+    });
+
+    $(".pys-pysselect2").pysselect2();
+    $(".pys-tags-pysselect2").pysselect2({
+        tags: true,
+        tokenSeparators: [",", " "]
+    });
+
+    $("select.controls-visibility").on("change", function(e) {
+        toggleVisibility($(this));
+    }).each(function(e, t) {
+        toggleVisibility($(t));
+    });
+
+    $(".card-collapse").on("click", function() {
+        var cardBody = $(this).closest(".card").children(".card-body");
+        cardBody.hasClass("show") ? cardBody.hide().removeClass("show") : cardBody.show().addClass("show");
+    });
+
+    $(".collapse-control .custom-switch-input").on('change', function() {
+        var target = $("." + $(this).data("target"));
+        target.length > 0 && ($(this).prop("checked") ? target.show() : target.hide());
+    }).trigger("change");
+
+    toggleWooEventValueOption();
+    $('input[name="pys[core][woo_event_value]"]').on('change', function() {
+        toggleWooEventValueOption();
+    });
+
+    toggleEddEventValueOption();
+    $('input[name="pys[core][edd_event_value]"]').on('change', function() {
+        toggleEddEventValueOption();
+    });
+
+    $("#pys_select_all_events").on('change', function() {
+        $(this).prop("checked") ? $(".pys-select-event").prop("checked", "checked") : $(".pys-select-event").prop("checked", false);
+    });
+
+    toggleEventDelay();
+    toggleEventTriggersPanel();
+    $(".pys_event_trigger_type").on('change', function() {
+        toggleEventDelay();
+        toggleEventTriggersPanel();
+    });
+
+    $(".add-event-trigger").on("click", function() {
+        var panel = $(this).closest(".event_triggers_panel");
+        addEventTrigger(panel, panel.data("trigger_type"));
+    });
+
+    $(".remove-row").on("click", function(e) {
+        $(this).closest(".row.event_trigger, .row.facebook-custom-param, .row.pinterest-custom-param").remove();
+    });
+
+    toggleFacebookPanel();
+    toggleFacebookCustomEventType();
+    toggleFacebookParamsPanel();
+    updateFacebookParamsPanelClass();
+    toggleFacebookCustomCurrency();
+
+    $("#pys_event_facebook_enabled").on("click", function() {
+        toggleFacebookPanel();
+    });
+
+    $("#pys_event_facebook_event_type").on('change', function() {
+        toggleFacebookCustomEventType();
+        updateFacebookParamsPanelClass();
+    });
+
+    $("#pys_event_facebook_params_enabled").on("click", function() {
+        toggleFacebookParamsPanel();
+    });
+
+    $("#pys_event_facebook_params_currency").on('change', function() {
+        toggleFacebookCustomCurrency();
+    });
+
+    $(".add-facebook-parameter").on("click", function() {
+        var panel = $("#facebook_params_panel");
+        var params = $(".facebook-custom-param", panel);
+        var newParam = $(params[0]).clone(true);
+        var newParamId = $(params[params.length - 1]).data("param_id") + 1;
+        var namePrefix = "pys[event][facebook_custom_params][" + newParamId + "]";
+        newParam.data("param_id", newParamId);
+        $("input.custom-param-name", newParam).attr("name", namePrefix + "[name]");
+        $("input.custom-param-value", newParam).attr("name", namePrefix + "[value]");
+        newParam.css("display", "flex");
+        newParam.insertBefore($(".insert-marker", panel));
+    });
+
+    togglePinterestPanel();
+    togglePinterestCustomEventType();
+    togglePinterestParamsPanel();
+    updatePinterestParamsPanelClass();
+    togglePinterestCustomCurrency();
+
+    $("#pys_event_pinterest_enabled").on("click", function() {
+        togglePinterestPanel();
+    });
+
+    $("#pys_event_pinterest_event_type").on('change', function() {
+        togglePinterestCustomEventType();
+        updatePinterestParamsPanelClass();
+    });
+
+    $("#pys_event_pinterest_params_enabled").on("click", function() {
+        togglePinterestParamsPanel();
+    });
+
+    $("#pys_event_pinterest_params_currency").on('change', function() {
+        togglePinterestCustomCurrency();
+    });
+
+    $(".add-pinterest-parameter").on("click", function() {
+        var panel = $("#pinterest_params_panel");
+        var params = $(".pinterest-custom-param", panel);
+        var newParam = $(params[0]).clone(true);
+        var newParamId = $(params[params.length - 1]).data("param_id") + 1;
+        var namePrefix = "pys[event][pinterest_custom_params][" + newParamId + "]";
+        newParam.data("param_id", newParamId);
+        $("input.custom-param-name", newParam).attr("name", namePrefix + "[name]");
+        $("input.custom-param-value", newParam).attr("name", namePrefix + "[value]");
+        newParam.css("display", "flex");
+        newParam.insertBefore($(".insert-marker", panel));
+    });
+
+    toggleAnalyticsPanel();
+    toggleGaAdsCustomAction();
+
+    $("#pys_event_ga_ads_enabled").on("click", function() {
+        toggleAnalyticsPanel();
+    });
+
+    $("#pys_event_ga_ads_event_action").on('change', function() {
+        toggleGaAdsCustomAction();
+    });
+
+    toggleBingPanel();
+
+    $("#pys_event_bing_enabled").on("click", function() {
+        toggleBingPanel();
+    });
+});
 jQuery( document ).ready(function($) {
 
     function enable_gtm(){
@@ -395,5 +644,96 @@ jQuery( document ).ready(function($) {
         const value = $(this).val();
         $('#manual_custom_object_name').text(value);
     });
+
+    function cloneEventCondition() {
+        let cloned = $( '#pys_add_event_condition .condition_group' ).clone( true ),
+            conditionWrapper = $( '.pys_conditions_wrapper' ),
+            conditionGroup = $( '.pys_conditions_wrapper .condition_group' ),
+            conditionId = 0;
+
+        if ( conditionGroup.length > 0 ) {
+            conditionId = parseInt( $( conditionGroup[ conditionGroup.length - 1 ] ).attr( "data-condition_id" ) ) + 1;
+        }
+        $( '.pys_event_condition_type', cloned ).attr( {
+            name: 'pys[event][conditions][' + conditionId + '][condition_type]',
+            id: 'pys_event_' + conditionId + '_condition_type',
+            value: 'url_filters'
+        } );
+
+
+        cloned.attr( 'data-condition_id', conditionId );
+        cloned.css( 'display', 'block' );
+
+        conditionWrapper.append( cloned );
+        $( '.pys_event_condition_type', cloned ).trigger( 'change' );
+    }
+
+    function checkConditionTypeAvailability( group, triggerPanel ) {
+        let panelAvailability = group.find( '.' + triggerPanel + '_panel' );
+        group.find( '.event_conditions_panel' ).hide();
+        if ( panelAvailability.length === 0 ) {
+            let clonedCondition = $( '#pys_add_event_condition .' + triggerPanel + '_panel' ).clone( true ),
+                conditionId = group.attr( "data-condition_id" );
+            switch ( triggerPanel ) {
+                case 'url_filters':
+                case 'url_parameters':
+                case 'landing_page':
+                case 'source':
+                    $( 'select', clonedCondition ).attr( {
+                        name: 'pys[event][conditions][' + conditionId + '][' + triggerPanel + '][condition_rule]',
+                        id: 'pys_event_' + conditionId + '_'+ triggerPanel + '_condition_rule'
+                    } );
+                    $( 'input[type="text"]', clonedCondition ).attr( {
+                        name: 'pys[event][conditions][' + conditionId + '][' + triggerPanel + '][condition_value]',
+                        id: 'pys_event_' + conditionId + '_'+ triggerPanel + '_condition_value'
+                    } );
+                    break;
+                case 'device' :
+                    $( '.custom-radio input[type="radio"]', clonedCondition ).attr( {
+                        name: 'pys[event][conditions][' + conditionId + '][device]',
+                        id: 'pys_event_' + conditionId + '_device'
+                    } );
+                    break;
+                case 'user_role':
+                    $( 'select', clonedCondition ).attr( {
+                        name: 'pys[event][conditions][' + conditionId + '][user_role][]',
+                        id: 'pys_event_' + conditionId + '_user_role'
+                    } );
+                    $( 'input[type="hidden"]', clonedCondition ).attr( {
+                        name: 'pys[event][conditions][' + conditionId + '][user_role][]',
+                    } );
+                    break;
+            }
+
+            clonedCondition.show();
+            let inserted = group.append(clonedCondition);
+            $( '.pys-role-pysselect2', inserted ).each( function ( index, item ) {
+                $(this).pysselect2()
+            });
+        } else {
+            panelAvailability.show();
+        }
+    }
+
+    $('.pys_conditions_wrapper .pys-role-pysselect2').each( function ( index, value ) {
+        $(this).pysselect2();
+    } );
+    $( ".pys_event_condition_type" ).on( 'change', function () {
+        let conditionGroup = $( this ).closest( '.condition_group' ),
+            panel = $( this ).val();
+        checkConditionTypeAvailability( conditionGroup, panel );
+    } );
+
+    $( '#pys-add-condition .add-condition' ).on( 'click', function ( e ) {
+        e.preventDefault();
+    } );
+
+    $( document ).on( 'click', '.pys_conditions_wrapper .remove-row', function () {
+        $( this ).closest( '.condition_group' ).remove();
+    } )
+
+    if ( $( '.pys_conditions_wrapper .condition_group' ).length === 0 ) {
+        cloneEventCondition();
+    }
 });
 

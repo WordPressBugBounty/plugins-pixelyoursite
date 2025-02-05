@@ -191,6 +191,7 @@ class CustomEvent {
         'view_promotion'
     );
     private $triggers = array();
+    private $conditions = array();
     private $triggerEventTypes = array();
 	private $data = array(
 		'delay'        => null,
@@ -249,6 +250,9 @@ class CustomEvent {
         'bing_event_category' => null,
         'bing_event_label' => null,
         'bing_event_value' => null,
+
+        'conditions_enabled' => false,
+        'conditions_logic' => 'AND'
 	);
 
 	public function __construct( $post_id = null ) {
@@ -257,25 +261,22 @@ class CustomEvent {
 
 	public function __get( $key ) {
 
-		if ( $key == 'post_id' ) {
-			return $this->post_id;
-		}
+        if ( isset( $this->$key) ) {
+            return $this->$key;
+        }
 
-		if ( $key == 'title' ) {
-			return $this->title;
-		}
-
-		if ( $key == 'enabled' ) {
-			return $this->enabled;
-		}
-
-		if ( isset( $this->data[ $key ] ) ) {
-			return $this->data[ $key ];
-		} else {
-			return null;
-		}
+        if ( isset( $this->data[ $key ] ) ) {
+            return $this->data[ $key ];
+        } else {
+            return null;
+        }
 
 	}
+    public function __set( $key, $value ) {
+        if ( $key == 'triggerEventTypes' ) {
+            $this->triggerEventTypes = $value;
+        }
+    }
 
 	private function initialize( $post_id ) {
 
@@ -286,10 +287,14 @@ class CustomEvent {
 
             $data = get_post_meta( $post_id, '_pys_event_data', true );
             $triggers = get_post_meta( $post_id, '_pys_event_triggers', true );
+            $conditions = get_post_meta( $post_id, '_pys_event_conditions', true );
 
+            if ( $conditions !== '' ) {
+                $this->conditions = !empty( $conditions ) ? unserialize( $conditions ) : array();
+            }
             if ( $triggers !== '' ) {
                 $this->triggers = !empty( $triggers ) ? unserialize( $triggers ) : array();
-            } elseif ( !empty( $data ) ) {
+            } elseif ( !empty( $data ) && isset( $data[ 'trigger_type' ] )) {
                 $trigger_type = $data[ 'trigger_type' ];
                 $trigger_event = new TriggerEvent( $trigger_type, 0 );
                 if ( in_array( $trigger_type, TriggerEvent::$allowedTriggers ) ) {
@@ -323,7 +328,6 @@ class CustomEvent {
 		if ( ! is_array( $args ) ) {
 			$args = $this->data;
 		}
-
 		/**
 		 * GENERAL
 		 */
@@ -339,12 +343,22 @@ class CustomEvent {
 		$this->enabled = $state == 'active' ? true : false;
 		update_post_meta( $this->post_id, '_pys_event_state', $state );
 
+        $this->data[ 'conditions_enabled' ] = isset( $args[ 'conditions_enabled' ] ) ? (bool) $args[ 'conditions_enabled' ] : false;
+        $this->data[ 'conditions_logic' ] = isset( $args[ 'conditions_logic' ] ) ? $args[ 'conditions_logic' ] : 'AND';
+
+
         $trigger_types = array(
             'page_visit',
-            'home_page'
+            'home_page',
+            'scroll_pos',
+            'post_type',
         );
 
         $this->triggers = array();
+        $index = 0;
+
+        $this->conditions = array();
+        $condition_index = 0;
 		// trigger type
         $old_data = array(
             'conditional_number_visit',
@@ -367,7 +381,9 @@ class CustomEvent {
             }
         }
 
+
         if ( !empty( $args[ 'triggers' ] ) ) {
+
             foreach ( $args[ 'triggers' ] as $data_trigger ) {
 
                 if ( isset( $data_trigger[ 'cloned_event' ] ) ) {
@@ -375,17 +391,18 @@ class CustomEvent {
                 }
 
                 $saving_trigger = false;
-
                 // trigger type
                 $trigger_type = isset( $data_trigger[ 'trigger_type' ] ) && in_array( $data_trigger[ 'trigger_type' ], $trigger_types ) ? sanitize_text_field( $data_trigger[ 'trigger_type' ] ) : 'page_visit';
 
                 $trigger = new TriggerEvent( $trigger_type );
-
                 // delay
-                $delay = ( $trigger_type == 'page_visit' || $trigger_type == 'home_page' ) && isset( $data_trigger[ 'delay' ] ) && $data_trigger[ 'delay' ] ? (int) sanitize_text_field( $data_trigger[ 'delay' ] ) : null;
+                $delay = ( $trigger_type == 'page_visit' || $trigger_type == 'post_type' || $trigger_type == 'home_page' ) && isset( $data_trigger[ 'delay' ] ) && $data_trigger[ 'delay' ] ? (int) sanitize_text_field( $data_trigger[ 'delay' ] ) : null;
                 $trigger->updateParam( 'delay', $delay );
 
-                if ( $trigger_type === 'home_page' ) {
+                $post_type_value = $trigger_type == 'post_type' && isset( $data_trigger[ 'post_type_value' ] ) && $data_trigger[ 'post_type_value' ] ? sanitize_text_field( $data_trigger[ 'post_type_value' ] ) : null;
+                $trigger->updateParam( 'post_type_value', $post_type_value );
+
+                if ( $trigger_type === 'home_page' || $trigger_type === 'post_type' ) {
                     $saving_trigger = true;
                 }
 
@@ -406,7 +423,20 @@ class CustomEvent {
                         }
                     }
                 }
+                // scroll pos triggers
+                if ( $trigger_type == 'scroll_pos' && isset( $data_trigger[ 'scroll_pos_triggers' ] ) && is_array( $data_trigger[ 'scroll_pos_triggers' ] ) ) {
 
+                    foreach ( $data_trigger[ 'scroll_pos_triggers' ] as $scroll_pos_trigger ) {
+
+
+                        if ( !empty( $scroll_pos_trigger[ 'value' ] ) ) {
+                            $event_triggers[] = array(
+                                'rule'  => null,
+                                'value' => (int) sanitize_text_field( $scroll_pos_trigger[ 'value' ] ),
+                            );
+                        }
+                    }
+                }
                 if ( !empty( $event_triggers ) || $saving_trigger ) {
                     $trigger->updateParam( 'triggers', $event_triggers );
                     $trigger->updateParam( 'index', $index );
@@ -414,6 +444,35 @@ class CustomEvent {
                     $this->triggers[] = $trigger;
                     $index++;
                 }
+            }
+        }
+
+        if ( !empty( $args[ 'conditions' ] ) ) {
+            foreach ($args['conditions'] as $data_condition) {
+                if (isset($data_condition['cloned_event'])) {
+                    continue;
+                }
+
+                $condition_type = isset( $data_condition[ 'condition_type' ] ) ? sanitize_text_field( $data_condition[ 'condition_type' ] ) : 'url_filters';
+                $condition = new ConditionalEvent( $condition_type );
+                switch ($condition_type){
+                    case 'url_filters' :
+                        $condition->updateParam('condition_rule', $data_condition[$condition_type][ 'condition_rule' ]);
+                        $condition->updateParam('condition_value', $data_condition[$condition_type][ 'condition_value' ]);
+                        break;
+                    case 'device' :
+                        $condition->updateParam('device', $data_condition[ 'device' ]);
+                        break;
+                    case 'user_role':
+                        $condition->updateParam('user_role', $data_condition[ 'user_role' ]);
+                        break;
+                }
+
+                $condition->updateParam( 'index', $condition_index );
+                $this->conditions[] = $condition;
+                $condition_index++;
+
+                break; // Stop after processing the first condition
             }
         }
 
@@ -597,6 +656,7 @@ class CustomEvent {
         $this->data['bing_event_value'] = !empty($args['bing_event_value']) ? sanitize_text_field($args['bing_event_value']) : null;
 
         update_post_meta( $this->post_id, '_pys_event_data', $this->data );
+        update_post_meta( $this->post_id, '_pys_event_conditions', addslashes( serialize( $this->conditions ) ) );
         update_post_meta( $this->post_id, '_pys_event_triggers', addslashes( serialize( $this->triggers ) ) );
 	}
 
@@ -656,7 +716,9 @@ class CustomEvent {
     public function getTriggers() {
         return $this->triggers;
     }
-
+    public function getConditions(){
+        return $this->conditions;
+    }
 	/**
 	 * @return array
 	 */
@@ -1066,5 +1128,28 @@ class CustomEvent {
         }
 
         return $delay;
+    }
+    public function checkConditions()
+    {
+        $conditions_enabled = $this->__get('conditions_enabled');
+        $conditions_logic = $this->__get('conditions_logic');
+        $conditions = $this->getConditions();
+
+        $check = true;
+
+        if($conditions_enabled && !empty($conditions)){
+            $conditions_results = [];
+            foreach ($conditions as $condition) {
+                $condition_result = $condition->check();
+                $conditions_results[] = $condition_result;
+            }
+            if($conditions_logic === 'AND'){
+                $check = !in_array(false, $conditions_results);
+            }
+            else{
+                $check =  in_array(true, $conditions_results);
+            }
+        }
+        return $check;
     }
 }

@@ -2231,6 +2231,26 @@
 #pys .custom-file-input.is-invalid:focus {
   box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
+#pys .card-conditions .form-inline .custom-control {
+  width: auto;
+}
+#pys .card-conditions .condition_group {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  margin: 1.25rem;
+  padding: 2rem 1rem;
+  border-radius: 0.25rem;
+  background: #F8F8F8;
+  position: relative;
+}
+#pys .card-conditions .condition_group .pys_remove_condition {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  z-index: 100;
+}
+#pys .card-conditions .condition_group .pys_remove_condition .remove-row {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+}
 #pys .form-inline {
   display: -ms-flexbox;
   display: flex;
@@ -5032,6 +5052,9 @@
   border-radius: 0.25rem;
   background: #F8F8F8;
   position: relative;
+}
+#pys .pys_triggers_wrapper .trigger_group .event-delay input[type=number] {
+  max-width: 50px !important;
 }
 #pys .pys_triggers_wrapper .pys_remove_trigger {
   position: absolute;

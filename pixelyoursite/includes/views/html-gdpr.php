@@ -78,7 +78,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="card-body">
         <div class="row">
             <div class="col">
-                <p><a href="https://www.youtube.com/watch?v=uXTpgFu2V-E" target="_blank">The biggest problem with consent messages (7:02 min) - watch now</a></p>
+								<p><a href="https://www.youtube.com/watch?v=7BNHWbLbbdg" target="_blank">RECENT: Meta Limited Data Use - Privacy Options for USA States - WordPress (6:17 min) - watch now</a></p>
+								<p><a href="https://www.youtube.com/watch?v=uXTpgFu2V-E" target="_blank">The biggest problem with consent messages (7:02 min) - watch now</a></p>
 								<p><a href="https://www.youtube.com/watch?v=L_YYjrmxykU" target="_blank">Improve tracking under GDPR consent with this smart option (5:31 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=ZOlNbIPS_Uc" target="_blank">Target your visitors with the right consent rule (12:29 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=P8CLxslSPDk" target="_blank">The right to change your mind (2:46 min) - watch now</a></p>

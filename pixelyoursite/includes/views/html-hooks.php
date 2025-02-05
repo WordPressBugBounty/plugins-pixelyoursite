@@ -321,9 +321,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 });</pre>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        pys_meta_ldu_mode - The filter turn ON/OFF the Limited Data Use option<?php cardCollapseBtn(); ?>
+                    </div>
+                    <div class="card-body">
+                        <p>Param: <i>bool $status</i></p>
+                        <label>Example:</label>
+                        <pre class="copy_text">add_filter('pys_meta_ldu_mode',function ($status) {
+    if(get_current_user_id() == 0) {
+        return true;
+    }
+    return $status;
+});</pre>
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
 </div>
 
