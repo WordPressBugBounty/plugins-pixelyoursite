@@ -1148,7 +1148,20 @@ function getStandardParams() {
 
     return $params;
 }
+function getWPMLProductId($product_id, $tag) {
+    $tagOption = "woo_wpml_unified_id";
+    $tagLanguageOption = "woo_wpml_language";
 
+    if (isWPMLActive() && $tag->getOption($tagOption)) {
+        $wpml_product_id = !empty($tag->getOption($tagLanguageOption))
+            ? apply_filters('wpml_object_id', $product_id, 'product', false, $tag->getOption($tagLanguageOption))
+            : apply_filters('wpml_original_element_id', NULL, $product_id);
+        if ($wpml_product_id) {
+            return $wpml_product_id;
+        }
+    }
+    return $product_id;
+}
 function getTrafficSource () {
     $referrer = "";
     $source = "";
@@ -1303,6 +1316,7 @@ function getAllMetaEventParamName(){
         'content_name'=>'Content Name',
         'content_type'=>'Content Type',
         'categories'=>'Categories',
+        'category_name'=>'Category Name',
         'tags'=>'Tags',
         'user_role'=>'User Role',
         'plugin'=>'Plugin',

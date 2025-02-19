@@ -315,16 +315,18 @@ use PixelYourSite\Facebook\Helpers;
                     <label>content_id suffix</label><?php Facebook()->render_text_input( 'woo_content_id_suffix', '(optional)' ); ?>
                 </div>
             </div>
-	        <?php if (isWPMLActive()) : ?>
                 <div class="row mb-3 mt-3">
                     <div class="col">
                         <p class="mb-3"> WPML Detected! Select your ID logic.</p>
 				        <?php Facebook()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
                         <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <div class="select_language  col-offset-left form-inline mt-3">
+                            <label>Default language IDs: </label>
+                            <?php renderDummySelectInput( 'Select language'); renderProBadge();?>
+                        </div>
                         <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
                     </div>
                 </div>
-	        <?php endif; ?>
         </div>
     </div>
 
@@ -382,6 +384,10 @@ use PixelYourSite\Facebook\Helpers;
                         <p class="mb-3"> WPML Detected! Select your ID logic.</p>
 				        <?php GATags()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
                         <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <div class="select_language  col-offset-left form-inline mt-3">
+                            <label>Default language IDs: </label>
+                            <?php renderDummySelectInput( 'Select language'); renderProBadge();?>
+                        </div>
                         <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
                     </div>
                 </div>
@@ -438,6 +444,10 @@ use PixelYourSite\Facebook\Helpers;
                         <p class="mb-3"> WPML Detected! Select your ID logic.</p>
 				        <?php Pinterest()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
                         <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <div class="select_language  col-offset-left form-inline mt-3">
+                            <label>Default language IDs: </label>
+                            <?php renderDummySelectInput( 'Select language'); renderProBadge();?>
+                        </div>
                         <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
                     </div>
                 </div>
@@ -503,6 +513,10 @@ use PixelYourSite\Facebook\Helpers;
                         <p class="mb-3"> WPML Detected! Select your ID logic.</p>
 				        <?php Bing()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
                         <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <div class="select_language  col-offset-left form-inline mt-3">
+                            <label>Default language IDs: </label>
+                            <?php renderDummySelectInput( 'Select language'); renderProBadge();?>
+                        </div>
                         <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
                     </div>
                 </div>
@@ -571,6 +585,10 @@ use PixelYourSite\Facebook\Helpers;
                         <p class="mb-3"> WPML Detected! Select your ID logic.</p>
 				        <?php GTM()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
                         <h4 class="switcher-label">WPML Unified ID logic</h4>
+                        <div class="select_language  col-offset-left form-inline mt-3">
+                            <label>Default language IDs: </label>
+                            <?php renderDummySelectInput( 'Select language'); renderProBadge();?>
+                        </div>
                         <p class="mt-3"> If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translationed item.</p>
                     </div>
                 </div>
@@ -951,6 +969,16 @@ use PixelYourSite\Facebook\Helpers;
     </div>
     <div class="card-body">
         <?php PYS()->renderValueOptionsBlock('woo_view_content', false);?>
+        <div class="row">
+            <div class="col">
+                <div>
+                    <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label">Trigger an event when a variation is selected</h4>
+                    <?php renderProBadge(); ?>
+                </div>
+                <small>It works when the tag is configured to <i>track the variation data when a variation is selected</i> - tags ID settings.</small>
+            </div>
+        </div>
         <hr>
         <?php if ( Facebook()->enabled() ) : ?>
             <div class="row">

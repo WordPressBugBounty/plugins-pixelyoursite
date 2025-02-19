@@ -15,6 +15,7 @@ class AjaxHookEventManager {
         $events = WC()->session->get( 'pys_events', array() );
         $events[$name] = $event;
         WC()->session->set( 'pys_events', $events );
+        WC()->session->save_data();
     }
 
     /**
@@ -32,6 +33,7 @@ class AjaxHookEventManager {
                 if ($unset) {
                     unset($events[$name]);
                     WC()->session->set('pys_events', $events);
+                    WC()->session->save_data();
                 }
                 return $event;
             }

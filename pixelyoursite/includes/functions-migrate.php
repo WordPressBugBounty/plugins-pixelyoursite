@@ -11,55 +11,41 @@ function maybeMigrate() {
 	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 		return;
 	}
-	
+
 	if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
 	
-	$pys_free_7_version = get_option( 'pys_core_free_version', false );
+	$pys_free_version = get_option( 'pys_core_free_version', false );
 
-    if (!$pys_free_7_version || ($pys_free_7_version && version_compare($pys_free_7_version, '10.0.1', '<'))) {
+    $migrations = [
+        '10.1.1.1' => '\PixelYourSite\migrate_10_1_1_1',
+        '10.0.1' => '\PixelYourSite\migrate_10_0_0',
+        '9.6.1'  => '\PixelYourSite\migrate_9_6_1',
+        '9.5.6'  => '\PixelYourSite\migrate_9_5_6',
+        '9.5.1.1' => [
+            'function' => '\PixelYourSite\migrate_unify_custom_events',
+            'condition' => !get_option('pys_custom_event_migrate_free', false)
+        ],
+        '9.0.0'  => '\PixelYourSite\migrate_9_0_0',
+        '7.1.0'  => '\PixelYourSite\migrate_7_1_0_bing_defaults'
+    ];
 
-        migrate_10_0_0();
-
-        update_option( 'pys_core_version', PYS_FREE_VERSION );
-        update_option( 'pys_updated_at', time() );
+    foreach ($migrations as $version => $migration_function) {
+        if (!$pys_free_version || version_compare($pys_free_version, $version, '<')) {
+            if (is_array($migration_function)) {
+                if (!$migration_function['condition']) {
+                    continue;
+                }
+                $migration_function = $migration_function['function'];
+            }
+            if (is_callable($migration_function)) {
+                $migration_function();
+                update_option('pys_core_free_version', PYS_FREE_VERSION);
+                update_option('pys_updated_at', time());
+            }
+        }
     }
-
-    if (!$pys_free_7_version || ($pys_free_7_version && version_compare($pys_free_7_version, '9.6.1', '<'))) {
-        migrate_9_6_1();
-
-        update_option( 'pys_core_version', PYS_FREE_VERSION );
-        update_option( 'pys_updated_at', time() );
-    }
-
-    if (!$pys_free_7_version || ($pys_free_7_version && version_compare($pys_free_7_version, '9.5.6', '<'))) {
-
-        migrate_9_5_6();
-
-        update_option( 'pys_core_free_version', PYS_FREE_VERSION );
-        update_option( 'pys_updated_at', time() );
-    }
-
-    if (!$pys_free_7_version || ($pys_free_7_version && version_compare($pys_free_7_version, '9.5.1.1', '<') && !get_option( 'pys_custom_event_migrate_free', false )) ) {
-        migrate_unify_custom_events();
-
-        update_option( 'pys_core_free_version', PYS_FREE_VERSION );
-        update_option( 'pys_updated_at', time() );
-    } elseif ($pys_free_7_version && version_compare($pys_free_7_version, '9.0.0', '<') ) {
-        migrate_9_0_0();
-
-        update_option( 'pys_core_free_version', PYS_FREE_VERSION );
-        update_option( 'pys_updated_at', time() );
-    } elseif ($pys_free_7_version && version_compare($pys_free_7_version, '7.1.0', '<')) {
-
-        migrate_7_1_0_bing_defaults();
-
-        update_option( 'pys_core_free_version', PYS_FREE_VERSION );
-        update_option( 'pys_updated_at', time() );
-
-    }
-	
 }
 function migrate_unify_custom_events(){
     foreach (CustomEventFactory::get() as $event) {
@@ -67,7 +53,14 @@ function migrate_unify_custom_events(){
     }
     update_option( 'pys_custom_event_migrate_free', true );
 }
-
+function migrate_10_1_1_1()
+{
+    if (!in_array('category_name', Facebook()->getOption('do_not_track_medical_param'))) {
+        Facebook()->updateOptions([
+            'do_not_track_medical_param' => array_merge(Facebook()->getOption('do_not_track_medical_param'), ['category_name']),
+        ]);
+    }
+}
 function migrate_10_0_0()
 {
     if(GTM()->getOption('gtm_dataLayer_name') === 'dataLayerPYS'){

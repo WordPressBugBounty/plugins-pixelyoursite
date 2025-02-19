@@ -14,7 +14,7 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
     <div class="row">
         <div class="col">
             <div class="d-flex justify-content-between">
-                <span class="mt-2">With the pro version, you can fire events on clicks, mouse over elements, post type visits, or page scroll:</span>
+                <span class="mt-2">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
                 <a target="_blank" class="btn btn-sm btn-primary float-right" href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-upgrade-blue">UPGRADE</a>
             </div>
         </div>
@@ -69,19 +69,18 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
     </div>
 </div>
 
-
-<div class="card card-static">
+<div class="card card-static custom_events">
     <div class="card-header">
         Events List
     </div>
     <div class="card-body">
-        <div class="row mb-3">
+        <div class="row mb-3 bulk-events-block">
             <div class="col">
                 <a href="<?php echo esc_url( $new_event_url ); ?>" class="btn btn-sm btn-primary mr-3">Add</a>
                 <button class="btn btn-sm btn-light" name="pys[bulk_event_action]" value="enable" type="submit">Enable</button>
                 <button class="btn btn-sm btn-light" name="pys[bulk_event_action]" value="disable" type="submit">Disable</button>
                 <button class="btn btn-sm btn-light" name="pys[bulk_event_action]" value="clone" type="submit">Duplicate</button>
-                <button class="btn btn-sm btn-danger ml-3" name="pys[bulk_event_action]" value="delete" type="submit">Delete</button>
+                <button class="btn btn-sm btn-danger ml-3 bulk-events-delete" name="pys[bulk_event_action]" value="delete" type="submit">Delete</button>
             </div>
         </div>
         <div class="row">
@@ -96,7 +95,7 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                             </label>
                         </th>
                         <th>Name</th>
-                        <th>Trigger</th>
+                        <th>Triggers</th>
                         <th>Networks</th>
                     </tr>
                     </thead>
@@ -198,7 +197,7 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                                     <?php endif; ?>
                                     &nbsp;|&nbsp;
                                     <a href="<?php echo esc_url( $event_remove_url ); ?>" class="
-                                    text-danger">Remove</a>
+                                    text-danger remove-custom-event">Remove</a>
                                 </span>
                             </td>
                             <td><?php echo wp_kses_post( $event_types); ?></td>
@@ -218,9 +217,9 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                                 <i class="fa fa-google" style="opacity: .25;"></i>
 
                                 <?php if ( $event->isGTMEnabled() && $event->isGTMPresent()) : ?>
-                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.svg">
+                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.png">
                                 <?php else : ?>
-                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.svg" style="opacity: 0.25">
+                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.png" style="opacity: 0.25">
                                 <?php endif; ?>
 
                                 <?php if ( Pinterest()->enabled() && $event->isPinterestEnabled() ) : ?>

@@ -125,13 +125,19 @@ class CustomEventFactory {
 			if ( ! $new_event ) {
 				return;
 			}
-			
+            $data = get_post_meta( $event->getPostId(), '_pys_event_data' );
+            $triggers = $event->getTriggers();
+            $conditions = $event->getConditions();
 			// copy meta from original event
-			foreach ( get_post_meta( $event->getPostId() ) as $meta_key => $meta_values ) {
-				foreach ( $meta_values as $meta_value ) {
-					update_post_meta( $new_event->getPostId(), $meta_key, maybe_unserialize( $meta_value ) );
-				}
-			}
+            foreach ( $data as $meta_value ) {
+                update_post_meta( $new_event->getPostId(), '_pys_event_data', maybe_unserialize( $meta_value ) );
+            }
+            if($triggers){
+                update_post_meta( $new_event->getPostId(), '_pys_event_triggers', addslashes( serialize( $triggers ) ) );
+            }
+            if($conditions){
+                update_post_meta( $new_event->getPostId(), '_pys_event_conditions', addslashes( serialize( $conditions ) ) );
+            }
 			
 			// disable cloned event
 			$new_event->disable();

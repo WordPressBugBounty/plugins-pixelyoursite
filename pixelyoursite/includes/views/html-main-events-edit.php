@@ -20,8 +20,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
     <div class="row">
         <div class="col">
             <div class="d-flex justify-content-between">
-                <span class="mt-2">With the pro version, you can fire events on clicks, mouse over elements, post type visits, or page
-                    scroll:</span>
+                <span class="mt-2">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
                 <a target="_blank" class="btn btn-sm btn-primary float-right" href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-upgrade-blue">UPGRADE</a>
             </div>
         </div>
