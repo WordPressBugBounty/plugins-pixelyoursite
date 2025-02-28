@@ -3110,15 +3110,21 @@ if (!String.prototype.trim) {
                 $('.add_to_cart_button:not(.product_type_variable,.product_type_bundle,.single_add_to_cart_button)').on("click",function (e) {
 
                     var product_id = $(this).data('product_id');
-
                     if (typeof product_id !== 'undefined') {
-                        Facebook.onWooAddToCartOnButtonEvent(product_id);
-                        Analytics.onWooAddToCartOnButtonEvent(product_id);
-                        GTM.onWooAddToCartOnButtonEvent(product_id);
-                        Pinterest.onWooAddToCartOnButtonEvent(product_id);
-                        Bing.onWooAddToCartOnButtonEvent(product_id);
+                        if (options.dynamicEvents.hasOwnProperty("woo_add_to_cart_on_button_click")) {
+                            var tmpEventID = pys_generate_token();
+                            $.each(options.dynamicEvents.woo_add_to_cart_on_button_click, function (i, tag) {
+                                tag.eventID = tmpEventID;
+                            });
+                        }
+                        if (typeof product_id !== 'undefined') {
+                            Facebook.onWooAddToCartOnButtonEvent(product_id);
+                            Analytics.onWooAddToCartOnButtonEvent(product_id);
+                            GTM.onWooAddToCartOnButtonEvent(product_id);
+                            Pinterest.onWooAddToCartOnButtonEvent(product_id);
+                            Bing.onWooAddToCartOnButtonEvent(product_id);
+                        }
                     }
-
                 });
 
                 // Single Product
@@ -3169,6 +3175,13 @@ if (!String.prototype.trim) {
                             qtyTag = $form.find('select[name="quantity"]');
                         }
                         qty = parseInt(qtyTag.val());
+                    }
+
+                    if(options.dynamicEvents.hasOwnProperty("woo_add_to_cart_on_button_click")){
+                        var tmpEventID = pys_generate_token();
+                        $.each(options.dynamicEvents.woo_add_to_cart_on_button_click, function (i, tag) {
+                            tag.eventID = tmpEventID;
+                        });
                     }
 
                     Facebook.onWooAddToCartOnSingleEvent(product_id, qty, product_type, $form);

@@ -16,7 +16,7 @@ class FacebookAsyncTask extends \WP_Async_Task {
                         'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\Event',
                         'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\UserData',
                         'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\CustomData',
-
+                        'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\Content'
                     ]]);
 
                     // Check if $oldData[0] and $data[0] are arrays before merging
@@ -38,6 +38,7 @@ class FacebookAsyncTask extends \WP_Async_Task {
                 'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\Event',
                 'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\UserData',
                 'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\CustomData',
+                'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\Content'
 
             ]]);
             $events = is_array($data[0]) ? $data[0] : $data ;
