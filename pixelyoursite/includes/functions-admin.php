@@ -656,7 +656,7 @@ function adminRenderNotSupportUA( $show = false) {
 
     <?php
 }
-add_action( 'wp_ajax_pys_notice_UA_dismiss', 'adminNoticeUADismissHandler' );
+add_action( 'wp_ajax_pys_notice_UA_dismiss', 'PixelYourSite\adminNoticeUADismissHandler' );
 
 function adminNoticeUADismissHandler() {
 
