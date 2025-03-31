@@ -666,7 +666,7 @@ if (!String.prototype.trim) {
              * Generate unique ID
              */
             generateUniqueId : function (event) {
-                if(event.eventID.length == 0 || (event.type == "static" && options.ajaxForServerStaticEvent) || (event.type !== "static" && options.ajaxForServerEvent)) {
+                if(event.eventID.length == 0) {
                     let idKey = event.hasOwnProperty('custom_event_post_id') ? event.custom_event_post_id : event.e_id;
                     if (!uniqueId.hasOwnProperty(idKey)) {
                         uniqueId[idKey] = pys_generate_token();
@@ -986,7 +986,7 @@ if (!String.prototype.trim) {
                 window[ this.dataLayerName ].push( arguments );
             },
 
-            loadGTMScript: function (id) {
+            loadGTMScript: function (id = '') {
                 const domain = options.gtm.gtm_container_domain ?? 'www.googletagmanager.com';
                 const loader = options.gtm.gtm_container_identifier ?? 'gtm';
                 const gtm_auth = options.gtm.gtm_auth ?? ''; // Set this if needed
@@ -2674,6 +2674,9 @@ if (!String.prototype.trim) {
                 if(options.gtm.gtm_just_data_layer) {
                     console.warn && console.warn("[PYS] Google Tag Manager container code placement set to OFF !!!");
                     console.warn && console.warn("[PYS] Data layer codes are active but GTM container must be loaded using custom coding !!!");
+                    if(options.gtm.trackingIds.length == 0){
+                        Utils.loadGTMScript();
+                    }
                 }
 
                 if(options.hasOwnProperty("tracking_analytics") && options.tracking_analytics.hasOwnProperty("userDataEnable") && options.tracking_analytics.userDataEnable){
@@ -3558,6 +3561,14 @@ function getCookieYes(key) {
 
 function getRootDomain(useSubdomain = false) {
     const hostname = window.location.hostname; // Get the current hostname
+    // Check if tldjs is defined before using it
+    if (typeof tldjs === "undefined") {
+        console.warn("tldjs is not defined");
+        return hostname; // Return hostname as a fallback
+    }
+
     const rootDomain = tldjs.getDomain(hostname); // Use tldjs to extract the root domain
-    return rootDomain && (useSubdomain == true) ? '.' + rootDomain : hostname; // Add leading dot for cookies
+
+    // Return the root domain with or without a leading dot based on useSubdomain
+    return rootDomain ? (useSubdomain ? '.' + rootDomain : rootDomain) : hostname;
 }

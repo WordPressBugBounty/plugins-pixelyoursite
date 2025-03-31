@@ -124,7 +124,7 @@ class GATags extends Settings {
             }
         }, $buffer);
         $buffer = preg_replace_callback(
-            '/window\.dataLayer\s*=\s*window\.dataLayer\s*\|\|\s*\[\];/s',
+            '/window\.dataLayer\s*=\s*window\.dataLayer\s*\|\|\s*\[\];|window\[\'dataLayer\'\]\s*=\s*window\[\'dataLayer\'\]\s*\|\|\s*\[\];/s',
             function($matches)  use ($dataLayerName) {
                 return str_replace('dataLayer', $dataLayerName, $matches[0]);
             },

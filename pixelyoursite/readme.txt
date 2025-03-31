@@ -4,11 +4,11 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.1.2
+Stable tag: 10.1.3
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-Add your Meta Pixel (the old Facebook Pixel) with Conversion API support, Google Analytics (GA4) with Google Consent Mode support, or Google Tag Manager. The plugin also offers Head and Footer scripts with various options. 
+Add Meta Pixel with Conversion API, Google Analytics (GA4) + Consent Mode, Google Tag Manager, and Head & Footer scripts. 
 
 == Description ==
 **PixelYourSite Free Version: Complete Tracking Solution for the Meta Pixel, Google Analytics 4, and Google Tag Manager.**
@@ -387,6 +387,26 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 10.1.3 =
+
+March 31, 2025
+
+* Fixing a possible issue with the Google dataLayer names.
+
+* Updating Google noscript image URL to reflect the current v 2 version.
+
+* Fixing the short description in the readme file to fit the 150 characters limit. 
+
+* Declaring support for WooCommerce 9.7
+
+
+= PixelYourSite 10.1.2.1 =
+
+March 4, 2025
+
+* Fix for a code problem potentially resulting in PHP Fatal error: Uncaught TypeError: call_user_func_array(): Argument #1 ($callback) must be a valid callback, function "adminNoticeUADismissHandler" not found or invalid function
+
 
 = PixelYourSite 10.1.2 =
 

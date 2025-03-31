@@ -292,7 +292,7 @@ class CustomEvent {
             if ( $conditions !== '' ) {
                 $this->conditions = !empty( $conditions ) ? unserialize( $conditions ) : array();
             }
-            if ( $triggers !== '' ) {
+            if ( $triggers !== '' && is_string( $triggers ) ) {
                 $this->triggers = !empty( $triggers ) ? unserialize( $triggers ) : array();
             } elseif ( !empty( $data ) && isset( $data[ 'trigger_type' ] )) {
                 $trigger_type = $data[ 'trigger_type' ];
@@ -302,6 +302,12 @@ class CustomEvent {
                     $this->triggers = array( $trigger_event );
                 } else {
                     $this->triggers = array();
+                }
+            }elseif ( !empty( $triggers ) ) {
+                foreach ( $triggers as $trigger ) {
+                    if ($trigger instanceof TriggerEvent) {
+                        $this->triggers[] = $trigger;
+                    }
                 }
             }
 

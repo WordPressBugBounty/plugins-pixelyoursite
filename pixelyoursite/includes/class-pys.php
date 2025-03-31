@@ -34,6 +34,8 @@ final class PYS extends Settings implements Plugin {
 
     public $general_domain = '';
 
+    private $pixels_loaded = false;
+
     public static function instance() {
 
 		if ( is_null( self::$_instance ) ) {
@@ -276,7 +278,7 @@ final class PYS extends Settings implements Plugin {
             }
             if (empty($_SESSION['LandingPage'])) {
                 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-                $currentUrl = $protocol . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '');
+                $currentUrl = $protocol . ($_SERVER['HTTP_HOST'] ?? parse_url(get_site_url(), PHP_URL_HOST)) . ($_SERVER['REQUEST_URI'] ?? '');
                 $landing = explode('?', $currentUrl)[0];
                 $_SESSION['LandingPage'] = $landing;
             }
@@ -456,6 +458,11 @@ final class PYS extends Settings implements Plugin {
 	 * Front-end entry point
 	 */
     public function managePixels() {
+
+        if ( $this->pixels_loaded ) {
+            return;
+        }
+        $this->pixels_loaded = true;
 
         if (defined('DOING_AJAX') && DOING_AJAX) {
             return;
