@@ -49,7 +49,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             <div class="row mb-3">
                 <div class="col">
                     <p>
-                        Learn about Conversion API and Advanced Matching privacy and consent:
+                        Learn about Conversion API and Advanced Matching - privacy and consent:
                         <a href="https://www.youtube.com/watch?v=PsKdCkKNeLU" target="_blank">watch video</a>
                     </p>
                     <p>
@@ -57,8 +57,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <a href="https://www.youtube.com/watch?v=HM98mGZshvc" target="_blank">watch video</a>
                     </p>
                     <p>
-                        What is Events Matching and EMQ and how you can improve it:
-                        <a href=" https://www.youtube.com/watch?v=3soI_Fl0JQw" target="_blank">watch video</a>
+                        Learn about EMQ - why it matters and how to improve it:
+                        <a href="https://www.youtube.com/watch?v=8d3yeg7s9A4" target="_blank">watch video</a>
                     </p>
                 </div>
             </div>
@@ -494,11 +494,11 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="card-body">
         <div class="row">
             <div class="col">
-                <p><a href="https://www.youtube.com/watch?v=wUsqwomsYMo" target="_blank">RECENT: Conditions: Improved Event Tracking - Meta, Google, TikTok, GTM (5:09) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=kWozitdarSA" target="_blank">RECENT: How to use Custom Events for Meta Ads (7:49)</a></p>
-                <p><a href="https://www.youtube.com/watch?v=7BNHWbLbbdg" target="_blank">RECENT: Meta Limited Data Use - Privacy Options for USA States - WordPress (6:17 min) - watch now</a></p>
+                <p><a href="https://www.youtube.com/watch?v=Wv6KhJQqFL4" target="_blank">HOT: Secret Trick to Boost Your Meta EMQ Score: Facebook Login Integration (6:20) - watch now</a></p>
+                <p><a href="https://www.youtube.com/watch?v=wUsqwomsYMo" target="_blank">Conditions: Improved Event Tracking - Meta, Google, TikTok, GTM (5:09) - watch now</a></p>
+                <p><a href="https://www.youtube.com/watch?v=kWozitdarSA" target="_blank">How to use Custom Events for Meta Ads (7:49)</a></p>
+                <p><a href="https://www.youtube.com/watch?v=7BNHWbLbbdg" target="_blank">Meta Limited Data Use - Privacy Options for USA States - WordPress (6:17 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=bEK3qaaRvNg" target="_blank">Google Tag Manager and PixelYourSite (7:48 min) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=uXTpgFu2V-E" target="_blank">How to configure Facebook Conversion API (2:51 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=DZzFP4pSitU" target="_blank">Meta Pixel (formerly Facebook Pixel), CAPI, and PixelYourSite MUST WATCH (8:19) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=QqAIO1ONc0I" target="_blank">How to test Facebook Conversion API (10:16 min) - watch now</a></p>
                 <p><a href="https://www.youtube.com/watch?v=kEp5BDg7dP0" target="_blank">How to fire EVENTS with PixelYourSite (22:28) - watch now</a></p>

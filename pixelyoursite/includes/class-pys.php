@@ -518,27 +518,20 @@ final class PYS extends Settings implements Plugin {
                 });
             }
 	    	return;
-
 	    }
-
-
-
     }
 
-    function get_user_ip(){
-        $ip = $_SERVER['REMOTE_ADDR'];
+    function get_user_ip() {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
 
-        // Check if HTTP_X_FORWARDED_FOR is set and not empty
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            // Split the list of IPs using a comma and take the first IP
             $forwarded_ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
             $ip = trim($forwarded_ips[0]);
         } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            // Use HTTP_CLIENT_IP if available
             $ip = $_SERVER['HTTP_CLIENT_IP'];
         }
 
-        return $ip;
+        return filter_var($ip, FILTER_VALIDATE_IP) ?: '0.0.0.0';
     }
 
     function is_user_agent_bot(){

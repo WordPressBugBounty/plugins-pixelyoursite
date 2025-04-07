@@ -112,11 +112,11 @@ function adminGetFixedNotices() {
                     'button_url' => 'https://www.youtube.com/watch?v=w97FATUy7ok'
                 ],
                 [
-                    'slug'  => 'free_block_2_message_2_v1',
-                    'message' => 'Build Meta Custom Audiences with events and parameters. Retarget key segments of your audience, or find new potential customers with Lookalikes.',
-                    'title' => 'Meta Custom Audiences using Events',
+                    'slug'  => 'free_block_2_message_2_v2',
+                    'message' => 'Meta EMQ numbers can be misleading. Watch this video to see why, and what you can do to improve them.',
+                    'title' => 'Meta EMQ Explained and How to Improve It!',
                     'button_text' => 'Watch video',
-                    'button_url' => 'https://www.youtube.com/watch?v=EvzGMAvBnbs',
+                    'button_url' => 'https://www.youtube.com/watch?v=oHoWyT8UQWo',
                 ],
 
 

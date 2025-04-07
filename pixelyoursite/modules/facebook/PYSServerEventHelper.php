@@ -307,6 +307,14 @@ class ServerEventHelper {
 				if ( !empty( $user_persistence_data[ 'em' ] ) ) $userData->setEmail( $user_persistence_data[ 'em' ] );
 				if ( !empty( $user_persistence_data[ 'tel' ] ) ) $userData->setPhone( $user_persistence_data[ 'tel' ] );
 
+				$user_id = $order->get_user_id();
+				if ( $user_id && apply_filters( 'pys_send_meta_id', true ) ) {
+					$login_id = get_user_meta( $user_id, '_socplug_social_id_Facebook', true );
+					if ( !empty( $login_id ) ) {
+						$userData->setFbLoginId( $login_id );
+					}
+				}
+
             } else {
                 return ServerEventHelper::getRegularUserData();
             }
@@ -342,12 +350,17 @@ class ServerEventHelper {
 				if ( !empty( $user_persistence_data[ 'em' ] ) ) $userData->setEmail( $user_persistence_data[ 'em' ] );
 				if ( !empty( $user_persistence_data[ 'tel' ] ) ) $userData->setPhone( $user_persistence_data[ 'tel' ] );
 
+				if ( $user_info[ 'id' ] && apply_filters( 'pys_send_meta_id', true ) ) {
+					$login_id = get_user_meta( $user_info[ 'id' ], '_socplug_social_id_Facebook', true );
+					if ( !empty( $login_id ) ) {
+						$userData->setFbLoginId( $login_id );
+					}
+				}
+
 			} else {
                 return ServerEventHelper::getRegularUserData();
             }
         }
-
-
 
         return $userData;
     }
@@ -393,6 +406,11 @@ class ServerEventHelper {
                     $userData->setExternalId(PixelYourSite\PYS()->get_pbid());
                 }
             }
+
+			$login_id = get_user_meta( $user->ID, '_socplug_social_id_Facebook', true );
+			if ( !empty( $login_id ) && apply_filters( 'pys_send_meta_id', true ) ) {
+				$userData->setFbLoginId( $login_id );
+			}
         } else {
 			$user_persistence_data = get_persistence_user_data( '', '', '', '' );
             if (PixelYourSite\EventsManager::isTrackExternalId() && isset($_COOKIE['pbid'])) {

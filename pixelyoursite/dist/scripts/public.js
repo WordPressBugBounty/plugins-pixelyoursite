@@ -453,40 +453,7 @@ if (!String.prototype.trim) {
                     Cookies.set('pys_session_limit', true,{ expires: now, path: '/',domain: domain })
                     Cookies.set('pys_start_session', true,{path: '/',domain: domain});
                 }
-                if (options.gdpr.ajax_enabled && !options.gdpr.consent_magic_integration_enabled) {
 
-                    // retrieves actual PYS GDPR filters values which allow to avoid cache issues
-                    $.get({
-                        url: options.ajaxUrl,
-                        dataType: 'json',
-                        data: {
-                            action: 'pys_get_gdpr_filters_values'
-                        },
-                        success: function (res) {
-
-                            if (res.success) {
-
-                                options.gdpr.all_disabled_by_api = res.data.all_disabled_by_api;
-                                options.gdpr.facebook_disabled_by_api = res.data.facebook_disabled_by_api;
-                                options.gdpr.tiktok_disabled_by_api = res.data.tiktok_disabled_by_api;
-                                options.gdpr.analytics_disabled_by_api = res.data.analytics_disabled_by_api;
-                                options.gdpr.google_ads_disabled_by_api = res.data.google_ads_disabled_by_api;
-                                options.gdpr.pinterest_disabled_by_api = res.data.pinterest_disabled_by_api;
-                                options.gdpr.bing_disabled_by_api = res.data.bing_disabled_by_api;
-
-                                options.cookie.externalID_disabled_by_api = res.data.externalID_disabled_by_api;
-                                options.cookie.disabled_all_cookie = res.data.disabled_all_cookie;
-                                options.cookie.disabled_advanced_form_data_cookie = res.data.disabled_advanced_form_data_cookie;
-                                options.cookie.disabled_landing_page_cookie = res.data.disabled_landing_page_cookie;
-                                options.cookie.disabled_first_visit_cookie = res.data.disabled_first_visit_cookie;
-                                options.cookie.disabled_trafficsource_cookie = res.data.disabled_trafficsource_cookie;
-                                options.cookie.disabled_utmTerms_cookie = res.data.disabled_utmTerms_cookie;
-                                options.cookie.disabled_utmId_cookie = res.data.disabled_utmId_cookie;
-
-                            }
-                        }
-                    });
-                }
                 if (options.ajaxForServerEvent && !Cookies.get('pbid') && Facebook.isEnabled()) {
                      jQuery.ajax({
                         url: options.ajaxUrl,
@@ -2888,16 +2855,26 @@ if (!String.prototype.trim) {
     $(document).ready(function () {
 
         if($("#pys_late_event").length > 0) {
-            var events =  JSON.parse($("#pys_late_event").attr("dir"));
-            for(var key in events) {
-                var event = {};
-                event[events[key].e_id] = [events[key]];
-                if(options.staticEvents.hasOwnProperty(key)) {
-                    Object.assign(options.staticEvents[key], event);
-                } else {
-                    options.staticEvents[key] = event;
+            var dirAttr = $("#pys_late_event").attr("dir");
+            if (dirAttr) {
+                try {
+                    var events = JSON.parse(dirAttr);
+                } catch (e) {
+                    console.warn("Invalid JSON in pys_late_event dir attribute:", e);
                 }
-
+            } else {
+                console.warn("pys_late_event dir attribute is undefined or empty");
+            }
+            if (events) {
+                for (var key in events) {
+                    var event = {};
+                    event[events[key].e_id] = [events[key]];
+                    if (options.staticEvents.hasOwnProperty(key)) {
+                        Object.assign(options.staticEvents[key], event);
+                    } else {
+                        options.staticEvents[key] = event;
+                    }
+                }
             }
         }
 

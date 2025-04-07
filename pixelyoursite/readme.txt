@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.1.3
+Stable tag: 10.2.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,9 +17,9 @@ Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4
 
 **Free training:** 
 
-We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this to learn how to install the Meta Pixel with Conversion API support, how to test it, and how to improve your Event Match Quality score (EMQ):
+We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this to learn **how to improve your Meta EMQ score with Facebook Login** (facebook_login_id):
 
-[youtube https://www.youtube.com/watch?v=fAwsayYLo5s]
+[youtube https://www.youtube.com/watch?v=Wv6KhJQqFL4]
 
 **PixelYourSite will help you:**
 
@@ -387,6 +387,19 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 10.2.0 =
+
+April 7, 2025
+
+* Social Connect by PixelYourSite (new plugin) integration: PixelYourSite can use the facebook_login_id for Meta, increasing Meta EMQ score and improving tracking performance.
+
+* Fixing a possible issue resulting in GDPR filters loading twice. 
+
+* Fixing a small bug resulting in “PHP Warning: Undefined array key “REMOTE_ADDR…”
+
+* Other small code improvements. 
+
 
 = PixelYourSite 10.1.3 =
 
