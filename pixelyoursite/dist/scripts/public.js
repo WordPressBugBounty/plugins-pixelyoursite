@@ -633,7 +633,7 @@ if (!String.prototype.trim) {
              * Generate unique ID
              */
             generateUniqueId : function (event) {
-                if(event.eventID.length == 0) {
+                if(event.eventID.length == 0 || (event.type == "static" && options.ajaxForServerStaticEvent) || (event.type !== "static" && options.ajaxForServerEvent)) {
                     let idKey = event.hasOwnProperty('custom_event_post_id') ? event.custom_event_post_id : event.e_id;
                     if (!uniqueId.hasOwnProperty(idKey)) {
                         uniqueId[idKey] = pys_generate_token();

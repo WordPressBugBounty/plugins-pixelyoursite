@@ -472,8 +472,10 @@ final class PYS extends Settings implements Plugin {
         if (is_admin() || is_customize_preview() || is_preview()) {
             return;
         }
-        if($this->is_user_agent_bot())
-        {
+        if ($this->is_user_agent_bot()) {
+            if (!defined('DONOTCACHEPAGE')) {
+                define('DONOTCACHEPAGE', true);
+            }
             return;
         }
         // disable Events Manager on Elementor editor
