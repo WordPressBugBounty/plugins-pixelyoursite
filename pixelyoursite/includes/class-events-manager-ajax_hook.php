@@ -95,7 +95,7 @@ class AjaxHookEventManager {
         if(isset($cart_item_data['woosb_parent_id'])) return; // fix for WPC Product Bundles for WooCommerce (Premium) product
 
         $is_ajax_request = wp_doing_ajax();
-        if( isset( $_REQUEST['action'] ) && $_REQUEST['action'] == 'yith_wacp_add_item_cart') {
+        if( isset( $_REQUEST['action'] ) && $_REQUEST['action'] === 'yith_wacp_add_item_cart') {
             $is_ajax_request = true;
         }
         $standardParams = getStandardParams();
@@ -110,8 +110,9 @@ class AjaxHookEventManager {
 
             if( !empty($variation_id)
                 && $variation_id > 0
-                && (($pixel->getSlug() == 'ga' && !GATags()->getOption( 'woo_variable_as_simple')) ||
-                    ( $pixel->getSlug() == "facebook" && !Facebook\Helpers\isDefaultWooContentIdLogic())
+                && (($pixel->getSlug() === 'ga' && !GATags()->getOption( 'woo_variable_as_simple')) ||
+                    ($pixel->getSlug() === "facebook" && Facebook\Helpers\isDefaultWooContentIdLogic() && !Facebook()->getOption( 'woo_variable_as_simple') ) ||
+                    (!in_array($pixel->getSlug(), ['ga', 'facebook']) && !$pixel->getOption( 'woo_variable_as_simple' ))
                 )
             ) {
                 $_product_id = $variation_id;
@@ -124,7 +125,7 @@ class AjaxHookEventManager {
             $event->args = ['productId' => $_product_id,'quantity' => $quantity];
             $events = $pixel->generateEvents( $event );
 
-            if ( count($events) == 0 ) {
+            if ( empty($events) ) {
                 continue; // event is disabled or not supported for the pixel
             }
             $event = $events[0];
@@ -138,11 +139,11 @@ class AjaxHookEventManager {
 
             $dataList[$pixel->getSlug()] = $eventData;
 
-            if($pixel->getSlug() == "facebook" && Facebook()->isServerApiEnabled()) {
+            if($pixel->getSlug() === "facebook" && Facebook()->isServerApiEnabled()) {
                 FacebookServer()->sendEventsNow([$event]);
             }
 
-			if($pixel->getSlug() == "pinterest" && Pinterest()->isServerApiEnabled()) {
+			if($pixel->getSlug() === "pinterest" && Pinterest()->isServerApiEnabled()) {
                 PinterestServer()->sendEventsNow(array($event));
 			}
         }

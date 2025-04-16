@@ -46,13 +46,7 @@ function getWooProductPriceToDisplay( $product_id, $qty = 1 ) {
 		return 0;
 	}
 
-    // for Woo Discount Rules
-    if(method_exists('\Wdr\App\Controllers\ManageDiscount','calculateInitialAndDiscountedPrice')) {
-        $salePrice = \Wdr\App\Controllers\ManageDiscount::calculateInitialAndDiscountedPrice($product,$qty);
-        if(is_array($salePrice) && isset($salePrice['discounted_price'])) {
-            return $salePrice['discounted_price'];
-        }
-    }
+
     $productPrice = "";
 
     // take min price for variable product
