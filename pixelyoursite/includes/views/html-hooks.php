@@ -353,6 +353,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 });</pre>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        pys_bing_ad_storage_mode - Fire the Bing with consent mode<?php cardCollapseBtn(); ?>
+                    </div>
+                    <div class="card-body">
+                        <p>Param: <i>bool $mode</i></p>
+                        <label>Example:</label>
+                        <pre class="copy_text">add_filter('pys_bing_ad_storage_mode',function ($mode) {
+    if(get_current_user_id() == 0) {
+        return true;
+    }
+    return $mode;
+});</pre>
+                        <p>Fire the Bing with consent mode "ad_storage": "granted"</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
