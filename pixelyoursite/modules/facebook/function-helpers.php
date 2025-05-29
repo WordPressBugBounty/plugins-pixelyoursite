@@ -211,21 +211,25 @@ function getFacebookWooProductContentId( $product_id ) {
 
     if ( PixelYourSite\Facebook()->getOption( 'woo_content_id' ) == 'product_sku' ) {
         $product = wc_get_product( $product_id );
-        if ( $product->is_type( 'variation' ) ) {
+        if ($product && $product->is_type( 'variation' ) ) {
             $content_id = $product->get_sku();
             if ( empty( $content_id ) ) {
                 $parent_id = $product->get_parent_id();
                 $parent_product = wc_get_product( $parent_id );
-                $content_id = $parent_product->get_sku();
+                if($parent_product){
+                    $content_id = $parent_product->get_sku();
+                }
                 if ( empty( $content_id ) ) {
                     $content_id = $product_id;
                 }
             }
-        } else {
+        } elseif($product) {
             $content_id = $product->get_sku();
             if ( empty( $content_id ) ) {
                 $content_id = $product_id;
             }
+        } else {
+            $content_id = $product_id;
         }
     } else {
         $content_id = $product_id;

@@ -8,90 +8,67 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 ?>
 
-<h2 class="section-title">Facebook Settings</h2>
-
-<!-- General -->
-<div class="card card-static">
-	<div class="card-header">
-		General
-	</div>
-	<div class="card-body">
-		<div class="row">
-			<div class="col">
-				<?php Facebook()->render_switcher_input( 'advanced_matching_enabled' ); ?>
-				<h4 class="switcher-label">Enable Advanced Matching</h4>
-			</div>
-		</div>
-		<div class="row">
-			<div class="col">
-				<?php Facebook()->render_switcher_input( 'remove_metadata' ); ?>
-				<h4 class="switcher-label">autoConfig: false</h4>
-                <p><small>Remove Facebook default events</small></p>
-			</div>
-		</div>
-		<div class="row">
-			<div class="col">
-				<?php Facebook()->render_switcher_input( 'disable_noscript' ); ?>
-				<h4 class="switcher-label">Disable noscript</h4>
-			</div>
-		</div>
-
-        <!--
-        <div class="row">
-            <div class="col">
-                <?php Facebook()->render_switcher_input( 'send_external_id_demo',false,true ); ?>
-                <h4 class="switcher-label">Send external id</h4>
-                <?php renderProBadge(); ?>
-            </div>
+<div class="cards-wrapper cards-wrapper-style2 gap-24 logs-wrapper">
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('General', 'pys');?></h4>
         </div>
-        -->
-	</div>
-</div>
+        <div class="card-body">
+            <div class="gap-24">
+                <div>
+                    <div class="d-flex align-items-center mb-4">
+                        <?php Facebook()->render_switcher_input( 'remove_metadata' ); ?>
+                        <h4 class="switcher-label secondary_heading">autoConfig: false</h4>
+                    </div>
+                    <p class="text-gray"><?php _e('Remove Facebook default events', 'pys');?> </p>
+                </div>
 
-<!-- Medical Switch -->
-<div class="card card-static">
-    <div class="card-header">
-        Medical Content
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <?php Facebook()->render_switcher_input( 'enabled_medical' ); ?>
-                <h4 class="switcher-label"><?php _e('Don\'t track parameters', 'pys');?></h4>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col">
-                <p>
-                    Meta imposes restrictions on tracking data for websites with medical-related content and products. Use this option to disable event parameters that might track such data. These settings apply to Meta Pixel and CAPI events. To disable parameters for all tags, use the default parameter controls.
-                </p>
-                <p>
-                    To replace the standard WooCommerce AddToCart or Purchase events with custom events, you’ll need the Pro version, as this functionality is only available on the Events Page in Pro. <?php renderProBadge(); ?>
-                </p>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col">
-                <p><?php _e('Don\'t track these parameters for the Meta pixel and CAPI events:', 'pys');?></p>
-                <?php Facebook()->render_multi_select_input('do_not_track_medical_param', getAllMetaEventParamName()); ?>
-                <p><?php _e('If you want to disable parameters for all tags, use the default options from the plugin\'s main page, or from the WooCommerce and EDD pages.', 'pys');?></p>
+                <div>
+                    <div class="d-flex align-items-center">
+                        <?php Facebook()->render_switcher_input( 'disable_noscript' ); ?>
+                        <h4 class="switcher-label secondary_heading"> <?php _e('Disable noscript', 'pys');?> </h4>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<div class="panel">
-    <div class="row">
-        <div class="col text-center">
-            <p class="mb-0">Fire more events and parameters and improve your ads performance.
-                <br><a href="https://www.pixelyoursite.com/facebook-pixel-plugin?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-facebook-settings"
-                        target="_blank">Find more about the PRO Meta Pixel (formerly Facebook Pixel) implementation</a></p>
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Medical Content', 'pys');?></h4>
+        </div>
+        <div class="card-body">
+            <div class="gap-24">
+                <div>
+                    <div class="d-flex align-items-center mb-4">
+                        <?php Facebook()->render_switcher_input( 'enabled_medical' ); ?>
+                        <h4 class="switcher-label"><?php _e('Don\'t track parameters', 'pys');?></h4>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="mb-8">
+                        Meta imposes restrictions on tracking data for websites with medical-related content and products. Use this option to disable event parameters that might track such data. These settings apply to Meta Pixel and CAPI events. To disable parameters for all tags, use the default parameter controls.
+                    </p>
+                    <div class="d-flex align-items-center justify-content-between pro-feature-container">
+                        <p>To replace the standard WooCommerce AddToCart or Purchase events with custom events, you’ll need the Pro version, as this functionality is only available on the Events Page in Pro.</p>
+                        <?php renderProBadge(); ?>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="primary_heading mb-4"><?php _e('Don\'t track these parameters for the Meta pixel and CAPI events:', 'pys');?></h4>
+                    <?php Facebook()->render_multi_select_input('do_not_track_medical_param', getAllMetaEventParamName()); ?>
+                    <p class="text-gray mt-8"><?php _e('If you want to disable parameters for all tags, use the default options from the plugin\'s main page, or from the WooCommerce and EDD pages.', 'pys');?></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel card card-style6 card-static">
+        <div class="card-body text-center">
+                <p class="mb-0">Fire more events and parameters and improve your ads performance.
+                    <br><a class="link" href="https://www.pixelyoursite.com/facebook-pixel-plugin?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-facebook-settings"
+                           target="_blank">Find more about the PRO Meta Pixel (formerly Facebook Pixel) implementation</a></p>
         </div>
     </div>
 </div>
 
-<hr>
-<div class="row justify-content-center">
-	<div class="col-4">
-		<button class="btn btn-block btn-save">Save Settings</button>
-	</div>
-</div>

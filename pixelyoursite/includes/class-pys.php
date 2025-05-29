@@ -53,6 +53,9 @@ final class PYS extends Settings implements Plugin {
     public function getPluginVersion() {
         return PYS_FREE_VERSION;
     }
+    public function getPluginIcon() {
+        return PYS_FREE_PLUGIN_ICON;
+    }
     public function adminUpdateLicense() {}
     public function __construct() {
 		
@@ -108,8 +111,11 @@ final class PYS extends Settings implements Plugin {
 		 * For Woo
 		 */
 		add_action( 'woocommerce_checkout_order_processed', array( $this, 'woo_checkout_process' ), 10, 3 );
+	    add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
+	    // Hook for Store API (passes WC_Order object instead of order_id)
+	    add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
 
-		/**
+	    /**
 		 * For EDD
 		 */
 		if(!$this->isCachePreload()){
@@ -123,9 +129,8 @@ final class PYS extends Settings implements Plugin {
     }
 
     public function init() {
-
+	    $this->logger->init();
         if (current_user_can( 'manage_pys' ) ) {
-            $this->logger->init();
 
             $loggers = [
                 'meta' => [$this->logger, 'downloadLogFile'],
@@ -334,8 +339,10 @@ final class PYS extends Settings implements Plugin {
             }
         }
     }
-    public function utmTemplate() {
-        include 'views/html-utm-templates.php';
+    public function adminSinglePage()
+    {
+        $this->adminResetSettings();
+        include 'views/html-wrapper-single-page.php';
     }
 	/**
 	 * Extend options after post types are registered
@@ -625,7 +632,7 @@ final class PYS extends Settings implements Plugin {
         add_menu_page( 'PixelYourSite', 'PixelYourSite', 'manage_pys', 'pixelyoursite',
             array( $this, 'adminPageMain' ), PYS_FREE_URL . '/dist/images/favicon.png' );
         add_submenu_page( 'pixelyoursite', 'Global Settings', 'Global Settings',
-            'manage_pys', 'pixelyoursite_settings', array( $this, 'settingsTemplate' ) );
+            'manage_pys', 'pixelyoursite_settings', array( $this, 'adminSinglePage' ) );
         $addons = $this->registeredPlugins;
 
         if ( $addons['head_footer'] ) {
@@ -635,7 +642,7 @@ final class PYS extends Settings implements Plugin {
         // display Licenses menu item only when at lest one addon is active
         if ( count( $addons ) ) {
             add_submenu_page( 'pixelyoursite', 'Licenses', 'Licenses',
-                'manage_pys', 'pixelyoursite_licenses', array( $this, 'adminPageLicenses' ) );
+                'manage_pys', 'pixelyoursite_licenses', array( $this, 'adminSinglePage' ) );
         }
 
         if(isWooCommerceActive()) {
@@ -648,10 +655,10 @@ final class PYS extends Settings implements Plugin {
         }
 
         add_submenu_page( 'pixelyoursite', 'UTM Builder', 'UTM Builder',
-            'manage_pys', 'pixelyoursite_utm', array( $this, 'utmTemplate' ) );
+            'manage_pys', 'pixelyoursite_utm', array( $this, 'adminSinglePage' ) );
 
         add_submenu_page( 'pixelyoursite', 'System Report', 'System Report',
-            'manage_pys', 'pixelyoursite_report', array( $this, 'adminPageReport' ) );
+            'manage_pys', 'pixelyoursite_report', array( $this, 'adminSinglePage' ) );
 
         // core admin pages
         $this->adminPagesSlugs = array(
@@ -674,7 +681,9 @@ final class PYS extends Settings implements Plugin {
     }
 
     public function adminEnqueueScripts() {
-        wp_enqueue_style( 'pys_notice', PYS_FREE_URL . '/dist/styles/notice.css', array(), PYS_FREE_VERSION );
+        if ( ! wp_style_is( 'pys_notice') ) {
+            wp_enqueue_style( 'pys_notice', PYS_FREE_URL . '/dist/styles/notice.min.css', array(), PYS_FREE_VERSION );
+        }
         if ( in_array( getCurrentAdminPage(), $this->adminPagesSlugs ) ) {
 
 
@@ -682,12 +691,13 @@ final class PYS extends Settings implements Plugin {
             wp_enqueue_script( 'select2_js', PYS_FREE_URL . '/dist/scripts/select2.min.js',
                 array( 'jquery' ) );
 
-	        wp_enqueue_script( 'popper', PYS_FREE_URL . '/dist/scripts/popper.min.js', 'jquery' );
+            wp_enqueue_script( 'popper', PYS_FREE_URL . '/dist/scripts/popper.min.js', 'jquery' );
+            wp_enqueue_script( 'tippy', PYS_FREE_URL . '/dist/scripts/tippy.min.js', 'jquery' );
 	        wp_enqueue_script( 'bootstrap', PYS_FREE_URL . '/dist/scripts/bootstrap.min.js', 'jquery',
 		        'popper' );
 
-            wp_enqueue_style( 'pys_css', PYS_FREE_URL . '/dist/styles/admin.css', array( 'select2_css' ), PYS_FREE_VERSION );
-            wp_enqueue_script( 'pys_js', PYS_FREE_URL . '/dist/scripts/admin.js', array( 'jquery', 'select2_js', 'popper',
+            wp_enqueue_style( 'pys_css', PYS_FREE_URL . '/dist/styles/admin.min.css', array( 'select2_css' ), PYS_FREE_VERSION );
+            wp_enqueue_script( 'pys_js', PYS_FREE_URL . '/dist/scripts/admin.js', array( 'jquery', 'select2_js', 'popper', 'tippy',
                                                                                  'bootstrap' ), PYS_FREE_VERSION );
 
             if( (isset($_GET['page']) && $_GET['page'] == "pixelyoursite" && isset($_GET['tab']) && ($_GET['tab'] == 'events')) ||
@@ -1116,6 +1126,29 @@ final class PYS extends Settings implements Plugin {
         }
         return $domain;
     }
+	public function saveExternalIDInOrder($order_param) {
+		// Determine whether the WC_Order object or order ID is passed
+		if ( $order_param instanceof WC_Order ) {
+			// If the order object is transferred
+			$order = $order_param;
+		} else {
+			// If order_id is passed
+			$order = wc_get_order( $order_param );
+		}
+		if (!$order && empty($order_param)) return;
+
+		$external_id = PYS()->get_pbid();
+
+		if (isWooCommerceVersionGte('3.0.0') && !empty($order)) {
+			// WooCommerce >= 3.0
+			$order->update_meta_data("external_id", $external_id);
+			$order->save();
+		} elseif ( ! empty( $order_param ) ) {
+			// WooCommerce < 3.0
+			update_post_meta($order_param, 'external_id', $external_id);
+		}
+
+	}
 }
 
 /**

@@ -8,210 +8,243 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 ?>
 
-<h2 class="section-title">Super Pack Settings</h2>
+<div class="cards-wrapper cards-wrapper-style2 gap-24 settings-wrapper">
 
-<!-- General -->
-<div class="card card-static">
-    <div class="card-header">
-        General <?php renderSpBadge(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable Super Pack</h4>
-            </div>
+    <!-- General -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('General', 'pys');?></h4>
+            <?php renderSpBadge(); ?>
         </div>
-    </div>
-</div>
-
-<!-- Additional Pixel IDs -->
-<div class="card card-static">
-    <div class="card-header">
-        Advanced Pixel Options <?php renderSpBadge(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <p>Add support for multiple pixels (Meta, Google, TikTok), enable pixel display conditions, and add extra controls for automated events for each pixel.</p>
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable advanced pixel options</h4>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Dynamic Params -->
-<div class="card card-static">
-    <div class="card-header">
-        Dynamic Parameters for Events <?php renderSpBadge(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <p>Use page title, post ID, category or tags as your dynamic events parameters.</p>
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable dynamic params</h4>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Custom Thank You Page -->
-<div class="card card-static">
-    <div class="card-header">
-        Custom Thank You Pages <?php renderSpBadge(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <p>Define custom thank you pages (general or for a particular product) and fire the
-                    Meta Pixel (formerly Facebook Pixel) on it.</p>
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable Custom Thank You Pages</h4>
-            </div>
-        </div>
-        <?php if ( isWooCommerceActive() ) : ?>
-            <div class="row mt-3">
-                <div class="col">
-                    <h4>WooCommerce</h4>
-                    <p>You can set up a global WooCommerce Thank You Page here. If you need to, you can also
-                        define Custom Thank You Pages for each product (edit the product and you will find this option
-                        in the
-                        right side menu).</p>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col col-offset-left">
-                    <?php renderDummySwitcher(); ?>
-                    <h4 class="switcher-label">Enable WooCommerce Global Thank You Page</h4>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col col-offset-left">
-                    <div class="my-3">
-                        <label>Global Custom Page URL:</label>
-                        <?php renderDummyTextInput( 'Enter URL' ); ?>
-                    </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
                     <div>
-                        <label>Order Details:</label>
-                        <div class="custom-controls-stacked">
-                            <?php renderDummyRadioInput( 'Hidden', true ); ?>
-                            <?php renderDummyRadioInput( 'After page content' ); ?>
-                            <?php renderDummyRadioInput( 'Before page content' ); ?>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Enable Super Pack', 'pys');?></h4>
                         </div>
                     </div>
                 </div>
             </div>
-        <?php endif; ?>
-    
-        <?php if ( isEddActive() ) : ?>
-            <div class="row mt-3">
-                <div class="col">
-                    <h4>Easy Digital Downloads</h4>
-                    <p>You can set up a global Easy Digital Downloads Thank You Page here. If you need to,
-                        you can also define Custom Thank You Pages for each product (edit the product and you will find
-                        this
-                        option in the right side menu).</p>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col col-offset-left">
-                    <?php renderDummySwitcher(); ?>
-                    <h4 class="switcher-label">Enable Easy Digital Downloads Global Thank You Page</h4>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col col-offset-left">
-                    <div class="my-3">
-                        <label>Global Custom Page URL:</label>
-                        <?php renderDummyTextInput( 'Enter URL' ); ?>
-                    </div>
+        </div>
+    </div>
+
+    <!-- Additional Pixel IDs -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Advanced Pixel Options', 'pys');?></h4>
+            <?php renderSpBadge(); ?>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
                     <div>
-                        <label>Order Details:</label>
-                        <div class="custom-controls-stacked">
-                            <?php renderDummyRadioInput( 'Hidden', true ); ?>
-                            <?php renderDummyRadioInput( 'After page content' ); ?>
-                            <?php renderDummyRadioInput( 'Before page content' ); ?>
+                        <p class="text-gray mb-24">
+                            <?php _e('Add support for multiple pixels (Meta, Google, TikTok), enable pixel display conditions, and add extra controls for automated events for each pixel.', 'pys'); ?>
+                        </p>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Enable advanced pixel options', 'pys');?></h4>
                         </div>
                     </div>
                 </div>
             </div>
-        <?php endif; ?>
+        </div>
     </div>
-</div>
-<!-- Hide this tag -->
-<div class="card card-static">
-    <div class="card-header">
-        Hide tag <?php renderSpBadge(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Hide this tag if the landing URL includes these URL tags</h4>
+    <!-- Dynamic Parameters -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Dynamic Parameters for Events', 'pys');?></h4>
+            <?php renderSpBadge(); ?>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
+                    <div>
+                        <p class="text-gray mb-24">
+                            <?php _e('Use page title, post ID, category or tags as your dynamic events parameters.', 'pys'); ?>
+                        </p>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Enable dynamic params', 'pys');?></h4>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="row">
-            <div class="col">
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Hide this tag if the URL includes</h4>
-            </div>
-        </div>
+    </div>
 
+    <!-- Custom Thank You Page -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Custom Thank You Pages', 'pys');?></h4>
+            <?php renderSpBadge(); ?>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
+                    <div>
+                        <p class="text-gray mb-24">
+                            <?php _e('Define custom thank you pages (general or for a particular product) and fire the Meta Pixel on it.', 'pys'); ?>
+                        </p>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Enable Custom Thank You Pages', 'pys');?></h4>
+                        </div>
+                    </div>
+                    <div class="<?php echo 'pys_superpack_' . esc_attr( 'custom_thank_you_page_enabled' ) . '_panel gap-24'; ?>">
+                        <?php if ( isWooCommerceActive() ) : ?>
+                            <div>
+                                <div class="mb-24">
+                                    <label class="primary_heading"><?php _e('WooCommerce', 'pys');?></label>
+                                </div>
+                                <p class="text-gray"><?php _e('You can set up a global WooCommerce Thank You Page here. If you need to, you can also
+            define Custom Thank You Pages for each product (edit the product and you will find this option in the
+                right side menu).', 'pys');?></p>
+                            </div>
+                            <div class="offset-block">
+                                <div class="d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading"><?php _e('Enable WooCommerce Global Thank You Page', 'pys');?></h4>
+                                </div>
+                                <div <?php renderCollapseTargetAttributes( 'woo_custom_thank_you_page_global_enabled', PYS() ); ?>>
+                                    <div>
+                                        <div>
+                                            <h4 class="primary_heading mb-4"><?php _e( 'Global Custom Page URL:', 'pys' );?></h4>
+                                            <?php renderDummyTextInput( 'Enter URL' ); ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center mb-24">
+                                            <h4 class="primary_heading"><?php echo esc_html( __('Order Details:', 'pys') ); ?></h4>
+                                        </div>
+                                        <div class="radio-inputs-wrap mb-16">
+                                            <?php renderDummyRadioInput( 'Hidden', true ); ?>
+                                            <?php renderDummyRadioInput( 'After page content' ); ?>
+                                            <?php renderDummyRadioInput( 'Before page content' ); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ( isEddActive() ) : ?>
+                            <div>
+                                <div class="mb-24">
+                                    <label class="primary_heading"><?php _e('Easy Digital Downloads', 'pys');?></label>
+                                </div>
+                                <p class="text-gray"><?php _e('You can set up a global Easy Digital Downloads Thank You Page here. If you need to,
+                you can also define Custom Thank You Pages for each product (edit the product and you will find this
+                option in the right side menu).', 'pys');?></p>
+                            </div>
+                            <div class="offset-block">
+                                <div class="d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading"><?php _e('Enable Easy Digital Downloads Global Thank You Page', 'pys');?></h4>
+                                </div>
+                                <div <?php renderCollapseTargetAttributes( 'edd_custom_thank_you_page_global_enabled', PYS() ); ?> class="pt-24">
+                                    <div>
+                                        <div>
+                                            <h4 class="primary_heading mb-4"><?php _e( 'Global Custom Page URL:', 'pys' );?></h4>
+                                            <?php renderDummyTextInput( 'Enter URL' ); ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center mb-24">
+                                            <h4 class="primary_heading"><?php echo esc_html( __('Order Details:', 'pys') ); ?></h4>
+                                        </div>
+                                        <div class="radio-inputs-wrap mb-16">
+                                            <?php renderDummyRadioInput( 'Hidden', true ); ?>
+                                            <?php renderDummyRadioInput( 'After page content' ); ?>
+                                            <?php renderDummyRadioInput( 'Before page content' ); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-<!-- Remove Pixel -->
-<div class="card card-static">
-    <div class="card-header">
-        Remove Pixel from Pages <?php renderSpBadge(); ?>
+    <!-- Hide this tag -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Hide tag', 'pys');?></h4>
+            <?php renderSpBadge(); ?>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
+                    <div>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Hide this tag if the landing URL includes these URL tags', 'pys');?></h4>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Hide this tag if the URL includes', 'pys');?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <p>Remove Facebook, Google Analytics or Pinterest pixels from a particular page or post.</p>
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable remove pixel from pages</h4>
+    <!-- Remove Pixel -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Remove Pixel from Pages', 'pys');?></h4>
+            <?php renderSpBadge(); ?>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
+                    <div>
+                        <p class="text-gray mb-24"><?php _e('Remove Facebook, Google Analytics or Pinterest pixels from a particular page or post.', 'pys');?></p>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Enable remove pixel from pages', 'pys');?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AMP -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('AMP Support', 'pys');?></h4>
+            <?php renderSpBadge(); ?>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
+                    <div>
+                        <p class="text-gray mb-24"><?php _e('Fire Facebook, Google Analytics or Pinterest pixels on AMP pages.', 'pys');?></p>
+                        <div class="d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Enable AMP integration', 'pys');?></h4>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center">
+                            <div class="indicator indicator-off"><span>OFF</span></div>
+                            <h4 class="indicator-label">AMP by <a class="link" href="https://wordpress.org/plugins/amp/" target="_blank">WordPress.com VIP, XWP, Google, and contributors</a></h4>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center">
+                            <div class="indicator indicator-off"><span>OFF</span></div>
+                            <h4 class="indicator-label">Accelerated Mobile Pages by <a class="link" href="https://wordpress.org/plugins/accelerated-mobile-pages/" target="_blank">Ahmed Kaludi, Mohammed Kaludi</a></h4>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- AMP -->
-<div class="card card-static">
-    <div class="card-header">
-        AMP Support <?php renderSpBadge(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <p>Fire Facebook, Google Analytics or Pinterest pixels on AMP pages.</p>
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable AMP integration</h4>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="indicator indicator-off">OFF</div>
-                <h4 class="indicator-label">AMP by <a href="https://wordpress.org/plugins/amp/"
-                                                      target="_blank">WordPress.com VIP, XWP, Google, and
-                        contributors</a></h4>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                <div class="indicator indicator-off">OFF</div>
-                <h4 class="indicator-label">Accelerated Mobile Pages by <a
-                            href="https://wordpress.org/plugins/accelerated-mobile-pages/"
-                            target="_blank">Ahmed Kaludi, Mohammed Kaludi</a></h4>
-            </div>
-        </div>
-    </div>
-</div>
-
-<hr>
-<div class="row justify-content-center">
-    <div class="col-4">
-        <button class="btn btn-block btn-save">Save Settings</button>
-    </div>
-</div>

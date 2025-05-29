@@ -777,6 +777,22 @@ class CustomEvent {
 	public function isGoogleAnalyticsEnabled() {
 		return (bool) $this->ga_enabled;
 	}
+
+    public function isGoogleAnalyticsPresent(){
+        $allValues = GA()->getPixelIDs();
+        $selectedValues = (array) $this->ga_ads_pixel_id;
+        $hasAWElement = !empty($selectedValues) && (
+                ( in_array( 'all', $selectedValues ) &&
+                    (bool) array_filter( $allValues, function ( $value ) {
+                        return strpos( $value, 'G' ) === 0;
+                    } ) ) ||
+                (bool) array_filter($selectedValues, function($value) {
+                    return strpos($value, 'G') === 0;
+                })
+            );
+
+        return $hasAWElement;
+    }
     public function isUnifyAnalyticsEnabled(){
         return (bool) $this->ga_ads_enabled;
     }

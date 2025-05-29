@@ -130,6 +130,12 @@ class GTM extends Settings implements Pixel {
         return $options;
     }
 
+    public function updateOptions( $values = null ) {
+        if(!isset($_POST['pys'][ $this->getSlug() ]['select_all_blacklist'])) {
+            $_POST['pys'][ $this->getSlug() ]['select_all_blacklist'] = array();
+        }
+        parent::updateOptions($values);
+    }
     /**
      * Create pixel event and fill it
      * @param SingleEvent $event
@@ -349,49 +355,34 @@ class GTM extends Settings implements Pixel {
             foreach ( $events as $event ) {
                 foreach ( $this->getPixelIDs() as $pixelID ) {
                     $args = array(
-                        'v'   => 1,
-                        'tid' => $pixelID,
-                        't'   => 'event',
+                        'v'    => 2,
+                        'tid'  => $pixelID,
+                        'cid'  => isset($_COOKIE['_ga']) ? preg_replace('/GA\d+\.\d+\.(\d+\.\d+)/', '$1', $_COOKIE['_ga']) : time() . '.' . rand(100000, 999999), // Generate a random Client ID
+                        'en'   => $event['name'], // The name of the event (eg view_item)
+                        'ep.eventID'  => $event['eventID'],
                     );
 
-                    //@see: https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ec
-                    if ( isset( $event['params']['event_category'] ) ) {
-                        $args['ec'] = urlencode( $event['params']['event_category'] );
-                    }
-
-                    if ( isset( $event['params']['event_action'] ) ) {
-                        $args['ea'] = urlencode( $event['params']['event_action'] );
-                    }
-
-                    if ( isset( $event['params']['event_label'] ) ) {
-                        $args['el'] = urlencode( $event['params']['event_label'] );
-                    }
-
-                    if ( isset( $event['params']['value'] ) ) {
-                        $args['ev'] = urlencode( $event['params']['value'] );
-                    }
-
-                    if ( isset( $event['params']['items'] ) && is_array( $event['params']['items'] )) {
-
-                        foreach ( $event['params']['items'] as $key => $item ) {
-                            if(isset($item['id']))
-                                @$args["pr{$key}id" ] = urlencode( $item['id'] );
-                            if(isset($item['name']))
-                                @$args["pr{$key}nm"] = urlencode( $item['name'] );
-                            if(isset($item['category']))
-                                @$args["pr{$key}ca"] = urlencode( $item['category'] );
-                            //@$args["pr{$key}va"] = urlencode( $item['id'] ); // variant
-                            if(isset($item['price']))
-                                @$args["pr{$key}pr"] = urlencode( pys_round($item['price']) );
-                            if(isset($item['quantity']))
-                                @$args["pr{$key}qt"] = urlencode( $item['quantity'] );
-
+                    $args['dt'] = isset($event['params']['page_title']) ? urlencode($event['params']['page_title']) : '';
+                    $args['dl'] = isset($event['params']['event_url']) ? urlencode($event['params']['event_url']) : '';
+                    // DYNAMICALLY LOOPING THROUGH ALL PARAMETERS EXCEPT "items"
+                    foreach ($event['params'] as $key => $value) {
+                        if ($key === 'items' || $key === 'page_title' || $key === 'event_url') {
+                            continue;
                         }
-
-                        //https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#pa
-                        $args["pa"] = 'detail'; // required
-
+                        $args["ep.$key"] = is_array($value) ? json_encode($value) : $value;
                     }
+
+                    // Adding products
+                    if (!empty($event['params']['items'])) {
+                        foreach ($event['params']['items'] as $key => $item) {
+                            $args["pr" . ($key + 1) . "id"] = urlencode($item['id']);
+                            $args["pr" . ($key + 1) . "nm"] = urlencode($item['name']);
+                            $args["pr" . ($key + 1) . "pr"] = (float)$item['price'];
+                            $args["pr" . ($key + 1) . "qt"] = (int)$item['quantity'];
+                            $args["pr" . ($key + 1) . "ca"] = urlencode($item['item_category']);
+                        }
+                    }
+
                     $src = add_query_arg( $args, 'https://www.google-analytics.com/collect' );
                     $src = str_replace("[","%5B",$src);
                     $src = str_replace("]","%5D",$src);
@@ -728,6 +719,7 @@ class GTM extends Settings implements Pixel {
 
             foreach ($variations as $variation) {
                 $variationProduct = wc_get_product($variation['variation_id']);
+                if($variationProduct) continue;
                 $variationProductId = Helpers\getWooProductContentId($variation['variation_id']);
                 $category = $this->getCategoryArrayWoo($variationProductId, true);
 
@@ -852,7 +844,7 @@ class GTM extends Settings implements Pixel {
 
         foreach ($product_ids as $child_id) {
             $childProduct = wc_get_product($child_id);
-            if($childProduct->get_type() == "variable" && $isGrouped) {
+            if($childProduct || ($childProduct->get_type() == "variable" && $isGrouped)) {
                 continue;
             }
             $content_id = Helpers\getWooProductContentId($child_id);
@@ -1036,7 +1028,7 @@ class GTM extends Settings implements Pixel {
             $content_id = Helpers\getWooProductContentId( $product_id );
 
             $product = wc_get_product( $product_id );
-            if (GTM()->getOption('woo_variable_as_simple') && $product->is_type('variation')) {
+            if ($product && GTM()->getOption('woo_variable_as_simple') && $product->is_type('variation')) {
                 $product = wc_get_product($product->get_parent_id());
             }
             if(!$product) continue;

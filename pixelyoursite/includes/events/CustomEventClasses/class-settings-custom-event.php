@@ -24,7 +24,7 @@ abstract class SettingsCustomEvent {
         return $this->slug;
     }
 
-    public function render_text_input( $key, $placeholder = '',$conditional_type = null, $disabled = false, $hidden = false, $empty = false) {
+    public function render_text_input( $key, $placeholder = '',$conditional_type = null, $disabled = false, $hidden = false, $empty = false, $type = 'standard') {
         $i = $this->getConditionIndex();
         if(!empty($conditional_type)){
             $attr_name = "pys[event][$this->slug][$i][$conditional_type][$key]";
@@ -36,9 +36,11 @@ abstract class SettingsCustomEvent {
 
         $attr_value = $this->getParam($key);
 
-        $classes = array( 'form-control' );
+        $classes = array(
+            "input-$type"
+        );
 
-        if( $hidden ) {
+        if ( $hidden ) {
             $classes[] = 'form-control-hidden';
         }
 
@@ -46,11 +48,11 @@ abstract class SettingsCustomEvent {
 
         ?>
 
-        <input <?php disabled( $disabled ); ?> type="text" name="<?php esc_attr_e( $attr_name ); ?>"
-                                               id="<?php esc_attr_e( $attr_id ); ?>"
-                                               value="<?php esc_attr_e( $attr_value ); ?>"
-                                               placeholder="<?php esc_attr_e( $placeholder ); ?>"
-                                               class="<?php esc_attr_e( $classes ); ?>">
+        <input <?php disabled( $disabled ); ?> type="text" name="<?php echo esc_attr( $attr_name ); ?>"
+                                               id="<?php echo esc_attr( $attr_id ); ?>"
+                                               value="<?php echo esc_attr( $attr_value ); ?>"
+                                               placeholder="<?php echo esc_attr( $placeholder ); ?>"
+                                               class="<?php echo esc_attr( $classes ); ?>">
 
         <?php
 
@@ -83,18 +85,20 @@ abstract class SettingsCustomEvent {
         $attr_value = $this->getParam($key);
         ?>
 
-        <select class="form-control-sm <?php esc_attr_e( $classes ); ?>" id="<?php esc_attr_e( $attr_id ); ?>"
-                name="<?php esc_attr_e( $attr_name ); ?>" <?php disabled( $disabled ); ?>
-                data-target="<?php esc_attr_e( $visibility_target ); ?>"
-                data-value="<?php esc_attr_e( $visibility_value ); ?>" autocomplete="off" style="width: 100%;">
+        <div class="select-standard-wrap">
+            <select class="<?php echo esc_attr( $classes ); ?>" id="<?php echo esc_attr( $attr_id ); ?>"
+                    name="<?php echo esc_attr( $attr_name ); ?>" <?php disabled( $disabled ); ?>
+                    data-target="<?php echo esc_attr( $visibility_target ); ?>"
+                    data-value="<?php echo esc_attr( $visibility_value ); ?>" autocomplete="off" style="width: 100%;">
 
-            <option value="" disabled selected>Please, select...</option>
+                <option value="" disabled selected>Please, select...</option>
 
-            <?php foreach ( $options as $option_key => $option_value ) : ?>
-                <option value="<?php echo esc_attr( $option_key ); ?>" <?php selected( $option_key,
-                    esc_attr( $attr_value ) ); ?> <?php disabled(in_array($option_key, $disabled_array, true)); ?>><?php echo esc_attr( $option_value ); ?></option>
-            <?php endforeach; ?>
-        </select>
+                <?php foreach ( $options as $option_key => $option_value ) : ?>
+                    <option value="<?php echo esc_attr( $option_key ); ?>" <?php selected( $option_key,
+                        esc_attr( $attr_value ) ); ?> <?php disabled(in_array($option_key, $disabled_array, true)); ?>><?php echo esc_attr( $option_value ); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
         <?php
     }
@@ -118,11 +122,11 @@ abstract class SettingsCustomEvent {
         }
         ?>
 
-        <input type="hidden" name="<?php esc_attr_e( $attr_name ); ?>" value="">
-        <select class="form-control <?php esc_attr_e( $classes ); ?>"
+        <input type="hidden" name="<?php echo esc_attr( $attr_name ); ?>" value="">
+        <select class="form-control <?php echo esc_attr( $classes ); ?>"
                 data-placeholder="<?=$placeholder?>"
-                name="<?php esc_attr_e( $attr_name ); ?>"
-                id="<?php esc_attr_e( $attr_id ); ?>" <?php disabled( $disabled ); ?> style="width: 100%;"
+                name="<?php echo esc_attr( $attr_name ); ?>"
+                id="<?php echo esc_attr( $attr_id ); ?>" <?php disabled( $disabled ); ?> style="width: 100%;"
                 multiple>
             <?php foreach ( $values as $option_key => $option_value ) : ?>
                 <option value="<?php echo esc_attr( $option_key ); ?>"
@@ -148,18 +152,23 @@ abstract class SettingsCustomEvent {
      */
     public function render_radio_input( $key, $value, $label, $disabled = false ) {
         $i = $this->getConditionIndex();
+        $id = "pys_event_" . rand( 1, 1000000 )."_".$key.'_'.$value;
         $attr_name = "pys[event][$this->slug][$i][$key]";
         $attr_value = $this->getParam($key);
         ?>
-
-        <label class="custom-control custom-radio">
-            <input type="radio" name="<?php esc_attr_e( $attr_name ); ?>" <?php disabled( $disabled, true ); ?>
-                   class="custom-control-input" <?php checked( $attr_value, $value ); ?>
-                   value="<?php esc_attr_e( $value ); ?>">
-            <span class="custom-control-indicator"></span>
-            <span class="custom-control-description"><?php echo wp_kses_post( $label ); ?></span>
-        </label>
-
+        <div class="radio-standard">
+            <input type="radio"
+                   name="<?php echo esc_attr( $attr_name ); ?>"
+                <?php disabled( $disabled, true ); ?>
+                   class="custom-control-input"
+                   id="<?php echo esc_attr( $id ); ?>"
+                <?php checked( $attr_value, $value ); ?>
+                   value="<?php echo esc_attr( $value ); ?>">
+            <label class="standard-control radio-checkbox-label" for="<?php echo esc_attr( $id ); ?>">
+                <span class="standard-control-indicator"></span>
+                <span class="standard-control-description"><?php echo wp_kses_post( $label ); ?></span>
+            </label>
+        </div>
         <?php
 
     }

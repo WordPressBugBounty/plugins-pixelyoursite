@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.7
-Stable tag: 10.2.1
+Stable tag: 11.0.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -387,6 +387,19 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.0.0 =
+
+May 29, 2025
+
+* New User Interface
+
+* Code refactoring and improvements. 
+
+* Fixed problem with empty $product object
+
+* Fixed getting categories for view_item event (GA) in FREE version
+
 
 = PixelYourSite 10.2.1 =
 

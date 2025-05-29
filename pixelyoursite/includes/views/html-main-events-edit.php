@@ -2,28 +2,22 @@
 
 namespace PixelYourSite;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+if ( !defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly.
 }
-
-if(isset( $_REQUEST['id'] )) {
-    $id = sanitize_key($_REQUEST['id']);
-    $event = CustomEventFactory::getById($id );
+if ( isset( $_REQUEST[ 'id' ] ) ) {
+    $id = sanitize_key( $_REQUEST[ 'id' ] );
+    $event = CustomEventFactory::getById( $id );
 } else {
-    $event =  new CustomEvent();
+    $event = new CustomEvent();
 }
 $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
 
 ?>
-
-<div class="panel">
-    <div class="row">
-        <div class="col">
-            <div class="d-flex justify-content-between">
-                <span class="mt-2">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
-                <a target="_blank" class="btn btn-sm btn-primary float-right" href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-upgrade-blue">UPGRADE</a>
-            </div>
-        </div>
+<div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24 mb-24">
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="font-semibold primary-heading-color fz-18">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
+        <?php renderProBadge();?>
     </div>
 </div>
 
@@ -31,737 +25,207 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
 <input type="hidden" name="action" value="update">
 <?php Events\renderHiddenInput( $event, 'post_id' ); ?>
 
-<div class="card card-static">
-	<div class="card-header">
-		General
-	</div>
-	<div class="card-body">
-        <div class="row mb-3">
-            <div class="col">
-				<?php Events\renderSwitcherInput( $event, 'enabled' ); ?>
-                <h4 class="switcher-label">Enable event</h4>
-            </div>
+<div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24">
+    <div class="card card-style4 card-static">
+        <div class="card-header card-header-style3">
+            <p class="secondary_heading_type2">
+                General
+            </p>
         </div>
-		<div class="row">
-			<div class="col">
-				<?php Events\renderTextInput( $event, 'title', 'Enter event title' ); ?>
-                <input type="hidden" id="get_transform_title_wpnonce" value="<?=wp_create_nonce("get_transform_title_wpnonce")?>"/>
-                <small class="form-text">This name will be used in the GTM data layer for the custom parameters object.</small>
-			</div>
-		</div>
-        <div class="row mt-3">
-            <div class="col form-inline" id="fire_event_once">
-                <?php Events\renderSwitcherInput( $event, 'enable_time_window',true ); ?>
-                <label>Fire this event only once in</label>
-                <?php Events\renderNumberInput( $event, 'time_window', '24' ); ?>
-                <label>hours</label>
-                <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
-            </div>
-        </div>
-	</div>
-</div>
+        <div class="card-body card-body-general">
+            <div class="events-general-content-wrap">
+                <div class="d-flex align-items-center mb-24">
+                    <?php Events\renderSwitcherInput( $event, 'enabled' ); ?>
+                    <h4 class="switcher-label secondary_heading">Enable Event</h4>
+                </div>
+                <div class="mb-24">
+                    <h4 class="primary_heading mb-4">Event Name</h4>
+                    <?php Events\renderTextInput( $event, 'title', 'Enter event title' ); ?>
+                    <input type="hidden" id="get_transform_title_wpnonce"
+                           value="<?= wp_create_nonce( "get_transform_title_wpnonce" ) ?>"/>
+                    <p class="text-gray mt-8">This name will be used in the GTM data layer for the custom parameters
+                        object.</p>
+                </div>
+                <div class="pro-feature-container">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center" id="fire_event_once">
+                            <?php renderDummySwitcher(); ?>
+                            <label class="switcher-label primary_heading mr-16">Fire this event only once in</label>
 
-<div class="card card-static">
-    <div class="card-header">
-        Event Trigger
-    </div>
-    <div class="pys_triggers_wrapper">
-
-        <div class="card-body trigger_group">
-            <?php
-            $event_triggers = $event->getTriggers();
-            $main_trigger = [];
-            $trigger_types = array(
-                'page_visit',
-                'home_page',
-                'scroll_pos',
-                'post_type',
-            );
-            if ( !empty( $event_triggers ) ) {
-                foreach ($event_triggers as $event_trigger) {
-
-                    $trigger_type = $event_trigger->getTriggerType();
-                    if (in_array($trigger_type, $trigger_types)) {
-                        $main_trigger = $event_trigger;
-                        break;
-                    }
-                }
-            }
-            elseif(empty( $event_triggers ) && empty($main_trigger) ){
-                $main_trigger = new TriggerEvent();
-            }
-            ?>
-            <div class="row mb-3">
-                <div class="col form-inline">
-                    <label>Fire event when</label>
-                    <?php Events\renderTriggerTypeInput( $main_trigger, 'trigger_type' ); ?>
-                    <div class="triger_post_type form-inline" style="display: none">
-                        <?php Events\renderPostTypeSelect( $main_trigger, 'post_type_value' ); ?>
-                    </div>
-                    <div class="event-delay form-inline" >
-                        <label>with delay</label>
-                        <?php Events\renderTriggerNumberInput( $main_trigger, 'delay', '0' ); ?>
-                        <label>seconds</label>
-                    </div>
-                    <div class="triger_number_page_visit form-inline">
-                        <?php renderDummySelectInput( '=', true ); ?>
-                    </div>
-                    <div class="triger_number_page_visit form-inline">
-                        <?php renderDummyNumberInput(3 ); ?>
-                        <label>visited page</label>
+                            <span>
+                                <?php renderDummyNumberInput( 24 ); ?>
+                            </span>
+                            <label class="ml-24 mr-12">hours</label>
+                        </div>
                         <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
                     </div>
                 </div>
+
             </div>
+        </div>
+    </div>
 
-
-
-
-            <div id="page_visit_panel" class="event_triggers_panel" data-trigger_type="page_visit" style="display: none;">
-                <div class="row mt-3 event_trigger" data-trigger_id="0" style="display: none;">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-4">
-                                <select class="form-control-sm" name="" autocomplete="off" style="width: 100%;">
-                                    <option value="contains">URL Contains</option>
-                                    <option value="match">URL Match</option>
-                                    <option value="param_contains"  disabled="disabled">URL Parameters Contains (PRO)</option>
-                                    <option value="param_match"  disabled="disabled">URL Parameters Match (PRO)</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <input name="" placeholder="Enter URL" class="form-control" type="text">
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm remove-row">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+    <div class="card card-style4 card-static">
+        <div class="card-header card-header-style3">
+            <p class="secondary_heading_type2">
+                Event Triggers
+            </p>
+        </div>
+        <div class="card-body pys_triggers_wrapper">
+            <div class="trigger_group" data-trigger_id="0">
                 <?php
-                $trigger = $main_trigger->getPageVisitTriggers()[0] ?? ['rule' => 'contains', 'value' => ''];
+                $event_triggers = $event->getTriggers();
+                $main_trigger = [];
+                $trigger_types = array(
+                    'page_visit',
+                    'home_page',
+                    'scroll_pos',
+                    'post_type',
+                );
+                if ( !empty( $event_triggers ) ) {
+                    foreach ($event_triggers as $event_trigger) {
 
+                        $trigger_type = $event_trigger->getTriggerType();
+                        if (in_array($trigger_type, $trigger_types)) {
+                            $main_trigger = $event_trigger;
+                            break;
+                        }
+                    }
+                }
+                elseif(empty( $event_triggers ) && empty($main_trigger) ){
+                    $main_trigger = new TriggerEvent();
+                }
+                $trigger_type = $main_trigger->getTriggerType();
                 ?>
 
-                <div class="row mt-3 event_trigger" data-trigger_id="0">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-4">
-                                <select class="form-control-sm"
-                                        name="<?php echo esc_attr( "pys[event][triggers][0][page_visit_triggers][0][rule]" ); ?>"
-                                        autocomplete="off" style="width: 100%;">
-                                    <option value="contains" <?php selected( $trigger['rule'], 'contains' ); ?>>URL Contains</option>
-                                    <option value="match"  <?php selected( $trigger['rule'], 'match' ); ?>>URL Match</option>
-                                    <option value="param_contains"  disabled="disabled">URL Parameters Contains (PRO)</option>
-                                    <option value="param_match"  disabled="disabled">URL Parameters Match (PRO)</option>
-                                </select>
+                    <div class="trigger_group_head trigger_group_<?php echo esc_attr( $trigger_type ); ?>">
+                        <div class="fire_event_when d-flex align-items-center">
+                            <div>
+                                <p class="font-semibold">Fire event when</p>
                             </div>
-                            <div class="col-6">
-                                <input type="text" placeholder="Enter URL" class="form-control"
-                                       name="<?php echo esc_attr( "pys[event][triggers][0][page_visit_triggers][0][value]" ); ?>"
-                                       value="<?php esc_attr_e( $trigger['value'] ); ?>">
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm remove-row">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
+
+                            <div class="ml-8">
+                                <?php Events\renderTriggerTypeInput( $main_trigger, 'trigger_type' ); ?>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="insert-marker"></div>
-                <div class="mt-3">
-                    <small>You can use <b>*</b> to trigger an event on all pages.</small>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-primary add-event-trigger" type="button">Add another
-                            URL</button>
-                    </div>
-                </div>
-            </div>
-            <div id="number_page_visit_panel" class="event_triggers_panel" data-trigger_type="number_page_visit" style="display: none;">
-                <div class="row mt-3 event_trigger" data-trigger_id="0" style="display: none;">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-4">
-                                <?php renderDummySelectInput( 'Any URL`s', true ); ?>
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm remove-row">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="insert-marker"></div>
-                <div class="mt-3">
-                    <small>You can use <b>*</b> to trigger an event on all pages.</small>
-                </div>
-
-                <div class="row mt-3">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                            URL</button>
-                    </div>
-                </div>
-            </div>
-            <div id="url_click_panel" class="event_triggers_panel" style="display: none;">
-                <div class="row mt-3">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col">
-                                <p>This is a PRO trigger. <a
-                                            href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
-                                            target="_blank">Upgrade to get all the benefits</a>.</p>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4">
-                                <?php renderDummySelectInput( 'URL Contains', true ); ?>
-                            </div>
-                            <div class="col-6">
-                                <?php renderDummyTextInput( 'Enter URL' ); ?>
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm btn-disabled">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3 mb-5">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                            URL</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="css_click_panel" class="event_triggers_panel" style="display: none;">
-                <div class="row mt-3">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-10">
-                                <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm btn-disabled">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3 mb-5">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                            selector</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="css_mouseover_panel" class="event_triggers_panel" style="display: none;">
-                <div class="row mt-3">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-10">
-                                <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm btn-disabled">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3 mb-5">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                            selector</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="scroll_pos_panel" class="event_triggers_panel" style="display: none;">
-
-                <?php
-                $trigger = $main_trigger->getScrollPosTriggers()[0] ?? ['value' => 0];
-
-                ?>
-
-                <div class="row mt-3 event_trigger" data-trigger_id="0">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-3">
-                                <input type="number" min="0" max="100" class="form-control"
-                                       name='<?php echo esc_attr( "pys[event][triggers][0][scroll_pos_triggers][0][value]" ); ?>'
-                                       value="<?php esc_attr_e( (int) $trigger[ 'value' ] ); ?>">
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <div class="insert-marker"></div>
-                <div class="row mt-3 mb-5">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                            threshold</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="add_to_cart_panel" class="event_triggers_panel" data-trigger_type="add_to_cart" style="display: none;">
-                <div class="row mt-3">
-                    <div class="col switcher_event_track_value_and_currency">
-                        <?php renderDummySwitcher(); ?>
-                        <h4 class="switcher-label">Track value and currency <?php renderProBadge(); ?></h4>
-                        <p><?php _e('We will add value and currency parameters, similar to the default WooCommerce add to cart event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col">
-                        <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Add To Cart event with a custom event. Don\'t configure an add to cart event with this trigger, the plugin fires such an event automatically.', 'pys');?></h4>
-                    </div>
-                </div>
-            </div>
-            <div id="purchase_panel" class="event_triggers_panel" data-trigger_type="purchase" style="display: none;">
-                <div class="row mt-3 event_trigger" data-trigger_id="0">
-                    <div class="col switcher_event_transaction_only_action">
-                        <?php renderDummySwitcher();?>
-                        <h4 class="switcher-label">Fire this event for transaction only <?php renderProBadge(); ?></h4>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col switcher_event_track_transaction_ID">
-                        <?php renderDummySwitcher();?>
-                        <h4 class="switcher-label">Track transaction ID <?php renderProBadge(); ?></h4>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col switcher_event_track_value_and_currency">
-                        <?php renderDummySwitcher();?>
-                        <h4 class="switcher-label">Track value and currency <?php renderProBadge(); ?></h4>
-                        <p><?php _e('We will add value and currency parameters, similar to the default WooCommerce Purchase event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col">
-                        <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Purchase event with a custom event. Don\'t configure a Purchase event with this trigger, the plugin fires such an event automatically. ', 'pys');?></h4>
-                    </div>
-                </div>
-            </div>
-            <?php $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
-            foreach ($eventsFormFactory as $activeFormPlugin) : ?>
-                <div id="<?php echo $activeFormPlugin->getSlug(); ?>_panel" class="event_triggers_panel" data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>" style="display: none;">
-
-                    <?php if ( $activeFormPlugin->getSlug() == "elementor_form" ) : ?>
-
-                        <div class="row mt-3 event_trigger" data-trigger_id="0">
-                            <div class="col">
-                                <div class="row">
-                                    <div class="col-10">
-                                        <small class="form-text mb-1">Enter Elementor form pages URL</small>
-                                        <?php renderDummySelectInput('Elementor form pages URL', true ); ?>
-                                    </div>
-                                    <div class="col-2 d-flex align-items-center pt-3">
-                                        <button class="btn btn-sm btn-block btn-disabled" type="button">Scan forms</button>
+                        <div class="d-flex align-items-center">
+                            <?php if ( $trigger_type == "post_type" ) : ?>
+                                <div class="event_triggers_panel post_type_panel">
+                                    <div class="trigger_post_type">
+                                        <?php Events\renderPostTypeSelect( $main_trigger, 'post_type_value' ); ?>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            <?php endif; ?>
 
-                        <div class="pys_video_view_triggers" data-trigger_id="0">
-                            <div class="row mt-3 event_trigger" data-trigger_id="0">
-                                <div class="col">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <small class="form-text mb-1">Select forms</small>
-                                            <?php renderDummySelectInput('Select forms', true ); ?>
+                            <div class="insert-marker-trigger post_type_marker"></div>
+
+                            <div class="event-delay ml-24">
+                                <label class="mr-24">with delay</label>
+                                <?php Events\renderTriggerNumberInput( $main_trigger, 'delay', '0' ); ?>
+                                <label class="ml-16">seconds</label>
+                            </div>
+
+                            <?php if ( $trigger_type == "number_page_visit" ) : ?>
+                                <div class="event_triggers_panel number_page_visit_panel number_page_visit_conditional_panel"
+                                     data-trigger_type="number_page_visit"
+                                     style="display: none;">
+                                    <div class="d-flex">
+                                        <div class="trigger_number_page_visit conditional_number_visit ml-24">
+                                            <?php Events\renderTriggerConditionalNumberPage( $main_trigger, 'conditional_number_visit' ); ?>
+                                        </div>
+
+                                        <div class="trigger_number_page_visit number_visit ml-24">
+                                            <?php Events\renderTriggerNumberInput( $main_trigger, 'number_visit', '0', 3 ); ?>
+                                            <label class="ml-24">visited page</label>
                                         </div>
                                     </div>
                                 </div>
+                            <?php endif; ?>
+
+                            <div class="insert-marker-trigger number_page_visit_conditional_marker"></div>
+                        </div>
+
+                        <?php
+                        if ( $trigger_type == "post_type" ) :
+                            $selectedPostType = $main_trigger->getPostTypeValue();
+                            $errorMessage = "Post type " . $selectedPostType . " not found: the post type that triggers this event is not found on the website. This event can't fire.";
+                            $types = get_post_types( null, "objects " );
+                            foreach ( $types as $type ) {
+                                if ( $type->name == $selectedPostType ) {
+                                    $errorMessage = "";
+                                    break;
+                                }
+                            }
+
+                            if ( $errorMessage != "" ) :?>
+                                <div class="post_type_error mt-16">
+                                    <div class="event_error critical_message"><?= $errorMessage ?>  </div>
+                                </div>
+                            <?php endif;
+                        endif; ?>
+
+                    </div>
+
+                    <?php if ( $trigger_type == "page_visit" ) : ?>
+                        <div class="event_triggers_panel page_visit_panel" data-trigger_type="page_visit"
+                             style="display: none;">
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+                                    <div class="select-standard-wrap">
+                                        <select class="select-standard" name="" autocomplete="off"
+                                                style="width: 100%;">
+                                            <option value="contains">URL Contains</option>
+                                            <option value="match">URL Match</option>
+                                            <option disabled value="param_contains">URL Parameters Contains</option>
+                                            <option disabled value="param_match">URL Parameters Match</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="ml-8">
+                                        <input name="" placeholder="Enter URL" class="input-standard"
+                                               type="text">
+                                    </div>
+
+                                    <div>
+                                        <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="row mt-3 event_trigger" data-trigger_id="0">
-                                <div class="col">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <?php renderDummySwitcher(); ?>
-                                            <h4 class="switcher-label">Disable the Form event for the same forms</h4>
+                            <?php foreach ( $main_trigger->getPageVisitTriggers() as $key => $trigger ) : ?>
+
+                                <div class="event_trigger mb-16"
+                                     data-trigger_id="0">
+
+                                    <div class="event_trigger_wrapper">
+                                        <div class="select-standard-wrap">
+                                            <select class="select-standard"
+                                                    name='<?php echo esc_attr( "pys[event][triggers][0][page_visit_triggers][0][rule]" ); ?>'
+                                                    autocomplete="off" style="width: 100%;">
+                                                <option value="contains" <?php selected( $trigger[ 'rule' ], 'contains' ); ?>>
+                                                    URL Contains
+                                                </option>
+                                                <option value="match" <?php selected( $trigger[ 'rule' ], 'match' ); ?>>
+                                                    URL Match
+                                                </option>
+                                                <option value="param_contains" disabled <?php selected( $trigger[ 'rule' ], 'param_contains' ); ?>>
+                                                    URL Parameters Contains
+                                                </option>
+                                                <option value="param_match" disabled <?php selected( $trigger[ 'rule' ], 'param_match' ); ?>>
+                                                    URL Parameters Match
+                                                </option>
+                                            </select>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php else : ?>
 
-                        <div class="row mt-3 event_trigger" data-trigger_id="0">
-                            <div class="col">
-                                <?php renderDummySelectInput('Forms'); ?>
-                            </div>
+                                        <div class="ml-8">
+                                            <input type="text" placeholder="Enter URL" class="input-standard"
+                                                   name='<?php echo esc_attr( "pys[event][triggers][0][page_visit_triggers][0][value]" ); ?>'
+                                                   value="<?php echo esc_attr( $trigger[ 'value' ] ); ?>">
+                                        </div>
 
-                        </div>
-                        <small class="form-text">Select Forms to Trigger the Event.</small>
-
-                    <?php endif; ?>
-                </div>
-            <?php
-            endforeach;
-            ?>
-            <div id="url_filter_panel" class="event_triggers_panel" style="display: none;">
-                <div class="row mt-3">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-10">
-                                <?php renderDummyTextInput( 'Enter URL' ); ?>
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm btn-disabled">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add URL filter</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="embedded_video_view" class="event_triggers_panel" data-trigger_type="video_view"
-                 style="display: none;">
-                <div class="row mt-3 event_trigger" data-trigger_id="0">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-10">
-                                <small class="form-text mb-1">Enter video pages URL</small>
-                                <?php renderDummySelectInput('Video pages URL', true ); ?>
-                            </div>
-                            <div class="col-2 d-flex align-items-center pt-3">
-                                <button class="btn btn-sm btn-block btn-disabled" type="button">Scan videos</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pys_video_view_triggers" data-trigger_id="0">
-                    <div class="row mt-3 event_trigger" data-trigger_id="0">
-                        <div class="col">
-                            <div class="row">
-                                <div class="col-12">
-                                    <small class="form-text mb-1">Select videos</small>
-                                    <?php renderDummySelectInput('Select videos', true ); ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3 event_trigger" data-trigger_id="0">
-                        <div class="col">
-                            <div class="row">
-                                <div class="col-12 d-flex">
-                                    <div class="mb-0 mt-2 mr-2">Select trigger </div>
-                                    <div class="form-inline">
-                                        <?php renderDummySelectInput( 'Play' ); ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3 event_trigger" data-trigger_id="0">
-                        <div class="col">
-                            <div class="row">
-                                <div class="col-12">
-                                    <?php PYS()->renderDummyCheckbox('Disable the automatic WatchVideo events for the video'); ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="email_link_panel" class="event_triggers_panel" data-trigger_type="email_link"
-                 style="display: none;">
-                <div class="row mt-3">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col">
-                                <p>This is a PRO trigger. <a
-                                            href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
-                                            target="_blank">Upgrade to get all the benefits</a>.</p>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4">
-                                <?php renderDummySelectInput( 'Link Match', true ); ?>
-                            </div>
-                            <div class="col-6">
-                                <?php renderDummyTextInput( 'Enter Link' ); ?>
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-sm btn-disabled">
-                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3 mb-5">
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-disabled" type="button">Add another
-                            link</button>
-                    </div>
-                </div>
-
-                <div class="row mt-3" data-trigger_id="0">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col-12">
-                                <?php renderDummySwitcher(); ?>
-                                <h4 class="switcher-label">Disable the default Email event for the same action</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <hr class="m-0">
-    <div id="pys-add-trigger" class="mt-4 mb-4 d-flex flex-column">
-        <div class="row d-flex justify-content-center">
-            <div class="col-6 d-flex justify-content-center">
-                <button class="btn btn-block btn-gray add-trigger" type="button">Add trigger
-                </button>
-            </div>
-
-        </div>
-        <div class="row d-flex justify-content-center mt-2">
-            <div class="col-6 d-flex justify-content-center">
-				<?php renderProBadge(); ?>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-
-<div class="card card-static card-conditions">
-    <div class="card-header">
-        Conditions
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <?php Events\renderSwitcherInput( $event, 'conditions_enabled' ); ?>
-                <h4 class="switcher-label">Enable conditions</h4>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col">
-                <h4>Logic</h4>
-                <div class="form-inline">
-                    <?php Events\render_radio_input( $event, 'conditions_logic', 'AND', 'AND' ); ?>
-                    <?php Events\render_radio_input( $event, 'conditions_logic', 'OR', 'OR' ); ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="pys_conditions_wrapper">
-        <?php
-        $event_conditions = $event->getConditions();
-        if ( !empty( $event_conditions ) ) :
-            foreach ( $event_conditions as $event_condition ) :
-                $i = $event_condition->getConditionIndex();
-                $trigger_type = $event_condition->getConditionType();
-                $event_condition->renderConditionalBlock(true);
-                break;
-            endforeach;
-        endif;
-        ?>
-    </div>
-    <hr class="m-0">
-    <div id="pys-add-condition" class="mt-4 mb-4">
-        <div class="row d-flex justify-content-center">
-            <div class="col-6 justify-content-center">
-                <button class="btn btn-block btn-grey add-condition" type="button"><?php _e('Add another Condition', 'pys'); ?></button>
-            </div>
-        </div>
-        <div class="row d-flex justify-content-center mt-2">
-            <div class="col-6 d-flex justify-content-center">
-                <?php renderProBadge(); ?>
-            </div>
-        </div>
-    </div>
-    <div id="pys_add_event_condition" style="display: none;">
-
-        <?php
-        $new_condition = new ConditionalEvent('url_filters');
-        $new_condition_index = $new_condition->getConditionIndex();
-        ?>
-
-        <input type="hidden" name="<?php echo esc_attr( "pys[event][conditions][$new_condition_index][cloned_event]" ); ?>"
-               value="1">
-        <?php $new_condition->renderConditionalBlock();?>
-        <?php $new_condition->renderConditionalsPanel();?>
-
-    </div>
-</div>
-
-<?php if ( Facebook()->enabled() ) : ?>
-    <div class="card card-static">
-        <div class="card-header">
-            Facebook
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col">
-                    <?php Events\renderSwitcherInput( $event, 'facebook_enabled' ); ?>
-                    <h4 class="switcher-label">Enable on Facebook</h4>
-                </div>
-            </div>
-            <div id="facebook_panel">
-                <div class="row mt-3">
-                    <div class="col col-offset-left form-inline">
-                        <label>Event type:</label>
-                        <?php Events\renderFacebookEventTypeInput( $event, 'facebook_event_type' ); ?>
-                        <div class="facebook-custom-event-type form-inline">
-                            <?php Events\renderTextInput( $event, 'facebook_custom_event_type', 'Enter name' ); ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col col-offset-left">
-                        <?php Events\renderSwitcherInput( $event, 'facebook_params_enabled' ); ?>
-                        <h4 class="indicator-label">Add Parameters</h4>
-                    </div>
-                </div>
-                <div id="facebook_params_panel">
-                    <div class="row mt-3">
-                        <div class="col col-offset-left">
-
-                            <div class="row mb-3 ViewContent Search AddToCart AddToWishlist InitiateCheckout AddPaymentInfo Purchase Lead CompleteRegistration Subscribe StartTrial">
-                                <label class="col-5 control-label">value</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'value' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 ViewContent Search AddToCart AddToWishlist InitiateCheckout AddPaymentInfo Purchase Lead CompleteRegistration Subscribe StartTrial">
-                                <label class="col-5 control-label">currency</label>
-                                <div class="col-4">
-                                    <?php Events\renderCurrencyParamInput( $event, 'currency' ); ?>
-                                </div>
-                                <div class="col-2 facebook-custom-currency">
-                                    <?php Events\renderFacebookParamInput( $event, 'custom_currency' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 ViewContent AddToCart AddToWishlist InitiateCheckout Purchase Lead CompleteRegistration">
-                                <label class="col-5 control-label">content_name</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'content_name' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 ViewContent AddToCart AddToWishlist InitiateCheckout Purchase Lead CompleteRegistration">
-                                <label class="col-5 control-label">content_ids</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'content_ids' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 ViewContent AddToCart InitiateCheckout Purchase">
-                                <label class="col-5 control-label">content_type</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'content_type' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 Search AddToWishlist InitiateCheckout AddPaymentInfo Lead">
-                                <label class="col-5 control-label">content_category</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'content_category' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 InitiateCheckout Purchase">
-                                <label class="col-5 control-label">num_items</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'num_items' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 Purchase">
-                                <label class="col-5 control-label">order_id</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'order_id' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 Search">
-                                <label class="col-5 control-label">search_string</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'search_string' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 CompleteRegistration">
-                                <label class="col-5 control-label">status</label>
-                                <div class="col-4">
-                                    <?php Events\renderFacebookParamInput( $event, 'status' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mb-3 Subscribe StartTrial">
-                                <label class="col-5 control-label">predicted_ltv</label>
-                                <div class="col-4">
-			                        <?php Events\renderFacebookParamInput( $event, 'predicted_ltv' ); ?>
-                                </div>
-                            </div>
-
-                            <!-- Custom Facebook Params -->
-                            <div class="row mt-3 facebook-custom-param" data-param_id="0" style="display: none;">
-                                <div class="col-1"></div>
-                                <div class="col-4">
-                                    <input name="" placeholder="Enter name" class="form-control custom-param-name" type="text">
-                                </div>
-                                <div class="col-4">
-                                    <input name="" placeholder="Enter value" class="form-control custom-param-value"
-                                           type="text">
-                                </div>
-                                <div class="col-2">
-                                    <button type="button" class="btn btn-sm remove-row">
-                                        <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <?php foreach ( $event->getFacebookCustomParams() as $key => $custom_param ) : ?>
-
-                                <?php $param_id = $key + 1; ?>
-
-                                <div class="row mt-3 facebook-custom-param" data-param_id="<?php echo $param_id; ?>">
-                                    <div class="col">
-                                        <div class="row">
-                                            <div class="col-1"></div>
-                                            <div class="col-4">
-                                                <input type="text" placeholder="Enter name" class="form-control custom-param-name"
-                                                       name="pys[event][facebook_custom_params][<?php echo $param_id; ?>][name]"
-                                                       value="<?php esc_attr_e( $custom_param['name'] ); ?>">
-                                            </div>
-                                            <div class="col-4">
-                                                <input type="text" placeholder="Enter value" class="form-control custom-param-value"
-                                                       name="pys[event][facebook_custom_params][<?php echo $param_id; ?>][value]"
-                                                       value="<?php esc_attr_e( $custom_param['value'] ); ?>">
-                                            </div>
-                                            <div class="col-2">
-                                                <button type="button" class="btn btn-sm remove-row">
-                                                    <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
+                                        <div>
+                                            <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -770,448 +234,1826 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
 
                             <div class="insert-marker"></div>
 
-                            <div class="row mt-3">
-                                <div class="col-5"></div>
-                                <div class="col-4">
-                                    <button class="btn btn-sm btn-block btn-primary add-facebook-parameter" type="button">Add
-                                        Custom Parameter</button>
-                                </div>
+                            <div class="mb-24">
+                                <p class="form-text text-small">You can also use <b>*</b> as the trigger URL on all
+                                    pages</p>
+                            </div>
+
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger"
+                                        type="button">Add another URL
+                                </button>
                             </div>
 
                         </div>
-                    </div>
-                </div>
-            </div>
-            <br>
-						<br>
-            <p>
-                <b>Important:</b> verify your custom events inside your Ads Manager:
-                <a href="https://www.youtube.com/watch?v=Iyu-pSbqcFI" target="_blank">watch this video to learn how</a>
-            </p>
-        </div>
-    </div>
-<?php endif; ?>
+                    <?php endif; ?>
+                    <div class="insert-marker-trigger page_visit_marker"></div>
 
-<?php if ( GA()->enabled() ) : ?>
-    <div class="card card-static">
-        <div class="card-header">
-            Google Analytics
-        </div>
-        <div class="card-body">
-            <div class="row mb-2">
-                <div class="col">
-                    <?php Events\renderSwitcherInput( $event, 'ga_ads_enabled' ); ?>
-                    <h4 class="switcher-label">Enable on Google Analytics</h4>
-                </div>
-            </div>
-            <div id="analytics_panel">
-                <div class="row mt-3">
-                    <div class="col ">
-                        <!-- v4 Google params  -->
-                        <div class="col g4">
-                            <div class="row mb-3 g4">
-
-                                <script>
-                                    <?php
-                                    $fields = array();
-                                    foreach ($event->GAEvents as $group => $items) {
-                                        foreach ($items as $name => $elements) {
-                                            $fields[] = array("name"=>$name,'fields'=>$elements);
-                                        }
-                                    }
-
-                                    ?>
-                                    var ga_fields = <?=json_encode($fields)?>
-                                </script>
-                                <label class="col-5 control-label">Event</label>
-                                <div class="col-4">
-                                    <?php  Events\renderGoogleAnalyticsMergedActionInput( $event, 'ga_ads_event_action' ); ?>
-                                </div>
-                                <div class="col-3">
-                                    <div id="ga-ads-custom-action_g4">
-                                        <?php Events\renderTextInput( $event, 'ga_ads_custom_event_action', 'Enter name' ); ?>
+                    <?php if ( $trigger_type == "number_page_visit" ) : ?>
+                        <div class="event_triggers_panel number_page_visit_panel number_page_visit_url_panel"
+                             data-trigger_type="number_page_visit"
+                             style="display: none;">
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+                                    <div class="select-standard-wrap">
+                                        <select disabled class="select-standard pys_number_page_visit_triggers"
+                                                name=""
+                                                autocomplete="off" style="width: 100%;">
+                                            <option value="any">Any URL`s</option>
+                                        </select>
                                     </div>
+
                                 </div>
-
-
                             </div>
 
-                            <div class="ga-ads-param-list">
-                                <?php
-                                foreach($event->getMergedGaParams() as $key=>$val) : ?>
-                                    <div class="row mb-3 ga_ads_param">
-                                        <label class="col-5 control-label"><?=$key?></label>
-                                        <div class="col-4">
-                                            <?php Events\renderMergedGAParamInput( $key, $val ); ?>
+                            <?php foreach ( $main_trigger->getNumberPageVisitTriggers() as $key => $trigger ) : ?>
+
+                                <div class="event_trigger mb-16"
+                                     data-trigger_id="<?php echo esc_attr( $key ); ?>">
+                                    <div class="event_trigger_wrapper">
+                                        <div class="select-standard-wrap">
+                                            <select disabled class="select-standard pys_number_page_visit_triggers"
+                                                    autocomplete="off" style="width: 100%;">
+                                                <option value="any">
+                                                    Any
+                                                    URL`s
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
+                                </div>
+
+                            <?php endforeach; ?>
+
+                            <div class="insert-marker"></div>
+
+                            <div class="mb-24">
+                                <p class="form-text text-small">You can also use <b>*</b> as the trigger URL on all
+                                    pages</p>
                             </div>
 
-                            <div class="ga-ads-custom-param-list">
-                                <?php
-                                foreach ( $event->getGAMergedCustomParams() as $key => $custom_param ) : ?>
-                                    <?php $param_id = $key + 1; ?>
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger"
+                                        type="button">Add another URL
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="insert-marker-trigger number_page_visit_url_marker"></div>
 
-                                    <div class="row mt-3 ga-ads-custom-param" data-param_id="<?php echo $param_id; ?>">
-                                        <div class="col">
-                                            <div class="row">
-                                                <div class="col-1"></div>
-                                                <div class="col-4">
-                                                    <input type="text" placeholder="Enter name" class="form-control custom-param-name"
-                                                           name="pys[event][ga_ads_custom_params][<?php echo $param_id; ?>][name]"
-                                                           value="<?php esc_attr_e( $custom_param['name'] ); ?>">
-                                                </div>
-                                                <div class="col-4">
-                                                    <input type="text" placeholder="Enter value" class="form-control custom-param-value"
-                                                           name="pys[event][ga_ads_custom_params][<?php echo $param_id; ?>][value]"
-                                                           value="<?php esc_attr_e( $custom_param['value'] ); ?>">
-                                                </div>
-                                                <div class="col-2">
-                                                    <button type="button" class="btn btn-sm remove-row">
-                                                        <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                                    </button>
+                    <?php if ( $trigger_type == "url_click" ) : ?>
+                        <div class="event_triggers_panel url_click_panel mb-16" data-trigger_type="url_click"
+                             style="display: none;">
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+
+                                    <?php renderDummySelectInput( 'URL Contains', true ); ?>
+                                    <div class="ml-24">
+                                        <?php renderDummyTextInput( 'Enter URL' ); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <?php foreach ( $main_trigger->getURLClickTriggers() as $key => $trigger ) : ?>
+
+                                <div class="event_trigger mb-16"
+                                     data-trigger_id="<?php echo esc_attr( $key );; ?>">
+                                    <div class="event_trigger_wrapper">
+                                        <?php renderDummySelectInput( 'URL Contains', true ); ?>
+                                        <div class="ml-24">
+                                            <?php renderDummyTextInput( 'Enter URL' ); ?>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            <?php endforeach; ?>
+
+                            <div class="insert-marker"></div>
+
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                                        type="button">Add another URL
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="insert-marker-trigger url_click_marker"></div>
+
+                    <?php if ( $trigger_type == "css_click" ) : ?>
+                        <div class="event_triggers_panel css_click_panel mb-16" data-trigger_type="css_click"
+                             style="display: none;">
+
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+                                    <div>
+                                        <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="insert-marker"></div>
+
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                                        type="button">Add another selector
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="insert-marker-trigger css_click_marker"></div>
+
+                    <?php if ( $trigger_type == "css_mouseover" ) : ?>
+                        <div class="event_triggers_panel css_mouseover_panel mb-16"
+                             data-trigger_type="css_mouseover"
+                             style="display: none;">
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+                                    <div>
+                                        <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="insert-marker"></div>
+
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                                        type="button">Add another selector
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="insert-marker-trigger css_mouseover_marker"></div>
+
+                    <?php if ( $trigger_type == "scroll_pos" ) : ?>
+                        <div class="event_triggers_panel scroll_pos_panel mb-16" data-trigger_type="scroll_pos"
+                             style="display: none;">
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+                                    <div class="input-number-wrapper input-number-wrapper-percent">
+                                        <button class="decrease"><i class="icon-minus"></i></button>
+                                        <input type="number" name=""
+                                               value="30"
+                                               min="0"
+                                               max="100"
+                                               step="1"
+                                        >
+                                        <button class="increase"><i class="icon-plus"></i></button>
+                                    </div>
+
+                                    <div>
+                                        <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <?php foreach ( $main_trigger->getScrollPosTriggers() as $key => $trigger ) : ?>
+
+                                <div class="event_trigger mb-16"
+                                     data-trigger_id="<?php echo esc_attr( $key );; ?>">
+                                    <div class="event_trigger_wrapper">
+
+                                        <?php Events\renderTriggerNumberInputPercent( $main_trigger, 'scroll_pos_triggers', $key, $trigger[ 'value' ] ); ?>
+
+                                        <div>
+                                            <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            <?php endforeach; ?>
+
+                            <div class="insert-marker"></div>
+
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                                        type="button">Add another threshold
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="insert-marker-trigger scroll_pos_marker"></div>
+
+                    <?php $eventsFormFactory = apply_filters( "pys_form_event_factory", [] );
+                    foreach ( $eventsFormFactory as $activeFormPlugin ) : ?>
+                        <?php if ( $trigger_type == $activeFormPlugin->getSlug() ) : ?>
+                            <?php if ( $activeFormPlugin->getSlug() == "elementor_form" ) : ?>
+                                <div class="event_triggers_panel <?php echo $activeFormPlugin->getSlug(); ?>_panel elementor_form"
+                                     data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>"
+                                     style="display: none;">
+
+                                    <?php $data = $main_trigger->getElementorFormData();
+                                    $urls = $main_trigger->getElementorFormUrls();
+                                    $urls = array_combine( $urls, $urls );
+                                    ?>
+                                    <div class="event_trigger" data-trigger_id="0">
+                                        <div class="event_trigger_wrapper">
+                                            <div class="w-100">
+                                                <p class="form-text text-small mb-4">Enter Elementor form pages
+                                                    URL</p>
+
+                                                <div class="d-flex align-items-center w-100">
+                                                    <div class="flex-1">
+                                                        <input type="hidden" class="pys_event_elementor_form_data"
+                                                               name="<?php echo esc_attr( "pys[event][triggers][0][elementor_form_data]" ); ?>"
+                                                               value="<?php echo htmlspecialchars( json_encode( $data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ), ENT_QUOTES, 'UTF-8' ) ?>">
+                                                        <?php Events\render_multi_select_trigger_input( $main_trigger, 'elementor_form_urls', $urls, $main_trigger->getElementorFormUrls(), false, '', 'pys-tags-pysselect2 pys_elementor_form_urls_event' ); ?>
+                                                    </div>
+
+                                                    <div class="ml-24">
+                                                        <button class="btn btn-primary btn-primary-type2 pys-scan-elementor-form"
+                                                                type="button"
+                                                                value="Scan forms">Scan forms
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
 
-                            </div>
+                                    <div class="pys_elementor_form_triggers" data-trigger_id="0"
+                                         style="<?php echo empty( $data ) ? 'display: none;' : ''; ?>">
+                                        <div class="event_trigger mb-16" data-trigger_id="0">
+                                            <div class="event_trigger_wrapper">
+                                                <div class="w-100">
+                                                    <p class="form-text text-small mb-4">Select forms</p>
+                                                    <?php Events\render_multi_select_trigger_form_input( $main_trigger, $activeFormPlugin, false, '', true, 'pys_elementor_form_triggers_event' ); ?>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                            <div class="row mt-3">
-                                <div class="col-5"></div>
-                                <div class="col-4">
-                                    <button class="btn btn-sm btn-block btn-primary add-ga-ads-custom-parameter" type="button">Add
-                                        Custom Parameter</button>
+                                        <div class="event_trigger" data-trigger_id="0">
+                                            <div class="switcher_event_disabled_form_action d-flex align-items-center">
+                                                <?php Events\renderSwitcherTriggerFormInput( $main_trigger, $activeFormPlugin ); ?>
+                                                <h4 class="switcher-label secondary_heading">Disable the Form event
+                                                    for the same forms</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="elementor_form_error mt-16" style="display: none">
+                                        <div class="event_error critical_message"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    The following parameters are automatically tracked: content_name, event_url, post_id, post_type. The paid version tracks the event_hour, event_month, and event_day.
+
+                            <?php else : ?>
+                                <div class="event_triggers_panel <?php echo $activeFormPlugin->getSlug(); ?>_panel"
+                                     data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>"
+                                     style="display: none;">
+                                    <div class="event_trigger mb-16" data-trigger_id="0">
+                                        <div class="event_trigger_wrapper">
+                                            <div class="w-100">
+                                                <p class="form-text text-small mb-4">Select Forms to Trigger the
+                                                    Event</p>
+
+                                                <div class="select_event_trigger_form_wrapper">
+                                                    <?php Events\render_multi_select_trigger_form_input( $main_trigger, $activeFormPlugin ); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="event_trigger" data-trigger_id="0">
+                                        <div class="event_trigger_wrapper">
+                                            <div class="switcher_event_form_disable_event d-flex align-items-center">
+                                                <?php Events\renderSwitcherTriggerFormInput( $main_trigger, $activeFormPlugin ); ?>
+                                                <h4 class="switcher-label secondary_heading">Disable the Form event
+                                                    for the same
+                                                    forms</h4>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row mt-3 ga_woo_info" style="display: none">
-                                <div class="col-12">
-                                    <strong>ATTENTION</strong>:​ the plugin automatically tracks ecommerce specific events for WooCommerce and Easy Digital Downloads. Make sure you really need this event.
+                            <?php endif; ?>
+                        <?php endif; ?>
+
+                        <div class="insert-marker-trigger <?php echo $activeFormPlugin->getSlug(); ?>_marker"></div>
+
+                    <?php endforeach; ?>
+
+                    <div class="event_triggers_panel url_filter_panel" style="display: none;">
+                        <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                            <div class="event_trigger_wrapper">
+                                <div>
+                                    <input name="" placeholder="Enter URL" type="text" class="input-standard">
+                                </div>
+
+                                <div>
+                                    <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
                                 </div>
                             </div>
                         </div>
 
+                        <?php foreach ( $main_trigger->getURLFilters() as $key => $trigger ) : ?>
+
+                            <div class="event_trigger mb-16" data-trigger_id="<?php echo esc_attr( $key ); ?>">
+                                <div class="event_trigger_wrapper">
+                                    <div>
+                                        <input type="text" placeholder="Enter URL"
+                                               class="input-standard"
+                                               name='<?php echo esc_attr( "pys[event][triggers][0][url_filter_triggers][$key][value]" ); ?>'
+                                               value="<?php echo esc_attr( $trigger[ 'value' ] ); ?>">
+                                    </div>
+
+                                    <div>
+                                        <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <?php endforeach; ?>
+
+                        <div class="insert-marker"></div>
+                    </div>
+
+                    <?php if ( $trigger_type == 'video_view' ) : ?>
+                        <div class="event_triggers_panel embedded_video_view video_view_panel"
+                             data-trigger_type="video_view"
+                             style="display: none;">
+                            <?php $data = $main_trigger->getVideoViewData();
+                            $urls = $main_trigger->getVideoViewUrls();
+                            $urls = array_combine( $urls, $urls );
+                            $selected = $main_trigger->getVideoViewTriggers();
+                            $triggers = !empty( $data ) ? array_combine( array_column( $data, 'id' ), array_column( $data, 'title' ) ) : array();
+                            $play_options = array(
+                                '0%'   => 'Play',
+                                '10%'  => '10%',
+                                '50%'  => '50%',
+                                '90%'  => '90%',
+                                '100%' => '100%',
+                            );
+                            ?>
+                            <div class="event_trigger" data-trigger_id="0">
+                                <div class="event_trigger_wrapper">
+                                    <div class="w-100">
+                                        <p class="form-text text-small mb-4">Enter video pages URL</p>
+
+                                        <div class="d-flex align-items-center w-100">
+                                            <div class="flex-1">
+                                                <input type="hidden" class="pys_event_video_view_data"
+                                                       name="<?php echo esc_attr( "pys[event][triggers][0][video_view_data]" ); ?>"
+                                                       value="<?php echo htmlspecialchars( json_encode( $data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ), ENT_QUOTES, 'UTF-8' ) ?>">
+                                                <?php Events\render_multi_select_trigger_input( $main_trigger, 'video_view_urls', $urls, $main_trigger->getVideoViewUrls(), false, '', 'pys-tags-pysselect2 pys_video_view_urls_event' ); ?>
+                                            </div>
+
+                                            <div class="ml-24">
+                                                <button class="btn btn-primary btn-primary-type2 pys-scan-video"
+                                                        type="button"
+                                                        value="Scan videos">Scan videos
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pys_video_view_triggers" data-trigger_id="0"
+                                 style="<?php echo empty( $data ) ? 'display: none;' : ''; ?>">
+                                <div class="event_trigger mb-16 mt-16" data-trigger_id="0">
+                                    <div class="event_trigger_wrapper">
+                                        <div class="w-100">
+                                            <p class="form-text text-small mb-4">Select videos</p>
+                                            <?php Events\render_multi_select_trigger_input( $main_trigger, 'video_view_triggers', $triggers, $selected, false, '', 'pys-pysselect2 pys_video_view_triggers_event' ); ?>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="event_trigger mb-16" data-trigger_id="0">
+                                    <div class="d-flex align-items-center">
+                                        <label class="primary_heading mr-16">Select trigger</label>
+                                        <?php Events\renderTriggerSelectInput( $main_trigger, 'video_view_play_trigger', $play_options, false, 'pys_video_view_play_trigger' ); ?>
+                                    </div>
+                                </div>
+
+                                <div class="event_trigger" data-trigger_id="0">
+                                    <div class="event_trigger_wrapper">
+                                        <div class="switcher_event_disable_watch_video d-flex align-items-center">
+                                            <?php Events\renderSwitcherTriggerInput( $main_trigger, 'video_view_disable_watch_video' ); ?>
+                                            <h4 class="switcher-label secondary_heading">Disable the automatic
+                                                WatchVideo
+                                                events for the video</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="video_view_error mt-16" style="display: none">
+                                <div class="event_error critical_message"></div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="insert-marker-trigger video_view_marker"></div>
+
+                    <?php if ( $trigger_type == 'email_link' ) : ?>
+                        <div class="event_triggers_panel email_link_panel" data-trigger_type="email_link"
+                             style="display: none;">
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+                                    <?php renderDummySelectInput( 'Link Match', true ); ?>
+
+                                    <div class="trigger_url ml-24" style="display: none">
+                                        <?php renderDummyTextInput( 'Enter Link' ); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="event_trigger mb-16"
+                                 data-trigger_id="0">
+                                <div class="event_trigger_wrapper">
+                                    <?php renderDummySelectInput( 'Link Match', true ); ?>
+
+                                    <div class="trigger_url ml-24">
+                                        <?php renderDummyTextInput( 'Enter Link' ); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="insert-marker"></div>
+
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled" type="button">
+                                    Add
+                                    another Link
+                                </button>
+                            </div>
+
+                            <div class="mt-16" data-trigger_id="0">
+                                <div class="event_trigger_wrapper">
+                                    <div class="switcher_event_email_link_event d-flex align-items-center">
+                                        <?php renderDummySwitcher(); ?>
+                                        <h4 class="switcher-label secondary_heading">Disable the default Email event
+                                            for the same action</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="insert-marker-trigger email_link_marker"></div>
+                    <div class="insert-marker-trigger add_to_cart_marker"></div>
+                    <?php if ( $trigger_type == 'add_to_cart' ) : ?>
+                        <div class="event_triggers_panel add_to_cart_panel" data-trigger_type="add_to_cart" style="display: none;">
+                            <div class="event_trigger mb-16">
+                                <div class="d-flex align-items-center switcher_event_track_transaction_ID">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label">Track value and currency</h4>
+                                </div>
+                                <p class="mt-8"><?php _e('We will add value and currency parameters, similar to the default WooCommerce add to cart event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col">
+                                    <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Add To Cart event with a custom event. Don\'t configure an add to cart event with this trigger, the plugin fires such an event automatically.', 'pys');?></h4>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="insert-marker-trigger purchase_marker"></div>
+                    <?php if ( $trigger_type == 'purchase' ) : ?>
+                        <div class="event_triggers_panel purchase_panel" data-trigger_type="purchase" style="display: none;">
+                            <div class="event_trigger mb-16">
+                                <div class="d-flex align-items-center switcher_event_transaction_only_action">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label">Fire this event for transaction only</h4>
+                                </div>
+                            </div>
+                            <div class="event_trigger mb-16">
+                                <div class="d-flex align-items-center switcher_event_track_transaction_ID">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label">Track transaction ID</h4>
+                                </div>
+                            </div>
+                            <div class="event_trigger mb-16">
+                                <div class="d-flex align-items-center switcher_event_track_transaction_ID">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label">Track value and currency</h4>
+                                </div>
+                                <p class="mt-8"><?php _e('We will add value and currency parameters, similar to the default WooCommerce Purchase event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col">
+                                    <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Purchase event with a custom event. Don\'t configure a Purchase event with this trigger, the plugin fires such an event automatically. ', 'pys');?></h4>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="insert-marker-add-trigger"></div>
+
+                <?php // Add new event trigger
+                ?>
+                <div class="pro-feature-container">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div id="pys-add-trigger">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <button class="btn btn-primary btn-primary-type2 add-trigger btn-disabled" type="button">Add trigger</button>
+                            </div>
+                        </div>
+                        <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
                     </div>
                 </div>
+
             </div>
         </div>
-    </div>
-<?php endif; ?>
+        <hr class="m-0">
+        <div id="pys_add_event_trigger" style="display: none;">
 
-<div class="card card-disabled">
-    <div class="card-header">
-        Google Ads <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?><?php cardCollapseBtn(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row mb-2">
-            <div class="col">
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable on Google Ads</h4>
+            <?php $new_trigger = new TriggerEvent();
+            $new_index = $new_trigger->getTriggerIndex();
+            ?>
+
+            <input type="hidden" name="<?php echo esc_attr( "pys[event][triggers][$new_index][cloned_event]" ); ?>"
+                   value="1">
+
+            <div class="trigger_group" data-trigger_id="0"
+                 data-new_trigger_index="<?php echo esc_attr( $new_index ); ?>" style="display: none;">
+
+                <div class="trigger_group_head">
+                    <div class="fire_event_when d-flex align-items-center">
+                        <div>
+                            <p class="font-semibold">Fire event when</p>
+                        </div>
+
+                        <div class="ml-8">
+                            <?php Events\renderTriggerTypeInput( $new_trigger, 'trigger_type' ); ?>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <div class="insert-marker-trigger post_type_marker"></div>
+
+                        <div class="event-delay ml-24">
+                            <label class="mr-24">with delay</label>
+                            <?php Events\renderTriggerNumberInput( $new_trigger, 'delay', '0' ); ?>
+                            <label class="ml-16">seconds</label>
+                        </div>
+
+                        <div class="insert-marker-trigger number_page_visit_conditional_marker"></div>
+                    </div>
+                </div>
+
+                <div class="insert-marker-trigger page_visit_marker"></div>
+                <div class="insert-marker-trigger number_page_visit_url_marker"></div>
+                <div class="insert-marker-trigger url_click_marker"></div>
+                <div class="insert-marker-trigger css_click_marker"></div>
+                <div class="insert-marker-trigger css_mouseover_marker"></div>
+                <div class="insert-marker-trigger scroll_pos_marker"></div>
+                <div class="insert-marker-trigger email_link_marker"></div>
+                <div class="insert-marker-trigger add_to_cart_marker"></div>
+                <div class="insert-marker-trigger purchase_marker"></div>
+
+                <?php $eventsFormFactory = apply_filters( "pys_form_event_factory", [] );
+                foreach ( $eventsFormFactory as $activeFormPlugin ) : ?>
+                    <div class="insert-marker-trigger <?php echo $activeFormPlugin->getSlug(); ?>_marker"></div>
+                <?php endforeach; ?>
+
+                <div class="event_triggers_panel url_filter_panel" style="display: none;">
+                    <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                        <div class="event_trigger_wrapper">
+                            <div>
+                                <input name="" placeholder="Enter URL" type="text" class="input-standard">
+                            </div>
+
+                            <div>
+                                <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insert-marker"></div>
+                </div>
+
+                <div class="insert-marker-trigger video_view_marker"></div>
             </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col col-offset-left" id="google_ads_params_panel">
-                <div class="row mb-3">
-                    <label class="col-5 control-label">Conversion ID</label>
-                    <div class="col-4">
-                        <?php renderDummySelectInput( 'All', true ); ?>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <label class="col-5 control-label">Conversion Label</label>
-                    <div class="col-4">
-                        <?php renderDummyTextInput( 'Enter name' ); ?>
-                        <small class="form-text">Optional</small>
-                    </div>
-                </div>
 
-                <!-- Default Params -->
-                <div class="row mb-3">
-                    <label class="col-5 control-label">Action</label>
-                    <div class="col-4">
-                        <?php renderDummySelectInput( 'Custom Action', true ); ?>
-                    </div>
-                    <div class="col-3">
-                        <div id="ga-custom-action">
-                            <?php renderDummyTextInput( 'Enter name' ); ?>
+            <div class="event_triggers_panel page_visit_panel" data-trigger_type="page_visit"
+                 style="display: none;">
+                <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper">
+                        <div class="select-standard-wrap">
+                            <select class="select-standard" name="" autocomplete="off" style="width: 100%;">
+                                <option value="contains">URL Contains</option>
+                                <option value="match">URL Match</option>
+                                <option disabled value="param_contains">URL Parameters Contains</option>
+                                <option disabled value="param_match">URL Parameters Match</option>
+                            </select>
+                        </div>
+
+                        <div class="ml-8">
+                            <input name="" placeholder="Enter URL" class="input-standard"
+                                   type="text">
+                        </div>
+
+                        <div>
+                            <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
                         </div>
                     </div>
                 </div>
-                <div class="row mb-3">
-                    <label class="col-5 control-label">Category</label>
-                    <div class="col-4">
-                        <?php renderDummyTextInput(); ?>
+
+                <div class="insert-marker"></div>
+
+                <div class="mb-24">
+                    <p class="form-text text-small">You can also use <b>*</b> as the trigger URL on all pages</p>
+                </div>
+
+                <div>
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger"
+                            type="button">Add another URL
+                    </button>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel number_page_visit_panel number_page_visit_url_panel"
+                 data-trigger_type="number_page_visit"
+                 style="display: none;">
+
+                <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper">
+                        <div class="select-standard-wrap">
+                            <select disabled class="select-standard pys_number_page_visit_triggers"
+                                    name=""
+                                    autocomplete="off" style="width: 100%;">
+                                <option value="any">Any URL`s</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-                <div class="row mb-3">
-                    <label class="col-5 control-label">Label</label>
-                    <div class="col-4">
-                        <?php renderDummyTextInput(); ?>
+
+                <div class="insert-marker"></div>
+
+                <div class="mb-24">
+                    <p class="form-text text-small">You can also use <b>*</b> as the trigger URL on all pages</p>
+                </div>
+
+                <div>
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                            type="button">Add another URL
+                    </button>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel post_type_panel" data-trigger_type="post_type"
+                 style="display: none;">
+                <div class="trigger_post_type">
+                    <?php Events\renderPostTypeSelect( $new_trigger, 'post_type_value' ); ?>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel number_page_visit_panel number_page_visit_conditional_panel d-flex"
+                 data-trigger_type="number_page_visit"
+                 style="display: none;">
+                <div class="d-flex">
+                    <div class="trigger_number_page_visit conditional_number_visit ml-24">
+                        <?php renderDummyConditionalNumberPage('='); ?>
+                    </div>
+                    <div class="trigger_number_page_visit number_visit ml-24">
+                        <?php renderDummyNumberInput(3 ); ?>
+                        <label class="ml-24 mr-12">visited page</label>
+                        <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
                     </div>
                 </div>
-                <div class="row mb-3">
-                    <label class="col-5 control-label">Value</label>
-                    <div class="col-4">
-                        <?php renderDummyTextInput(); ?>
+            </div>
+
+            <div class="event_triggers_panel url_click_panel mb-16" data-trigger_type="url_click"
+                 style="display: none;">
+                <div class="event_trigger pro-feature-container mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper">
+                        <?php renderDummySelectInput( 'URL Contains', true ); ?>
+
+                        <div class="ml-24">
+                            <?php renderDummyTextInput( 'Enter URL' ); ?>
+                        </div>
                     </div>
+
+                </div>
+
+                <div class="insert-marker"></div>
+
+                <div class="pro-feature-container">
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                            type="button">Add another URL
+                    </button>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel css_click_panel mb-16" data-trigger_type="css_click"
+                 style="display: none;">
+                <div class="event_trigger pro-feature-container mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper">
+                        <div>
+                            <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insert-marker"></div>
+
+                <div>
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled" type="button">Add another
+                        selector
+                    </button>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel pro-feature-container css_mouseover_panel mb-16" data-trigger_type="css_mouseover"
+                 style="display: none;">
+                <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper">
+                        <div>
+                            <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insert-marker"></div>
+
+                <div>
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled" type="button">Add another
+                        selector
+                    </button>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel scroll_pos_panel mb-16" data-trigger_type="scroll_pos"
+                 style="display: none;">
+                <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper">
+                        <div>
+                            <?php Events\renderTriggerNumberInputPercent( $new_trigger, 'scroll_pos_triggers', $new_index, 30 ); ?>
+                        </div>
+
+                        <div>
+                            <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="insert-marker"></div>
+
+                <div>
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                            type="button">Add another threshold
+                    </button>
+                </div>
+            </div>
+
+            <?php $eventsFormFactory = apply_filters( "pys_form_event_factory", [] );
+            foreach ( $eventsFormFactory as $activeFormPlugin ) : ?>
+                <?php if ( $activeFormPlugin->getSlug() == "elementor_form" ) : ?>
+                    <div class="event_triggers_panel <?php echo $activeFormPlugin->getSlug(); ?>_panel elementor_form"
+                         data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>"
+                         style="display: none;">
+                        <div class="event_trigger pro-feature-container" data-trigger_id="0">
+                            <div class="event_trigger_wrapper">
+                                <div class="w-100">
+                                    <p class="form-text text-small mb-4">Enter Elementor form pages URL</p>
+
+                                    <div class="d-flex align-items-center w-100">
+                                        <div class="flex-1">
+                                            <?php renderDummySelectInput('Elementor form pages URL', true ); ?>
+                                        </div>
+
+                                        <div class="ml-24">
+                                            <button class="btn btn-primary btn-primary-type2 pys-scan-elementor-form"
+                                                    type="button"
+                                                    value="Scan forms">Scan forms
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pys_elementor_form_triggers pro-feature-container" data-trigger_id="0"
+                             style="<?php echo empty( $data ) ? 'display: none;' : ''; ?>">
+                            <div class="event_trigger mb-16 mt-16" data-trigger_id="0">
+                                <div class="event_trigger_wrapper">
+                                    <div class="w-100">
+                                        <p class="form-text text-small mb-4">Select forms</p>
+                                        <?php renderDummySelectInput('Select forms', true ); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="event_trigger" data-trigger_id="0">
+                                <div class="switcher_event_disabled_form_action d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Disable the Form event for the same
+                                        forms</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="elementor_form_error mt-16" style="display: none">
+                            <div class="event_error critical_message"></div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="event_triggers_panel <?php echo $activeFormPlugin->getSlug(); ?>_panel"
+                         data-trigger_type="<?php echo $activeFormPlugin->getSlug(); ?>"
+                         style="display: none;">
+                        <div class="event_trigger pro-feature-container mb-16" data-trigger_id="0">
+                            <div class="event_trigger_wrapper">
+                                <div class="w-100">
+                                    <p class="form-text text-small mb-4">Select Forms to Trigger the Event</p>
+
+                                    <div class="select_event_trigger_form_wrapper">
+                                        <?php renderDummySelectInput('Forms'); ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="event_trigger pro-feature-container" data-trigger_id="0">
+                            <div class="event_trigger_wrapper">
+                                <div class="switcher_event_form_disable_event d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Disable the Form event for the same
+                                        forms</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <div class="event_triggers_panel embedded_video_view video_view_panel" data-trigger_type="video_view"
+                 style="display: none;">
+                <div class="event_trigger pro-feature-container" data-trigger_id="0">
+                    <div class="event_trigger_wrapper">
+                        <div class="w-100">
+                            <p class="form-text text-small mb-4">Enter video pages URL</p>
+
+                            <div class="d-flex align-items-center w-100">
+                                <div class="flex-1">
+                                    <?php renderDummySelectInput('Video pages URL', true ); ?>
+                                </div>
+
+                                <div class="ml-24">
+                                    <button class="btn btn-primary btn-primary-type2 pys-scan-video"
+                                            type="button"
+                                            value="Scan videos">Scan videos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pys_video_view_triggers pro-feature-container" data-trigger_id="0">
+                    <div class="event_trigger mb-16 mt-16" data-trigger_id="0">
+                        <div class="event_trigger_wrapper">
+                            <div class="w-100">
+                                <p class="form-text text-small mb-4">Select videos</p>
+                                <?php renderDummySelectInput('Select videos', true ); ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="event_trigger mb-16" data-trigger_id="0">
+                        <div class="d-flex align-items-center">
+                            <label class="primary_heading mr-16">Select trigger</label>
+                            <?php renderDummySelectInput( 'Play' ); ?>
+                        </div>
+                    </div>
+
+                    <div class="event_trigger" data-trigger_id="0">
+                        <div class="event_trigger_wrapper">
+                            <div class="switcher_event_disable_watch_video d-flex align-items-center">
+                                <?php PYS()->renderDummyCheckbox('Disable the automatic WatchVideo events for the video'); ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="video_view_error mt-16" style="display: none">
+                    <div class="event_error critical_message"></div>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel email_link_panel" data-trigger_type="email_link" style="display: none;">
+                <div class="event_trigger pro-feature-container mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper mb-16">
+                        <p>This is a PRO trigger. <a class="link"
+                                    href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
+                                    target="_blank">Upgrade to get all the benefits</a>.</p>
+                    </div>
+                    <div class="event_trigger_wrapper">
+                        <div class="select-standard-wrap">
+                            <?php renderDummySelectInput( 'Link Match', true ); ?>
+                        </div>
+
+                        <div class="trigger_url ml-24" style="display: none">
+                            <?php renderDummyTextInput( 'Enter Link' ); ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insert-marker"></div>
+
+                <div class="pro-feature-container">
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled" type="button">Add another Link
+                    </button>
+                </div>
+
+                <div class="mt-16 pro-feature-container" data-trigger_id="0">
+                    <div class="event_trigger_wrapper">
+                        <div class="switcher_event_email_link_event d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading">Disable the default Email event for the same
+                                action</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="event_triggers_panel add_to_cart_panel" data-trigger_type="add_to_cart">
+                <div class="event_trigger pro-feature-container mb-16">
+                    <div class="d-flex align-items-center switcher_event_track_value_and_currency">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="switcher-label">Track value and currency</h4>
+                    </div>
+
+                    <p class="mt-8"><?php _e('We will add value and currency parameters, similar to the default WooCommerce add to cart event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
                 </div>
                 <div class="row mt-3">
-                    <div class="col-5"></div>
-                    <div class="col-4">
-                        <button class="btn btn-sm btn-block btn-secondary" type="button" disabled>Add Custom Parameter
-                        </button>
+                    <div class="col">
+                        <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Add To Cart event with a custom event. Don\'t configure an add to cart event with this trigger, the plugin fires such an event automatically.', 'pys');?></h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel purchase_panel" data-trigger_type="purchase">
+                <div class="event_trigger pro-feature-container mb-16">
+                    <div class="d-flex align-items-center switcher_event_transaction_only_action">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="switcher-label">Fire this event for transaction only</h4>
+                    </div>
+                </div>
+                <div class="event_trigger pro-feature-container mb-16">
+                    <div class="d-flex align-items-center switcher_event_track_transaction_ID">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="switcher-label">Track transaction ID</h4>
+                    </div>
+                </div>
+                <div class="event_trigger pro-feature-container mb-16">
+                    <div class="d-flex align-items-center switcher_event_track_value_and_currency">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="switcher-label">Track value and currency</h4>
+                    </div>
+
+                    <p class="mt-8"><?php _e('We will add value and currency parameters, similar to the default WooCommerce Purchase event. If you use this option, don\'t manually add value or currency parameters to this event.', 'pys');?></p>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col">
+                        <h4><b><?php _e('Warning:', 'pys');?></b> <?php _e('Use it only if you must replace the default Purchase event with a custom event. Don\'t configure a Purchase event with this trigger, the plugin fires such an event automatically. ', 'pys');?></h4>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="card card-static">
-    <div class="card-header">
-        TikTok <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?><?php cardCollapseBtn(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <?php renderDummySwitcher(); ?>
-                <h4 class="switcher-label">Enable on TikTok</h4>
+
+    <div class="card card-style4 card-static">
+        <div class="card-header card-header-style3">
+            <p class="secondary_heading_type2">
+                Conditions
+            </p>
+        </div>
+        <div class="card-body pys_condition_wrapper">
+            <div class="d-flex align-items-center mb-24">
+                <?php Events\renderSwitcherInput( $event, 'conditions_enabled' ); ?>
+                <h4 class="switcher-label secondary_heading">Enable Conditions</h4>
+            </div>
+            <div class="conditions_logic d-flex flex-column mb-24">
+                <h4 class="primary_heading mb-16">Logic</h4>
+                <div class="d-flex">
+                    <?php Events\render_radio_input( $event, 'conditions_logic', 'AND', 'AND' ); ?>
+                    <?php Events\render_radio_input( $event, 'conditions_logic', 'OR', 'OR' ); ?>
+                </div>
+            </div>
+            <div class="pys_conditions_wrapper">
+                <?php
+                $event_conditions = $event->getConditions();
+                if ( !empty( $event_conditions ) ) :
+                    foreach ( $event_conditions as $event_condition ) :
+                        $i = $event_condition->getConditionIndex();
+                        $trigger_type = $event_condition->getConditionType();
+                        $event_condition->renderConditionalBlock(true);
+                    endforeach;
+                endif;
+                ?>
+            </div>
+            <div class="pro-feature-container">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div id="pys-add-condition" class="d-flex align-items-center justify-content-start">
+                        <button class="btn btn-primary btn-primary-type2 add-condition btn-disabled" type="button"><?php _e('Add another Condition', 'pys'); ?></button>
+                    </div>
+                    <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                </div>
+            </div>
+
+            <div id="pys_add_event_condition" style="display: none;">
+
+                <?php
+                $new_condition = new ConditionalEvent('url_filters');
+                $new_condition_index = $new_condition->getConditionIndex();
+                ?>
+
+                <input type="hidden" name="<?php echo esc_attr( "pys[event][conditions][$new_condition_index][cloned_event]" ); ?>"
+                       value="1">
+                <?php $new_condition->renderConditionalBlock();?>
+                <?php $new_condition->renderConditionalsPanel();?>
+
             </div>
         </div>
-        <div id="tiktok_panel">
-            <div class="row mt-3">
-                <label class="col-5 control-label">Fire for:</label>
-                <div class="col-4">
-                    <?php renderDummySelectInput( 'All pixels', true ); ?>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <label class="col-5 control-label">Event type:</label>
-                <div class="col-4">
-                    <?php renderDummyTextInput( 'Select Event type:' ); ?>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col col-offset-left">
-                    <?php renderDummySwitcher(); ?>
-                    <h4 class="indicator-label">Add Parameters</h4>
-                </div>
-            </div>
-        </div>
     </div>
-</div>
 
-<?php if ( Pinterest()->enabled() ) : ?>
-    <?php Pinterest()->renderCustomEventOptions( $event ); ?>
-<?php endif; ?>
+    <?php if ( Facebook()->enabled() ) :
+        $facebook_configured = Facebook()->enabled() && !empty( Facebook()->getPixelIDs() );?>
+    <div class="card card-style4" data-configured="<?php echo $facebook_configured ? '1' : '0' ?>">
+        <input type="checkbox" class="event-settings-checkbox" id="meta_custom_event_switch" style="display: none">
 
-<?php if ( Bing()->enabled() ) : ?>
-    <?php Bing()->renderCustomEventOptions( $event ); ?>
-<?php endif; ?>
+        <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+            <div class="custom-event-pixel-header">
+                <img src="<?php echo PYS_FREE_URL . '/dist/images/meta-logo.svg' ?>" alt="meta-logo"
+                     class="pixel-logo">
+                <h4 class="font-semibold main-switcher">Meta</h4>
+            </div>
+            <div class="custom-event-pixel-status">
+                <?php
+                $enabled = $event->facebook_enabled && $facebook_configured;
+                ?>
+                <div class="pixel-status">
+                    <p class="status pixel-enabled" style="<?php echo $enabled ? '' : 'display: none' ?>">
+                        Active
+                    </p>
 
-<hr class="mb-4 mt-4">
-<?php if ( GTM()->enabled() ) : ?>
-    <div class="card card-static mb-4">
-        <div class="card-header">
-            GTM DataLayer
+                    <p class="status pixel-disabled" style="<?php echo $enabled ? 'display: none' : '' ?>">
+                        Inactive
+                    </p>
+                </div>
+
+                <label class="card-header-label" for="meta_custom_event_switch">
+                    <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                </label>
+            </div>
         </div>
         <div class="card-body">
-            <div class="row mb-2">
-                <div class="col">
-                    <?php Events\renderSwitcherInput( $event, 'gtm_enabled' ); ?>
-                    <h4 class="switcher-label">Enable on GTM</h4>
+            <div class="facebook-not-configured-error mb-24">
+                <div class="event_error critical_message">Error: Meta pixel is not configured</div>
+            </div>
+            <div class="d-flex align-items-center mb-24">
+                <?php Events\renderSwitcherInput( $event, 'facebook_enabled' ); ?>
+                <h4 class="switcher-label secondary_heading">Enable on Facebook</h4>
+            </div>
+            <div id="facebook_panel" class="pixel_panel">
+                <div class="mb-24">
+                    <div class="mb-8">
+                        <label class="custom-event-label">Event type:</label>
+                    </div>
+
+                    <?php Events\renderFacebookEventTypeInput( $event, 'facebook_event_type' ); ?>
+
+                    <div class="facebook-custom-event-type mt-16">
+                        <?php Events\renderTextInput( $event, 'facebook_custom_event_type', 'Enter name' ); ?>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <?php Events\renderSwitcherInput( $event, 'facebook_params_enabled' ); ?>
+                    <h4 class="switcher-label secondary_heading">Add Parameters</h4>
+                </div>
+                <div id="facebook_params_panel">
+                    <div class="mt-24 ViewContent Search AddToCart AddToWishlist InitiateCheckout AddPaymentInfo Purchase Lead CompleteRegistration Subscribe StartTrial">
+                        <div class="mb-8">
+                            <label class="custom-event-label">value</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'value' ); ?>
+                    </div>
+
+                    <div class="mt-24 ViewContent Search AddToCart AddToWishlist InitiateCheckout AddPaymentInfo Purchase Lead CompleteRegistration Subscribe StartTrial">
+                        <div class="mb-8">
+                            <label class="custom-event-label">currency</label>
+                        </div>
+
+                        <?php Events\renderCurrencyParamInput( $event, 'currency' ); ?>
+
+                        <div class="facebook-custom-currency mt-24">
+                            <?php Events\renderFacebookParamInput( $event, 'custom_currency' ); ?>
+                        </div>
+                    </div>
+
+                    <div class="mt-24 ViewContent AddToCart AddToWishlist InitiateCheckout Purchase Lead CompleteRegistration">
+                        <div class="mb-8">
+                            <label class="custom-event-label">content_name</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'content_name' ); ?>
+                    </div>
+
+                    <div class="mt-24 ViewContent AddToCart AddToWishlist InitiateCheckout Purchase Lead CompleteRegistration">
+                        <div class="mb-8">
+                            <label class="custom-event-label">content_ids</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'content_ids' ); ?>
+                    </div>
+
+                    <div class="mt-24 ViewContent AddToCart InitiateCheckout Purchase">
+                        <div class="mb-8">
+                            <label class="custom-event-label">content_type</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'content_type' ); ?>
+                    </div>
+
+                    <div class="mt-24 Search AddToWishlist InitiateCheckout AddPaymentInfo Lead">
+                        <div class="mb-8">
+                            <label class="custom-event-label">content_category</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'content_category' ); ?>
+                    </div>
+
+                    <div class="mt-24 InitiateCheckout Purchase">
+                        <div class="mb-8">
+                            <label class="custom-event-label">num_items</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'num_items' ); ?>
+                    </div>
+
+                    <div class="mt-24 Purchase">
+                        <div class="mb-8">
+                            <label class="custom-event-label">order_id</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'order_id' ); ?>
+                    </div>
+
+                    <div class="mt-24 Search">
+                        <div class="mb-8">
+                            <label class="custom-event-label">search_string</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'search_string' ); ?>
+                    </div>
+
+                    <div class="mt-24 CompleteRegistration">
+                        <div class="mb-8">
+                            <label class="custom-event-label">status</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'status' ); ?>
+                    </div>
+
+                    <div class="mt-24 Subscribe StartTrial">
+                        <div class="mb-8">
+                            <label class="custom-event-label">predicted_ltv</label>
+                        </div>
+
+                        <?php Events\renderFacebookParamInput( $event, 'predicted_ltv' ); ?>
+                    </div>
+
+                    <!-- Custom Facebook Params -->
+                    <div class="facebook-custom-param" data-param_id="0"
+                         style="display: none;">
+                        <div class="mt-24 d-flex align-items-center">
+                            <div>
+                                <input name="" placeholder="Enter name"
+                                       class="custom-param-name input-standard"
+                                       type="text">
+                            </div>
+
+                            <div class="ml-16">
+                                <input name="" placeholder="Enter value"
+                                       class="custom-param-value input-standard"
+                                       type="text">
+                            </div>
+
+                            <div>
+                                <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php foreach ( $event->getFacebookCustomParams() as $key => $custom_param ) : ?>
+
+                        <?php $param_id = $key + 1; ?>
+
+                        <div class="facebook-custom-param"
+                             data-param_id="<?php echo $param_id; ?>">
+                            <div class="mt-24 d-flex align-items-center">
+                                <div>
+                                    <input type="text" placeholder="Enter name"
+                                           class="custom-param-name input-standard"
+                                           name="pys[event][facebook_custom_params][<?php echo $param_id; ?>][name]"
+                                           value="<?php echo esc_attr( $custom_param[ 'name' ] ); ?>">
+                                </div>
+
+                                <div class="ml-16">
+                                    <input type="text" placeholder="Enter value"
+                                           class="custom-param-value input-standard"
+                                           name="pys[event][facebook_custom_params][<?php echo $param_id; ?>][value]"
+                                           value="<?php echo esc_attr( $custom_param[ 'value' ] ); ?>">
+                                </div>
+
+                                <div>
+                                    <?php include PYS_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                    <?php endforeach; ?>
+
+                    <div class="insert-marker"></div>
+
+                    <div class="mt-24">
+                        <?php renderAddCustomParameterButton( 'facebook' ); ?>
+                    </div>
+                </div>
+                <p class="primary-heading-color mt-24">
+                    <span class="primary-text-color primary_heading">Important: </span>
+                    verify your custom events inside your Ads Manager:
+                    <a
+                            href="https://www.youtube.com/watch?v=Iyu-pSbqcFI" target="_blank"
+                            class="link">watch this video to learn how
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ( GA()->enabled() ) :
+
+        $ga_tags_configured = (GA()->enabled() && !empty(GA()->getPixelIDs()));
+
+        ?>
+        <div class="card card-style4" data-configured="<?php echo $ga_tags_configured ? '1' : '0' ?>">
+            <input type="checkbox" class="event-settings-checkbox" id="google_tags_custom_event_switch"
+                   style="display: none">
+
+            <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+                <div class="custom-event-pixel-header">
+                    <img src="<?php echo PYS_FREE_URL . '/dist/images/google-tags-logo.svg' ?>" alt="google-tags-logo"
+                         class="pixel-logo">
+                    <h4 class="font-semibold main-switcher">Google Tags</h4>
+                </div>
+
+                <div class="custom-event-pixel-status">
+                    <?php
+                    $enabled = $event->ga_ads_enabled && $ga_tags_configured;
+                    ?>
+                    <div class="pixel-status">
+                        <p class="status pixel-enabled" style="<?php echo $enabled ? '' : 'display: none' ?>">
+                            Active
+                        </p>
+
+                        <p class="status pixel-disabled" style="<?php echo $enabled ? 'display: none' : '' ?>">
+                            Inactive
+                        </p>
+                    </div>
+
+                    <label class="card-header-label" for="google_tags_custom_event_switch">
+                        <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                    </label>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="gatags-not-configured-error mb-24">
+                    <div class="event_error critical_message">Error: Google tags are not configured</div>
+                </div>
+                <div class="d-flex align-items-center mb-24">
+                    <?php Events\renderSwitcherInput( $event, 'ga_ads_enabled' ); ?>
+                    <h4 class="switcher-label secondary_heading">Enable on Google Analytics</h4>
+                </div>
+                <div id="merged_analytics_panel" class="pixel_panel">
+                    <!-- v4 Google params  -->
+                    <script>
+                        <?php
+                        $fields = array();
+                        foreach ( $event->GAEvents as $group => $items ) {
+                            foreach ( $items as $name => $elements ) {
+                                $fields[] = array(
+                                    "name"   => $name,
+                                    'fields' => $elements
+                                );
+                            }
+                        }
+
+                        ?>
+                        const ga_fields = <?=json_encode( $fields )?>
+                    </script>
+
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Event</label>
+                        </div>
+
+                        <?php Events\renderGoogleAnalyticsMergedActionInput( $event, 'ga_ads_event_action' ); ?>
+                    </div>
+                    <div class="mb-24" id="ga-ads-custom-action_g4">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Enter name</label>
+                        </div>
+
+                        <div class="ga_ads_custom_event_action">
+                            <?php Events\renderTextInput( $event, 'ga_ads_custom_event_action' ); ?>
+                        </div>
+                    </div>
+
+                    <div class="ga-ads-param-list">
+                        <?php
+                        foreach ( $event->getMergedGaParams() as $key => $val ) : ?>
+                            <div class="mb-24 ga_ads_param">
+                                <div class="mb-8">
+                                    <label class="custom-event-label"><?= $key ?></label>
+                                </div>
+
+                                <?php Events\renderMergedGAParamInput( $key, $val ); ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="ga-ads-custom-param-list">
+                        <?php
+                        foreach ( $event->getGAMergedCustomParams() as $key => $custom_param ) : ?>
+                            <?php $param_id = $key + 1; ?>
+
+                            <div class="ga-ads-custom-param"
+                                 data-param_id="<?php echo $param_id; ?>">
+                                <div class="mt-24 d-flex align-items-center">
+                                    <div>
+                                        <input type="text" placeholder="Enter name"
+                                               class="custom-param-name input-standard"
+                                               name="pys[event][ga_ads_custom_params][<?php echo $param_id; ?>][name]"
+                                               value="<?php echo esc_attr( $custom_param[ 'name' ] ); ?>">
+                                    </div>
+
+                                    <div class="ml-16">
+                                        <input type="text" placeholder="Enter value"
+                                               class="custom-param-name input-standard"
+                                               name="pys[event][ga_ads_custom_params][<?php echo $param_id; ?>][value]"
+                                               value="<?php echo esc_attr( $custom_param[ 'value' ] ); ?>">
+                                    </div>
+
+                                    <div>
+                                        <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="mt-24">
+                        <?php renderAddCustomParameterButton( 'ga-ads' ); ?>
+                    </div>
+                    <p class="primary-heading-color mt-24">
+                        The following parameters are automatically tracked: <span class="event-parameter-list">content_name, event_url,
+                    post_id, post_type</span>.
+                    </p>
+
+                    <p class="primary-heading-color">
+                        The paid version tracks the <span class="event-parameter-list">event_hour, event_month</span>, and
+                        <span class="event-parameter-list">event_day</span>.
+                    </p>
+
+                    <p class="primary-heading-color mt-24 ga_woo_info" style="display: none">
+                        <span class="primary-text-color primary_heading">ATTENTION: </span>
+                        ​ the plugin automatically tracks ecommerce specific
+                        events for WooCommerce and Easy Digital Downloads. Make sure you really need this event.
+                    </p>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <div class="card card-disabled card-style4" data-configured="0">
+        <input type="checkbox" class="event-settings-checkbox" id="ads_custom_event_switch"
+               style="display: none">
+        <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+            <div class="custom-event-pixel-header">
+                <img src="<?php echo PYS_FREE_URL . '/dist/images/google-ads-logo.svg' ?>" alt="google-ads-logo"
+                     class="pixel-logo">
+                <h4 class="font-semibold main-switcher">Google Ads </h4>
+            </div>
+            <div class="custom-event-pixel-status">
+
+                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+
+
+                <label class="card-header-label" for="ads_custom_event_switch">
+                    <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                </label>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="d-flex align-items-center mb-24">
+                    <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label">Enable on Google Ads</h4>
+                </div>
+                <div id="merged_analytics_panel" class="pixel_panel">
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Conversion ID</label>
+                        </div>
+                        <div class="ga_conversion_label">
+                            <?php renderDummySelectInput( 'All', true ); ?>
+                        </div>
+                    </div>
+
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Conversion Label</label>
+                        </div>
+                        <div class="ga_conversion_label">
+                            <?php renderDummyTextInput( 'Enter name' ); ?>
+                            <p class="form-text text-small mt-6">Optional</p>
+                        </div>
+                    </div>
+                    <div class="mb-24 ga_ads_param">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Action</label>
+                        </div>
+                        <div class="mt-24 d-flex align-items-center">
+                            <div>
+                                <?php renderDummySelectInput( 'Custom Action', true ); ?>
+                            </div>
+
+                            <div class="ml-16">
+                                <?php renderDummyTextInput( 'Enter name' ); ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-24 ga_conversion_label ">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Category</label>
+                        </div>
+                        <?php renderDummyTextInput(); ?>
+                    </div>
+                    <div class="mt-24 ga_conversion_label ">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Label</label>
+                        </div>
+                        <?php renderDummyTextInput(); ?>
+                    </div>
+                    <div class="mt-24 ga_conversion_label ">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Value</label>
+                        </div>
+                        <?php renderDummyTextInput(); ?>
+                    </div>
                 </div>
             </div>
 
-            <div id="gtm_panel" class="mt-3">
-                <hr>
-                <div class="row mt-4 mb-3">
-                    <div class="col">
-                        <?php Events\render_checkbox_input( $event, 'gtm_automated_param', 'Add the automated parameters in the dataLayer' ); ?>
+        </div>
+    </div>
+
+    <div class="card card-disabled card-style4" data-configured="0">
+        <input type="checkbox" class="event-settings-checkbox" id="tiktok_custom_event_switch"
+               style="display: none">
+        <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+            <div class="custom-event-pixel-header">
+                <img src="<?php echo PYS_FREE_URL . '/dist/images/tiktok-logo.svg' ?>" alt="tiktok-logo"
+                     class="pixel-logo">
+                <h4 class="font-semibold main-switcher">TikTok </h4>
+            </div>
+            <div class="custom-event-pixel-status">
+                <?php renderProBadge('https://www.pixelyoursite.com/tiktok-tag-pixelyoursite/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+
+                <label class="card-header-label" for="ads_custom_event_switch">
+                    <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                </label>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="tiktok-not-configured-error mb-24">
+                    <div class="event_error critical_message">Error: TikTok is not configured</div>
+                </div>
+                <div class="d-flex align-items-center mb-24">
+                    <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label">Enable on TikTok</h4>
+                </div>
+                <div id="tiktok_panel" class="pixel_panel">
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Fire for:</label>
+                        </div>
+                        <?php renderDummySelectInput( 'All pixels', true ); ?>
+                    </div>
+                    <div class="tiktok-custom-event-type">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Event type:</label>
+                        </div>
+
+                        <?php renderDummyTextInput( 'Select Event type:' ); ?>
+                    </div>
+                    <div class="d-flex align-items-center mt-24">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="switcher-label secondary_heading">Add Parameters</h4>
                     </div>
                 </div>
-                <div class="row mt-4 mb-3">
-                    <div class="col">
-                        <?php Events\render_checkbox_input( $event, 'gtm_remove_customTrigger', 'Remove the customTrigger object' ); ?>
-                    </div>
+            </div>
+        </div>
+    </div>
+
+    <?php if ( Pinterest()->enabled() ) : ?>
+        <?php Pinterest()->renderCustomEventOptions( $event ); ?>
+    <?php endif; ?>
+
+    <?php if ( Bing()->enabled() ) : ?>
+        <?php Bing()->renderCustomEventOptions( $event ); ?>
+    <?php endif; ?>
+
+    <?php if ( GTM()->enabled() ) :
+        $gtm_configured = GTM()->enabled() && !empty( GTM()->getPixelIDs() );
+        ?>
+        <div class="card card-style4" data-configured="<?php echo $gtm_configured ? '1' : '0' ?>">
+            <input type="checkbox" class="event-settings-checkbox" id="gtm_custom_event_switch"
+                   style="display: none">
+
+            <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+                <div class="custom-event-pixel-header">
+                    <img src="<?php echo PYS_FREE_URL . '/dist/images/gtm-logo.svg' ?>" alt="gtm-logo"
+                         class="pixel-logo">
+                    <h4 class="font-semibold main-switcher">GTM DataLayer</h4>
                 </div>
-                <hr>
-                <div class="row align-items-center mb-2">
-                    <label class="col-5 control-label" style="padding-top:0;">Fire for:</label>
-                    <div class="col-4">
+
+                <div class="custom-event-pixel-status">
+                    <?php
+
+                    $enabled = $event->gtm_enabled && $gtm_configured;
+                    ?>
+                    <div class="pixel-status">
+                        <p class="status pixel-enabled" style="<?php echo $enabled ? '' : 'display: none' ?>">
+                            Active
+                        </p>
+
+                        <p class="status pixel-disabled" style="<?php echo $enabled ? 'display: none' : '' ?>">
+                            Inactive
+                        </p>
+                    </div>
+
+                    <label class="card-header-label" for="gtm_custom_event_switch">
+                        <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                    </label>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="gtm-not-configured-error mb-24">
+                    <div class="event_error critical_message">Error: GTM is not configured</div>
+                </div>
+                <div class="d-flex align-items-center mb-24">
+                    <?php Events\renderSwitcherInput( $event, 'gtm_enabled' ); ?>
+                    <h4 class="switcher-label secondary_heading">Enable on GTM</h4>
+                </div>
+
+                <div id="gtm_panel" class="pixel_panel">
+                    <div class="line mb-24"></div>
+
+                    <div class="d-flex align-items-center mb-24">
+                        <?php Events\renderSwitcherInput( $event, 'gtm_automated_param' ); ?>
+                        <h4 class="switcher-label secondary_heading">Add the automated parameters in the dataLayer</h4>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-24">
+                        <?php Events\renderSwitcherInput( $event, 'gtm_remove_customTrigger' ); ?>
+                        <h4 class="switcher-label secondary_heading">Remove the customTrigger object</h4>
+                    </div>
+
+                    <div class="line mb-24"></div>
+
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Fire for:</label>
+                        </div>
+
                         <?php
                         $mainPixels = GTM()->getPixelIDs();
-                        if(!empty($mainPixels) && strpos($mainPixels[0], 'GTM-') === 0 && strpos($mainPixels[0], 'GTM-') !== false) {
-                            echo $mainPixels[0];
-                            echo '<input type="hidden" name="pys[event][gtm_pixel_id][]" value="'.$mainPixels[0].'"/>';
-                        }
-                        else{
-                            _e('No container ID is configured', 'pys');
+                        if ( !empty( $mainPixels ) && strpos( $mainPixels[ 0 ], 'GTM-' ) === 0 && strpos( $mainPixels[ 0 ], 'GTM-' ) !== false ) {
+                            echo '<div class="disabled-input">' . $mainPixels[ 0 ] . '</div>';
+                            echo '<input type="hidden" name="pys[event][gtm_pixel_id][]" value="' . $mainPixels[ 0 ] . '"/>';
+                        } else {
+                            echo '<div class="disabled-input form-text">' . __( 'No container ID is configured', 'pys' ) . '</div>';
                         }
                         ?>
                     </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col ">
-                        <!-- v4 Google params  -->
-                        <div class="col g4">
-                            <div class="row mb-3 g4">
 
-                                <script>
-                                    <?php
-                                    $fields = array();
-                                    foreach ($event->GAEvents as $group => $items) {
-                                        foreach ($items as $name => $elements) {
-                                            $fields[] = array("name"=>$name,'fields'=>$elements);
-                                        }
-                                    }
+                    <script>
+                        <?php
+                        $fields = array();
+                        foreach ( $event->GAEvents as $group => $items ) {
+                            foreach ( $items as $name => $elements ) {
+                                $fields[] = array(
+                                    "name"   => $name,
+                                    'fields' => $elements
+                                );
+                            }
+                        }
 
-                                    ?>
-                                    var gtm_fields = <?=json_encode($fields)?>
-                                </script>
-                                <label class="col-5 control-label">Event</label>
-                                <div class="col-4">
-                                    <?php  Events\renderGTMActionInput( $event, 'gtm_event_action' ); ?>
-                                </div>
-                                <div class="col-3">
-                                    <div id="gtm-custom-action_g4">
-                                        <?php Events\renderTextInput( $event, 'gtm_custom_event_action', 'Enter name' ); ?>
-                                    </div>
-                                </div>
+                        ?>
+                        const gtm_fields = <?=json_encode( $fields )?>
+                    </script>
 
-
-                            </div>
-
-                            <div class="gtm-param-list">
-                                <?php
-                                foreach($event->getGTMParams() as $key=>$val) : ?>
-                                    <div class="row mb-3 gtm_param">
-                                        <label class="col-5 control-label"><?=$key?></label>
-                                        <div class="col-4">
-                                            <?php Events\renderGTMParamInput( $key, $val ); ?>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-
-                            <div class="gtm-custom-param-list">
-                                <?php
-                                foreach ( $event->getGTMCustomParamsAdmin() as $key => $custom_param ) : ?>
-                                    <?php $param_id = $key + 1; ?>
-
-                                    <div class="row mt-3 gtm-custom-param" data-param_id="<?php echo $param_id; ?>">
-                                        <div class="col">
-                                            <div class="row">
-                                                <div class="col-1"></div>
-                                                <div class="col-4">
-                                                    <input type="text" placeholder="Enter name" class="form-control custom-param-name"
-                                                           name="pys[event][gtm_custom_params][<?php echo $param_id; ?>][name]"
-                                                           value="<?php esc_attr_e( $custom_param['name'] ); ?>">
-                                                </div>
-                                                <div class="col-4">
-                                                    <input type="text" placeholder="Enter value" class="form-control custom-param-value"
-                                                           name="pys[event][gtm_custom_params][<?php echo $param_id; ?>][value]"
-                                                           value="<?php esc_attr_e( $custom_param['value'] ); ?>">
-                                                </div>
-                                                <div class="col-2">
-                                                    <button type="button" class="btn btn-sm remove-row">
-                                                        <i class="fa fa-trash-o" aria-hidden="true"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-
-                            </div>
-
-                            <div class="row mt-3">
-                                <div class="col-5"></div>
-                                <div class="col-4">
-                                    <button class="btn btn-sm btn-block btn-primary add-gtm-custom-parameter" type="button">Add
-                                        Custom Parameter</button>
-                                </div>
-                            </div>
-
-                            <hr>
-                            <div class="row mt-4 mb-2 gtm_use_custom_object_name">
-                                <div class="col">
-                                    <?php Events\render_checkbox_input( $event, 'gtm_use_custom_object_name', 'Use a custom value for the custom paramers object' ); ?>
-                                </div>
-                            </div>
-                            <div class="row mt-2 mb-2">
-                                <div class="col">
-                                    <?php Events\renderTextInput( $event, 'gtm_custom_object_name', $event->getManualCustomObjectName() );?>
-                                </div>
-                            </div>
-                            <hr>
-
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    When configuring GTM variables for these parameters, use this key: <span id="manual_custom_object_name"><?= $event->getManualCustomObjectName(); ?></span>
-                                </div>
-                            </div>
-                            <div class="row mt-3 gtm_woo_info" style="display: none">
-                                <div class="col-12">
-                                    <strong>ATTENTION</strong>:​ the plugin automatically tracks ecommerce specific events for WooCommerce and Easy Digital Downloads. Make sure you really need this event.
-                                </div>
-                            </div>
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Event</label>
                         </div>
 
+                        <?php Events\renderGTMActionInput( $event, 'gtm_event_action' ); ?>
                     </div>
+
+                    <div class="mb-24" id="gtm-custom-action_g4">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Enter name</label>
+                        </div>
+
+                        <?php Events\renderTextInput( $event, 'gtm_custom_event_action' ); ?>
+                    </div>
+
+                    <div class="gtm-param-list">
+                        <?php
+                        foreach ( $event->getGTMParams() as $key => $val ) : ?>
+                            <div class="mb-24 gtm_param">
+                                <div class="mb-8">
+                                    <label class="custom-event-label"><?= $key ?></label>
+                                </div>
+
+                                <?php Events\renderGTMParamInput( $key, $val ); ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="gtm-custom-param-list">
+                        <?php
+                        foreach ( $event->getGTMCustomParamsAdmin() as $key => $custom_param ) : ?>
+                            <?php $param_id = $key + 1; ?>
+
+                            <div class="gtm-custom-param" data-param_id="<?php echo $param_id; ?>">
+                                <div class="mt-24 d-flex align-items-center">
+                                    <div>
+                                        <input type="text" placeholder="Enter name"
+                                               class="custom-param-name input-standard"
+                                               name="pys[event][gtm_custom_params][<?php echo $param_id; ?>][name]"
+                                               value="<?php echo esc_attr( $custom_param[ 'name' ] ); ?>">
+                                    </div>
+
+                                    <div class="ml-16">
+                                        <input type="text" placeholder="Enter value"
+                                               class="custom-param-value input-standard"
+                                               name="pys[event][gtm_custom_params][<?php echo $param_id; ?>][value]"
+                                               value="<?php echo esc_attr( $custom_param[ 'value' ] ); ?>">
+                                    </div>
+
+                                    <div>
+                                        <?php include PYS_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div id="custom-param-message" class="critical_message mt-24"></div>
+
+                    <div class="mt-24 mb-24">
+                        <?php renderAddCustomParameterButton( 'gtm' ); ?>
+                    </div>
+
+                    <div class="line mb-24"></div>
+
+                    <div class="gtm_use_custom_object_name d-flex align-items-center mb-24">
+                        <?php Events\renderSwitcherInput( $event, 'gtm_use_custom_object_name' ); ?>
+                        <h4 class="switcher-label secondary_heading">Use a custom value for the custom parameters
+                            object</h4>
+                    </div>
+
+                    <div class="gtm_custom_object_name d-flex align-items-center mb-24">
+                        <?php Events\renderTextInput( $event, 'gtm_custom_object_name', $event->getManualCustomObjectName() ); ?>
+                    </div>
+
+                    <p class="primary-heading-color mt-24">
+                        When configuring GTM variables for these parameters, use this key: <span
+                                class="event-parameter-list"
+                                id="manual_custom_object_name"><?= $event->getManualCustomObjectName(); ?></span>
+                    </p>
+
+                    <p class="gtm_woo_info primary-heading-color mt-24">
+                        <span class="primary-text-color primary_heading">ATTENTION: </span>
+                        ​ the plugin automatically tracks ecommerce specific events for WooCommerce and Easy Digital
+                        Downloads. Make sure you really need this event.
+                    </p>
+
                 </div>
             </div>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
 
-<div class="card card-static card-disabled">
-    <div class="card-header">
-        Dynamic Parameters Help <?php renderProBadge(); ?>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <ul class="text-secondary">
-                    <li><code>[id]</code> - it will pull the WordPress post ID</li>
-                    <li><code>[title]</code> - it will pull the content title</li>
-                    <li><code>[content_type]</code> - it will pull the post type (post, product, page and so on)</li>
-                    <li><code>[categories]</code> - it will pull the content categories</li>
-                    <li><code>[tags]</code> - it will pull the content tags</li>
-                    <li><code>[total]</code> - it will pull WooCommerce or EDD order's total when it exists</li>
-                    <li><code>[subtotal]</code> - it will pull WooCommerce or EDD orders's subtotal when it exists</li>
-                </ul>
-                <p><strong class="text-secondary">Track URL parameters:</strong></p>
-                <p class="text-secondary"> Use <code>[url_ParameterName]</code> where ParameterName = the name of the parameter. <br/><br/>
-                    Example:<br/><br/>
-                    This is your URL: <?=$serverUrl?>?ParameterName=123<br/>
-                    The parameter value will be 123.<br/>
-                </p>
-                <p class="text-secondary mb-0"><strong>Note:</strong> if a parameter is missing from a particular
-                    page, the event won't include it.</p>
-					<br/>
-				<p><strong class="text-secondary">Track MemberPress plugin parameters:</strong></p>
-				  <p class="text-secondary"> These parameters only work on a "thankyou page" with shortcode <code>[mepr-ecommerce-tracking]Message with %%variables%% in here[/mepr-ecommerce-tracking]</code><br/><br/>
-					All variables must have the prefix "mp_".<br/><br/>
-					Example:<br/><br/>
-					This is your MemberPress variable: total.<br/>
-					The parameter value will be: [mp_total].<br/>
-				 </p>
+
+    <div class="card about-params card-style3 card-disabled">
+        <div class="card-header card-header-style2">
+            <div class="d-flex align-items-center">
+                <i class="icon-Info"></i>
+                <h4 class="heading-with-icon bold-heading mr-24">Dynamic Parameters Help</h4>
+                <?php renderProBadge(); ?>
             </div>
         </div>
-    </div>
-</div>
 
-<hr>
-<div class="row justify-content-center">
-	<div class="col-4">
-		<button class="btn btn-block btn-save">Save Event</button>
-	</div>
+        <div class="card-body" style="display: block;">
+            <p class="mb-20">
+                <span class="primary-text-color bold-heading">Important:</span>
+                Don't use the Dynamic Parameters to send users' personal data with your events because it can trigger
+                warnings or other similar actions.
+            </p>
+
+            <ul class="mb-20">
+                <li>
+                    <span class="event-parameter-list">[id]</span> - it will pull the WordPress post ID
+                </li>
+
+                <li>
+                    <span class="event-parameter-list">[title]</span> - it will pull the content title
+                </li>
+
+                <li>
+                    <span class="event-parameter-list">[content_type]</span> - it will pull the post type (post, product,
+                    page and so on)
+                </li>
+
+                <li>
+                    <span class="event-parameter-list">[categories]</span> - it will pull the content categories
+                </li>
+
+                <li>
+                    <span class="event-parameter-list">[tags]</span> - it will pull the content tags
+                </li>
+
+                <li>
+                    <span class="event-parameter-list">[total]</span> - it will pull WooCommerce or EDD order's total when
+                    it exists
+                </li>
+
+                <li>
+                    <span class="event-parameter-list">[subtotal]</span> - it will pull WooCommerce or EDD order's subtotal
+                    when it exists
+                </li>
+            </ul>
+
+            <p class="mb-20 primary-text-color bold-heading">
+                Track URL parameters:
+            </p>
+
+            <p>
+                Use <span class="event-parameter-list">[url_ParameterName]</span> where ParameterName = the name of the
+                parameter.
+            </p>
+
+            <p>Example:</p>
+            <p>This is your URL: <?= $serverUrl ?>?ParameterName=123</p>
+            <p class="mb-20">The parameter value will be 123.</p>
+
+            <p class="mb-20">
+                <span class="primary-text-color bold-heading">Note:</span>
+                if a parameter is missing from a particular page, the event won't include it.
+            </p>
+
+            <p class="mb-20 primary-text-color primary_heading">
+                Track form parameters:
+            </p>
+
+            <p>
+                Use <span class="event-parameter-list">[field_FieldName]</span> where FieldName = the name of the field.
+            </p>
+
+            <p>Example:</p>
+            <p>This is your field name: filed-name</p>
+            <p>The value of the dynamic parameter will be: [field_field-name]</p>
+            <p class="mb-20">The parameter value will be the value of the field.</p>
+
+            <p class="mb-20 primary-text-color bold-heading">
+                Track MemberPress plugin parameters:
+            </p>
+
+            <p class="mb-20">
+                These parameters only work on a "thankyou page" with shortcode
+                <span class="event-parameter-list">[mepr-ecommerce-tracking]Message with %%variables%% in here[/mepr-ecommerce-tracking]</span>
+            </p>
+            <p class="mb-20">Available parameters are described <a
+                        href="https://docs.memberpress.com/article/112-available-shortcodes" target="_blank" class="link">here</a>.
+            </p>
+
+            <p>All variables must have the prefix "mp_".</p>
+            <p>Example:</p>
+            <p>This is your MemberPress variable: total.</p>
+            <p>The parameter value will be: [mp_total].</p>
+        </div>
+    </div>
+
 </div>

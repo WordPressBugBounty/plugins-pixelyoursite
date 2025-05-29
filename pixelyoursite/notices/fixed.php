@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             'order' => '1', // message display order
             'wait' => 0, // timeout after closing the previous message
             'type' => 'event chain', // Message type, if included in the message sequence then type MUST be 'event chain'
+            'location' => 'backend', // can be "backend","plugin". backend is show in WP admin on all pages. plugin is show only in plugin page.
             'enabelYoutubeLink' => false, // enables or disables the link to the channel at the bottom of the block
             'enabelLogo' => false, // enable or disable the logo on the left in the block
             'enabelDismiss' => false, // enable or disable dismiss button, default enable
@@ -43,6 +44,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 If need fixed message
         [
             'type' => 'promo',
+            'location' => 'backend',
             'enabelDismiss' => false, // enable or disable dismiss button, default enable
             'plugins' =>[], // can be "woo","wcf","edd" or empty array
             'slug'  => '',// unique id
@@ -56,6 +58,7 @@ function adminGetFixedNotices() {
             'order' => '1',
             'wait' => 0,
             'type' => 'event chain',
+            'location' => 'backend',
             'enabelYoutubeLink' => true,
             'enabelLogo' => true,
             'enabelDismiss' => true,
@@ -91,6 +94,7 @@ function adminGetFixedNotices() {
             'order' => '2',
             'wait' => 12,
             'type' => 'event chain',
+            'location' => 'backend',
             'enabelYoutubeLink' => true,
             'enabelLogo' => true,
             'color' => 'green',
@@ -132,6 +136,7 @@ function adminGetFixedNotices() {
             'order' => '3',
             'wait' => 24,
             'type' => 'event chain',
+            'location' => 'backend',
             'enabelYoutubeLink' => true,
             'enabelLogo' => true,
             'multiMessage' => [
@@ -170,6 +175,7 @@ function adminGetFixedNotices() {
         /*
             [
                 'type' => 'promo',
+                'location' => 'backend',
                 'plugins' => [],
                 'slug'  => 'wcf_and_woo_promo_v1',
                 'enabelDismiss' => true,

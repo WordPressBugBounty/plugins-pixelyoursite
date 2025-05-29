@@ -384,11 +384,12 @@ class GA extends Settings implements Pixel {
                     // Adding products
                     if (!empty($event['params']['items'])) {
                         foreach ($event['params']['items'] as $key => $item) {
-                            $args["pr" . ($key + 1) . "id"] = urlencode($item['id']);
-                            $args["pr" . ($key + 1) . "nm"] = urlencode($item['name']);
-                            $args["pr" . ($key + 1) . "pr"] = (float)$item['price'];
-                            $args["pr" . ($key + 1) . "qt"] = (int)$item['quantity'];
-                            $args["pr" . ($key + 1) . "ca"] = urlencode($item['item_category']);
+
+                            $args["pr" . ($key + 1) . "id"] = isset($item['id']) ? urlencode($item['id']) : '';
+                            $args["pr" . ($key + 1) . "nm"] = isset($item['name']) ? urlencode($item['name']) : '';
+                            $args["pr" . ($key + 1) . "pr"] = isset($item['price']) ? (float)$item['price'] : 0;
+                            $args["pr" . ($key + 1) . "qt"] = isset($item['quantity']) ? (int)$item['quantity'] : 1;
+                            $args["pr" . ($key + 1) . "ca"] = isset($item['item_category']) ? urlencode($item['item_category']) : '';
                         }
                     }
                     $src = add_query_arg( $args, 'https://www.google-analytics.com/collect' ) ;
@@ -538,12 +539,11 @@ class GA extends Settings implements Pixel {
             'price'    => getWooProductPriceToDisplay($product->get_id(), $quantity, $customProductPrice),
         );
 
-        $category = $this->getCategoryArrayWoo($productId);
+        $category = $this->getCategoryArrayWoo($product->get_id());
         if(!empty($category))
         {
             $general_item = array_merge($general_item, $category);
         }
-
         $items[] = $general_item;
 // Check if the product has variations
         if ($product->is_type('variable') && !GATags()->getOption( 'woo_variable_as_simple' )) {
@@ -552,8 +552,9 @@ class GA extends Settings implements Pixel {
 
             foreach ($variations as $variation) {
                 $variationProduct = wc_get_product($variation['variation_id']);
+                if(!$variationProduct) continue;
                 $variationProductId = GA\Helpers\getWooProductContentId($variation['variation_id']);
-                $category = $this->getCategoryArrayWoo($variationProductId, true);
+                $category = $this->getCategoryArrayWoo($variation['variation_id'], true);
 
                 $item = array(
                     'id'       => $variationProductId,
@@ -673,7 +674,7 @@ class GA extends Settings implements Pixel {
 
         foreach ($product_ids as $child_id) {
             $childProduct = wc_get_product($child_id);
-            if($childProduct->get_type() == "variable" && $isGrouped) {
+            if(!$childProduct || ($childProduct->get_type() == "variable" && $isGrouped)) {
                 continue;
             }
             $content_id = GA\Helpers\getWooProductContentId($child_id);
@@ -856,7 +857,7 @@ class GA extends Settings implements Pixel {
             $content_id = GA\Helpers\getWooProductContentId( $product_id );
 
 			$product = wc_get_product( $product_id );
-            if (GATags()->getOption('woo_variable_as_simple') && $product->is_type('variation')) {
+            if ( $product && GATags()->getOption('woo_variable_as_simple') && $product->is_type('variation')) {
                 $product = wc_get_product($product->get_parent_id());
             }
             if(!$product) continue;
@@ -1316,7 +1317,6 @@ class GA extends Settings implements Pixel {
         } else {
             $category = getObjectTerms('product_cat', $contentID);
         }
-
         $category_index = 1;
 
         foreach ($category as $cat) {

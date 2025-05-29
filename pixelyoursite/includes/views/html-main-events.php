@@ -10,238 +10,325 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
 
 ?>
 
-<div class="panel">
-    <div class="row">
-        <div class="col">
-            <div class="d-flex justify-content-between">
-                <span class="mt-2">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
-                <a target="_blank" class="btn btn-sm btn-primary float-right" href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-upgrade-blue">UPGRADE</a>
-            </div>
-        </div>
+<div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24 mb-24">
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="font-semibold primary-heading-color fz-18">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
+        <?php renderProBadge();?>
     </div>
 </div>
 
-<input type="hidden" name="pys[bulk_event_action_nonce]" value="<?php echo wp_create_nonce( 'bulk_event_action' ); ?>">
+<div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24">
+    <input type="hidden" name="pys[bulk_event_action_nonce]"
+           value="<?php echo wp_create_nonce( 'bulk_event_action' ); ?>">
 
-<h2 class="section-title">User Defined Events</h2>
+    <h2 class="font-semibold primary-heading-color fz-18 pt-4">User Defined Events</h2>
 
-<div class="card card-static">
-    <div class="card-header">
-        General
-    </div>
-    <div class="card-body">
-	    <?php PYS()->render_switcher_input( 'custom_events_enabled' ); ?>
-        <h4 class="switcher-label">Enable Events</h4>
-        <div class="mt-3">
-            <a  class="btn btn-sm btn-light btn-events-import">Import Events</a>
-            <a   class="btn  ml-3  btn-sm btn-light btn-events-export">Export Events</a>
-            <a class="ml-3 badge badge-pill badge-pro" href="https://www.pixelyoursite.com/?utm_source=pys-free-plugin&amp;utm_medium=pro-badge&amp;utm_campaign=pro-feature/?utm_source=pys-free-plugin&amp;utm_medium=pro-badge&amp;utm_campaign=pro-feature" target="_blank" >Pro Feature <i class="fa fa-external-link" aria-hidden="true"></i></a>
+    <div class="card card-style4 card-static">
+        <div class="card-header card-header-style3">
+            <p class="secondary_heading_type2">
+                General
+            </p>
         </div>
-    </div>
-</div>
-<div class="card card-static">
-    <div class="card-header">
-        Recommeded videos
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-								<p><a href="https://www.youtube.com/watch?v=kEp5BDg7dP0" target="_blank">How to fire EVENTS with PixelYourSite (22:28) - watch now</a></p>
-                <p><a href="https://www.youtube.com/watch?v=wUsqwomsYMo" target="_blank">RECENT: Conditions: Improved Event Tracking - Meta, Google, TikTok, GTM (5:09) - watch now</a></p>
-								<p><a href="https://www.youtube.com/watch?v=kWozitdarSA" target="_blank">RECENT: How to use Custom Events for Meta Ads (7:49)</a></p>
-                <p><a href="https://www.youtube.com/watch?v=PcXYYGOvahc" target="_blank">Track URL tags as event parameters (8:15) - watch now</a></p>
+        <div class="card-body card-body-general">
+            <div class="events-general-content-wrap">
+                <div class="d-flex align-items-center mb-24">
+                    <?php PYS()->render_switcher_input( 'custom_events_enabled' ); ?>
+                    <h4 class="switcher-label secondary_heading">Enable Events</h4>
+                </div>
+
+                <?php include PYS_FREE_VIEW_PATH . '/UI/buttons-import-export-events.php'; ?>
             </div>
         </div>
     </div>
-</div>
-<div class="card card-static">
-    <div class="card-header">
-        About Parameters
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <p>All the events you configure here will automatically get the following parameters for all the tags:
-                    <i>page_title, post_type, post_id, event_URL, user_role, plugin, landing_page (pro), event_time (pro), event_day (pro), event_month (pro), traffic_source (pro), UTMs (pro).</i></p>
-                <p>You can add other parameters when you configure the events.</p>
-            </div>
+
+    <?php
+    $videos = array(
+        array(
+            'url'   => 'https://www.youtube.com/watch?v=kEp5BDg7dP0',
+            'title' => 'How to fire EVENTS with PixelYourSite',
+            'time'  => '22:28',
+        ),
+        array(
+            'url'   => 'https://www.youtube.com/watch?v=PcXYYGOvahc',
+            'title' => 'Track URL tags as event parameters',
+            'time'  => '8:15',
+        ),
+        array(
+            'url'   => 'https://www.youtube.com/watch?v=ehi66agv1zo',
+            'title' => 'Track YouTube or Vimeo Embedded Videos With Your Own Events',
+            'time'  => '5:25',
+        ),
+        array(
+            'url'   => 'https://www.youtube.com/watch?v=c4Hrb8WK5bw',
+            'title' => 'Fire a LEAD event on form submit - WordPress & PixelYourSite',
+            'time'  => '5:58',
+        ),
+        array(
+            'url'   => 'https://www.youtube.com/watch?v=0IFHqI6itx8',
+            'title' => 'Improve Meta EMQ score with when tracking WordPress forms',
+            'time'  => '4:52',
+        ),
+        array(
+            'url'   => 'https://www.youtube.com/watch?v=Iyu-pSbqcFI',
+            'title' => 'Mandatory: Verify your Meta CUSTOM Events (Pixel & CAPI)',
+            'time'  => '5:10',
+        ),
+    );
+
+    renderRecommendedVideo( $videos );
+    ?>
+
+    <div class="card card-style4 card-static card-custom-events">
+        <div class="card-header card-header-style3">
+            <p class="font-semibold main-switcher">
+                Events List
+            </p>
         </div>
-    </div>
-</div>
+        <div class="card-body">
+            <div class="events-general-content-wrap">
+                <?php include PYS_FREE_VIEW_PATH . '/UI/buttons-action-events.php'; ?>
 
-<div class="card card-static custom_events">
-    <div class="card-header">
-        Events List
-    </div>
-    <div class="card-body">
-        <div class="row mb-3 bulk-events-block">
-            <div class="col">
-                <a href="<?php echo esc_url( $new_event_url ); ?>" class="btn btn-sm btn-primary mr-3">Add</a>
-                <button class="btn btn-sm btn-light" name="pys[bulk_event_action]" value="enable" type="submit">Enable</button>
-                <button class="btn btn-sm btn-light" name="pys[bulk_event_action]" value="disable" type="submit">Disable</button>
-                <button class="btn btn-sm btn-light" name="pys[bulk_event_action]" value="clone" type="submit">Duplicate</button>
-                <button class="btn btn-sm btn-danger ml-3 bulk-events-delete" name="pys[bulk_event_action]" value="delete" type="submit">Delete</button>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <table class="table mb-0" id="table-custom-events">
-                    <thead>
-                    <tr>
-                        <th style="width: 45px;">
-                            <label class="custom-control custom-checkbox">
-                                <input type="checkbox" id="pys_select_all_events" value="1" class="custom-control-input">
-                                <span class="custom-control-indicator"></span>
-                            </label>
-                        </th>
-                        <th>Name</th>
-                        <th>Triggers</th>
-                        <th>Networks</th>
-                    </tr>
-                    </thead>
-                    <tbody>
+                <div class="line mb-24"></div>
 
-                    <?php foreach ( CustomEventFactory::get() as $event ) : ?>
-
-                        <?php
-                        $trigger_type = $event->getTriggerType();
-                        $triggers = $event->getTriggers();
-                        if ( !empty( $triggers ) ) {
-                            $trigger_type = $triggers[0]->getTriggerType();
-                            switch ( $trigger_type ) {
-                                case 'page_visit':
-                                    $event_types = 'Page Visit';
-                                    break;
-
-                                case 'home_page':
-                                    $event_types = 'Home Page Visit';
-                                    break;
-
-                                case 'post_type':
-                                    {
-                                        $event_types = 'Post Type';
-                                        $selectedPostType = $triggers[0]->getPostTypeValue();
-                                        $types = get_post_types( null, "objects " );
-                                        foreach ( $types as $type ) {
-                                            if ( $type->name == $selectedPostType ) {
-                                                $errorMessage = "";
-                                                break;
-                                            }
-                                        }
-
-                                    }
-                                    break;
-
-                                case 'scroll_pos':
-                                    $event_types = 'Scroll Position';
-                                    break;
-
-                                default:
-                                    $event_types = 'Page Visit';
-                                    break;
-                            }
-                        }
-
-                        /** @var CustomEvent $event */
-
-                        $event_edit_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit', array(
-                            'id' => $event->getPostId()
-                        ) );
-
-                        $event_enable_url = buildAdminUrl( 'pixelyoursite', 'events', 'enable', array(
-                            'pys'      => array(
-                                'event' => array(
-                                    'post_id' => $event->getPostId(),
-                                )
-                            ),
-                            '_wpnonce' => wp_create_nonce( 'pys_enable_event' ),
-                        ) );
-
-                        $event_disable_url = buildAdminUrl( 'pixelyoursite', 'events', 'disable', array(
-                            'pys'      => array(
-                                'event' => array(
-                                    'post_id' => $event->getPostId(),
-                                )
-                            ),
-                            '_wpnonce' => wp_create_nonce( 'pys_disable_event' ),
-                        ) );
-
-                        $event_remove_url = buildAdminUrl( 'pixelyoursite', 'events', 'remove', array(
-                            'pys'      => array(
-                                'event' => array(
-                                    'post_id' => $event->getPostId(),
-                                )
-                            ),
-                            '_wpnonce' => wp_create_nonce( 'pys_remove_event' ),
-                        ) );
-
-                        ?>
-
-                        <tr data-post_id="<?php esc_attr_e( $event->getPostId() ); ?>"
-                            class="<?php echo $event->isEnabled() ? '' : 'disabled'; ?>">
-                            <td>
-                                <label class="custom-control custom-checkbox">
-                                    <input type="checkbox" name="pys[selected_events][]"
-                                           value="<?php esc_attr_e( $event->getPostId() ); ?>"
-                                           class="custom-control-input pys-select-event">
-                                    <span class="custom-control-indicator"></span>
-                                </label>
-                            </td>
-                            <td>
-                                <a href="<?php echo esc_url( $event_edit_url ); ?>"><?php esc_html_e( $event->getTitle() ); ?></a>
-                                <span class="event-actions">
-                                    <?php if ( $event->isEnabled() ) : ?>
-                                        <a href="<?php echo esc_url( $event_disable_url ); ?>">Disable</a>
-                                    <?php else : ?>
-                                        <a href="<?php echo esc_url( $event_enable_url ); ?>">Enable</a>
-                                    <?php endif; ?>
-                                    &nbsp;|&nbsp;
-                                    <a href="<?php echo esc_url( $event_remove_url ); ?>" class="
-                                    text-danger remove-custom-event">Remove</a>
-                                </span>
-                            </td>
-                            <td><?php echo wp_kses_post( $event_types); ?></td>
-                            <td class="networks">
-                                <?php if ( Facebook()->enabled() && $event->isFacebookEnabled() ) : ?>
-                                    <i class="fa fa-facebook-square"></i>
-                                <?php else : ?>
-                                    <i class="fa fa-facebook-square" style="opacity: .25;"></i>
-                                <?php endif; ?>
-
-                                <?php if ( GA()->enabled() && $event->isUnifyAnalyticsEnabled() ) : ?>
-                                    <i class="fa fa-area-chart"></i>
-                                <?php else : ?>
-                                    <i class="fa fa-area-chart" style="opacity: .25;"></i>
-                                <?php endif; ?>
-
-                                <i class="fa fa-google" style="opacity: .25;"></i>
-
-                                <?php if ( $event->isGTMEnabled() && $event->isGTMPresent()) : ?>
-                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.png">
-                                <?php else : ?>
-                                    <img class="gtm-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tag-manager.png" style="opacity: 0.25">
-                                <?php endif; ?>
-
-                                <?php if ( Pinterest()->enabled() && $event->isPinterestEnabled() ) : ?>
-                                    <i class="fa fa-pinterest-square"></i>
-                                <?php else : ?>
-                                    <i class="fa fa-pinterest-square" style="opacity: .25;"></i>
-                                <?php endif; ?>
-                            </td>
+                <div>
+                    <table class="table" id="table-custom-events">
+                        <thead>
+                        <tr>
+                            <th>
+                                <div class="small-checkbox">
+                                    <input type="checkbox" id="pys_select_all_events" value="1"
+                                           class="small-control-input">
+                                    <label class="small-control small-checkbox-label" for="pys_select_all_events">
+                                        <span class="small-control-indicator"><i class="icon-check"></i></span>
+                                    </label>
+                                </div>
+                            </th>
+                            <th class="column-title font-semibold">Name</th>
+                            <th class="column-title font-semibold">Triggers</th>
+                            <th class="column-title font-semibold">Networks</th>
                         </tr>
+                        </thead>
+                        <tbody>
 
-                    <?php endforeach; ?>
+                        <?php foreach ( CustomEventFactory::get() as $event ) : ?>
 
-                    </tbody>
-                </table>
+                            <?php
+                            $errorMessage = "";
+                            /** @var CustomEvent $event */
+
+                            $event_edit_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit', array(
+                                'id' => $event->getPostId()
+                            ) );
+
+                            $event_enable_url = buildAdminUrl( 'pixelyoursite', 'events', 'enable', array(
+                                'pys'      => array(
+                                    'event' => array(
+                                        'post_id' => $event->getPostId(),
+                                    )
+                                ),
+                                '_wpnonce' => wp_create_nonce( 'pys_enable_event' ),
+                            ) );
+
+                            $event_disable_url = buildAdminUrl( 'pixelyoursite', 'events', 'disable', array(
+                                'pys'      => array(
+                                    'event' => array(
+                                        'post_id' => $event->getPostId(),
+                                    )
+                                ),
+                                '_wpnonce' => wp_create_nonce( 'pys_disable_event' ),
+                            ) );
+
+                            $event_remove_url = buildAdminUrl( 'pixelyoursite', 'events', 'remove', array(
+                                'pys'      => array(
+                                    'event' => array(
+                                        'post_id' => $event->getPostId(),
+                                    )
+                                ),
+                                '_wpnonce' => wp_create_nonce( 'pys_remove_event' ),
+                            ) );
+
+                            $triggers = $event->getTriggers();
+                            $event_types = array();
+
+                            if ( !empty( $triggers ) ) {
+                                foreach ( $triggers as $trigger ) {
+                                    $trigger_type = $trigger->getTriggerType();
+                                    switch ( $trigger_type ) {
+                                        case 'number_page_visit':
+                                            $event_types[] = 'Number of Page Visits';
+                                            break;
+                                        case 'post_type':
+                                            {
+                                                $event_types[] = 'Post Type';
+                                                $selectedPostType = $trigger->getPostTypeValue();
+                                                $errorMessage = "Post type not found";
+                                                $types = get_post_types( null, "objects " );
+                                                foreach ( $types as $type ) {
+                                                    if ( $type->name == $selectedPostType ) {
+                                                        $errorMessage = "";
+                                                        break;
+                                                    }
+                                                }
+
+                                            }
+                                            break;
+
+                                        case 'url_click':
+                                            $event_types[] = 'Link Click';
+                                            break;
+
+                                        case 'css_click':
+                                            $event_types[] = 'Element Click';
+                                            break;
+
+                                        case 'css_mouseover':
+                                            $event_types[] = 'Element Mouseover';
+                                            break;
+
+                                        case 'scroll_pos':
+                                            $event_types[] = 'Scroll Position';
+                                            break;
+
+                                        case 'video_view':
+                                            $event_types[] = 'Embedded Video View';
+                                            break;
+
+                                        case 'email_link':
+                                            $event_types[] = 'Email Link';
+                                            break;
+
+                                        case 'page_visit':
+                                            $event_types[] = 'Page Visit';
+                                            break;
+                                    }
+                                    if ( $trigger->isFormTriggerType( $trigger_type ) ) {
+                                        $eventsFormFactory = apply_filters( "pys_form_event_factory", [] );
+                                        foreach ( $eventsFormFactory as $activeFormPlugin ) :
+                                            if ( $activeFormPlugin->getSlug() == $trigger_type ) {
+                                                $event_types[] = $activeFormPlugin->getName();
+                                            }
+                                        endforeach;
+                                    }
+                                }
+                            }
+
+                            if ( empty( $event_types ) ) {
+                                $event_types[] = 'No triggers';
+                            }
+                            ?>
+
+                            <tr data-post_id="<?php echo esc_attr( $event->getPostId() ); ?>"
+                                class="event-row <?php echo $event->isEnabled() ? '' : 'disabled'; ?>">
+                                <td class="event-select">
+                                    <div class="small-checkbox">
+                                        <input type="checkbox" name="pys[selected_events][]"
+                                               value="<?php echo esc_attr( $event->getPostId() ); ?>"
+                                               class="small-control-input pys-select-event"
+                                               id="pys-event-<?php echo esc_attr( $event->getPostId() ); ?>"
+                                        >
+                                        <label class="small-control small-checkbox-label"
+                                               for="pys-event-<?php echo esc_attr( $event->getPostId() ); ?>">
+                                            <span class="small-control-indicator"><i class="icon-check"></i></span>
+                                        </label>
+                                    </div>
+                                </td>
+                                <td class="event-title-cell">
+                                    <div class="event-title-wrapper">
+                                        <div class="event-title">
+                                            <a href="<?php echo esc_url( $event_edit_url ); ?>"
+                                               class="font-medium"><?php esc_html_e( $event->getTitle() ); ?></a>
+                                        </div>
+                                        <div class="event-actions">
+                                            <?php if ( $event->isEnabled() ) : ?>
+                                                <a href="<?php echo esc_url( $event_disable_url ); ?>"
+                                                   class="event-toggle">Disable</a>
+                                            <?php else : ?>
+                                                <a href="<?php echo esc_url( $event_enable_url ); ?>"
+                                                   class="event-toggle">Enable</a>
+                                            <?php endif; ?>
+                                            <div class="row-separator"></div>
+
+                                            <a href="<?php echo esc_url( $event_remove_url ); ?>" class="
+                                        remove-custom-event">Remove</a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="event-types">
+                                    <?php
+                                    if ( !empty( $event_types ) ) :
+                                        foreach ( $event_types as $event_type ) : ?>
+                                            <p class="event-type font-medium">
+                                                <?php echo wp_kses_post( $event_type ); ?>
+                                            </p>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <?php
+
+                                    if ( $errorMessage != "" ) : ?>
+                                        <div class="event_error font-medium">
+                                            <?= $errorMessage ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="event-networks-col">
+                                    <div class="event-networks">
+                                        <?php
+                                        $disabled = Facebook()->enabled() && !empty( Facebook()->getPixelIDs() ) && $event->isFacebookEnabled(); ?>
+                                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/meta-logo.svg" alt="meta logo"
+                                             class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+
+                                        <?php
+                                        $ga_tags = ( GA()->enabled() && !empty( GA()->getPixelIDs() )) && $event->isUnifyAnalyticsEnabled();
+                                        $disabled = $ga_tags && $event->isGoogleAnalyticsPresent(); ?>
+                                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/google-tags-logo.svg"
+                                             alt="google tags logo"
+                                             class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+
+                                        <?php
+                                        $disabled = GTM()->enabled() && !empty( GTM()->getPixelIDs() ) && $event->isGTMEnabled() && $event->isGTMPresent(); ?>
+                                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/gtm-logo.svg" alt="gtm logo"
+                                             class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+
+                                        <?php
+                                        $disabled = Bing()->enabled() && !empty( Bing()->getPixelIDs() ) && $event->isBingEnabled(); ?>
+                                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/bing-logo.svg" alt="bing logo"
+                                             class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+
+                                        <?php
+                                        $disabled = Pinterest()->enabled() && !empty( Pinterest()->getPixelIDs() ) && $event->isPinterestEnabled(); ?>
+                                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/pinterest-logo.svg"
+                                             alt="pinterest logo"
+                                             class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+                                    </div>
+                                </td>
+                            </tr>
+
+                        <?php endforeach; ?>
+
+                        </tbody>
+                    </table>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- About params -->
+    <div class="card about-params card-style3">
+        <div class="card-header card-header-style2">
+            <div class="d-flex align-items-center">
+                <i class="icon-Info"></i>
+                <h4 class="heading-with-icon bold-heading">About Parameters:</h4>
+            </div>
+        </div>
+
+        <div class="card-body" style="display: block;">
+            <p class="mb-20">All the events you configure here will automatically get the following parameters for
+                all
+                the tags:
+                <span class="parameters-list">page_title, post_type, post_id, landing_page, event_URL, user_role, plugin, event_time (pro), event_day (pro), event_month (pro), traffic_source (pro), UTMs (pro).</span>
+            </p>
+            <p>You can add other parameters when you configure the events.</p>
         </div>
     </div>
 </div>
 
-<hr>
-<div class="row justify-content-center">
-    <div class="col-4">
-        <button class="btn btn-block btn-save">Save Settings</button>
-    </div>
-</div>

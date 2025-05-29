@@ -353,6 +353,8 @@ function getAvailableProductCogCart() {
 
         $product = wc_get_product($product_id);
 
+        if(!$product) continue;
+
         $cost_type = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_type', true );
         $product_cost = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_val', true );
 

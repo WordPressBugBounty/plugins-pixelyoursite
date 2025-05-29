@@ -60,29 +60,29 @@ if ( ! is_array( $meta ) ) {
 
 <div class="pys-head-footer">
 
-	<label for="pys_head_footer_head_any" class="control-label">Head (any device type):</label>
+	<label for="pys_head_footer_head_any" >Head (any device type):</label>
 	<textarea name="pys_head_footer[head_any]" id="pys_head_footer_head_any"
 	          rows="10"><?php @esc_html_e( $meta['head_any'] ); ?></textarea>
 
-	<label for="pys_head_footer_head_desktop" class="control-label">Head - Desktop Only:</label>
+	<label for="pys_head_footer_head_desktop">Head - Desktop Only:</label>
 	<textarea name="pys_head_footer[head_desktop]" id="pys_head_footer_head_desktop"
 	          rows="5"><?php @esc_html_e( $meta['head_desktop'] ); ?></textarea>
 
-	<label for="pys_head_footer_head_mobile" class="control-label">Head - Mobile Only:</label>
+	<label for="pys_head_footer_head_mobile">Head - Mobile Only:</label>
 	<textarea name="pys_head_footer[head_mobile]" id="pys_head_footer_head_mobile"
 	          rows="5"><?php @esc_html_e( $meta['head_mobile'] ); ?></textarea>
 
 	<hr style="margin-top: 15px;">
 
-	<label for="pys_head_footer_footer_any" class="control-label">Footer (any device type):</label>
+	<label for="pys_head_footer_footer_any">Footer (any device type):</label>
 	<textarea name="pys_head_footer[footer_any]" id="pys_head_footer_footer_any"
 	          rows="10"><?php @esc_html_e( $meta['footer_any'] ); ?></textarea>
 
-	<label for="pys_head_footer_footer_desktop" class="control-label">Footer - Desktop Only:</label>
+	<label for="pys_head_footer_footer_desktop">Footer - Desktop Only:</label>
 	<textarea name="pys_head_footer[footer_desktop]" id="pys_head_footer_footer_desktop"
 	          rows="5"><?php @esc_html_e( $meta['footer_desktop'] ); ?></textarea>
 
-	<label for="pys_head_footer_footer_mobile" class="control-label">Footer - Mobile Only:</label>
+	<label for="pys_head_footer_footer_mobile">Footer - Mobile Only:</label>
 	<textarea name="pys_head_footer[footer_mobile]" id="pys_head_footer_footer_mobile"
 	          rows="5"><?php @esc_html_e( $meta['footer_mobile'] ); ?></textarea>
 

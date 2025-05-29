@@ -3,57 +3,36 @@
 namespace PixelYourSite;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+    exit; // Exit if accessed directly.
 }
 
 ?>
 
-<div class="wrap" id="pys">
-	<h1><?php _e( 'PixelYourSite', 'pys' ); ?></h1>
-	<div class="container">
-		<div class="row">
-			<div class="col">
+<div class="cards-wrapper cards-wrapper-style2 gap-24 report-system-wrapper">
+    <?php foreach ( get_system_report_data() as $section_name => $section_report ) : ?>
+        <div class="card card-style6 card-static">
+            <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center logs_enable">
+                    <h4 class="secondary_heading_type2 switcher-label"><?php esc_html_e( $section_name ); ?></h4>
+                </div>
+            </div>
 
-				<h2 class="section-title">System Report</h2>
+            <div class="card-body">
+                <table class="table system-report">
+                    <tbody>
 
-				<?php foreach ( get_system_report_data() as $section_name => $section_report ) : ?>
+                    <?php foreach ( $section_report as $name => $value ) : ?>
 
-				<div class="card card-static">
-					<div class="card-header">
-						<?php esc_html_e( $section_name ); ?>
-					</div>
-					<div class="card-body">
-						<table class="table system-report">
-							<tbody>
+                        <tr>
+                            <td style="width: 40%;"><?php echo $name; ?></td>
+                            <td style="width: 60%;"><?php echo $value; ?></td>
+                        </tr>
 
-							<?php foreach ( $section_report as $name => $value ) : ?>
+                    <?php endforeach; ?>
 
-								<tr>
-									<td style="width: 50%;"><?php echo $name; ?></td>
-									<td style="width: 50%;"><?php echo $value; ?></td>
-								</tr>
-
-							<?php endforeach; ?>
-
-							</tbody>
-						</table>
-					</div>
-				</div>
-
-				<?php endforeach; ?>
-
-			</div>
-		</div>
-
-		<hr>
-		<div class="row justify-content-center">
-			<div class="col-4">
-				<form method="post">
-					<?php wp_nonce_field( 'pys_download_system_report_nonce' ); ?>
-					<input type="hidden" name="pys_action" value="download_system_report"/>
-					<button type="submit" class="btn btn-block btn-sm btn-primary">Download System Report</button>
-				</form>
-			</div>
-		</div>
-	</div>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endforeach; ?>
 </div>

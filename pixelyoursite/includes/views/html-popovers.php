@@ -1,5 +1,7 @@
 <!-- GENERAL -->
-
+<div id="pys-copied-popover" style="display: none; visibility: hidden">
+    Copied
+</div>
 <div id="pys-general_event" style="display: none; visibility: hidden">
 	<p>The GeneralEvent will track the following parameters:</p>
     <ul>
@@ -374,45 +376,63 @@
 		event has for your business.</p>
 </div>
 
+<div id="pys-woo_initiate_checkout_event_value_1" style="display: none; visibility: hidden">
+    <p>To enable Checkout Behavior reports on Google Analytics, you need to configure the funnel steps. Inside your Google Analytics, go on Settings > Ecommerce Settings.</p>
+    <p>Make sure you have "Enable Ecommerce" and "Enable Enhanced Ecommerce Reporting" turned ON.</p>
+    <p>Under "Checkout labeling" create 5 funnel steps:</p>
+    <ul>
+        <li>Initiate Checkout</li>
+        <li>First Name</li>
+        <li>Last Name</li>
+        <li>Email</li>
+        <li>Click Place Order</li>
+    </ul>
+    <p>You can find this report under Conversions > Ecommerce > Checkout Behaviour.</p>
+    <p>For more details,</p>
+    <p>visit our <a href="https://www.pixelyoursite.com/documentation/checkout-behaviour-analysis" target="_blank" class="link">help page</a> </p>
+</div>
+
 <div id="pys-woo_add_to_cart_event_value" style="display: none; visibility: hidden">
-    <p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
-        event has for your business.</p>
+	<p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
+	event has for your business.</p>
 </div>
 
 <div id="pys-woo_view_content_event_value" style="display: none; visibility: hidden">
-    <p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
-        event has for your business.</p>
+	<p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
+	event has for your business.</p>
 </div>
 
 <div id="pys-woo_affiliate_event_value" style="display: none; visibility: hidden">
-    <p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
-        event has for your business.</p>
+	<p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
+	event has for your business.</p>
 </div>
 
 <div id="pys-woo_paypal_event_value" style="display: none; visibility: hidden">
-    <p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
-        event has for your business.</p>
+	<p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
+	event has for your business.</p>
 </div>
 
 <!-- EDD -->
 
+<!-- @todo: review list of params for EDD popovers -->
+
 <div id="pys-edd_facebook_am_params" style="display: none; visibility: hidden">
-    <p>All the e-commerce events are Dynamic Product Ads ready, having the two required parameters:</p>
-    <ul>
-        <li>content_type: product or product group</li>
-        <li>content_ids</li>
-    </ul>
-    <p>The following events are used for Dynamic Product Ads:</p>
-    <ul>
-        <li>ViewContent: on single product pages</li>
-        <li>ViewCategory: on WooCommerce category pages</li>
-        <li>AddToCart: when a product is added to cart</li>
-        <li>Purchase: when a transaction is completed</li>
-    </ul>
-    <p><strong>IMPORTANT:</strong> in order to run Dynamic Product ads you need a Product Catalog. You can create one
-        using our <a href="https://www.pixelyoursite.com/easy-digital-downloads-product-catalog?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-info-popup"
-                     target="_blank">dedicated
-            Product Catalog Feed plugin</a>.</p>
+	<p>All the e-commerce events are Dynamic Product Ads ready, having the two required parameters:</p>
+	<ul>
+		<li>content_type: product or product group</li>
+		<li>content_ids</li>
+	</ul>
+	<p>The following events are used for Dynamic Product Ads:</p>
+	<ul>
+		<li>ViewContent: on single product pages</li>
+		<li>ViewCategory: on WooCommerce category pages</li>
+		<li>AddToCart: when a product is added to cart</li>
+		<li>Purchase: when a transaction is completed</li>
+	</ul>
+	<p><strong>IMPORTANT:</strong> in order to run Dynamic Product ads you need a Product Catalog. You can create one
+		using our <a href="https://www.pixelyoursite.com/easy-digital-downloads-product-catalog"
+		target="_blank" class="link">dedicated
+	Product Catalog Feed plugin</a>.</p>
 </div>
 
 <div id="pys-edd_facebook_and_pinterest_params" style="display: none; visibility: hidden">
@@ -572,8 +592,21 @@
 </div>
 
 <div id="pys-ga_cross_domain_tracking" style="display: none; visibility: hidden">
-    <p>Cross-domain measurement makes it possible for Analytics to see sessions on two related sites (such as an
-        ecommerce site and a separate shopping cart site) as a single session.</p>
-    <p><a href="https://www.pixelyoursite.com/pixelyoursite-free-version/google-analytics-cross-domain-tracking"
-          target="_blank">Click here for help</a></p>
+	<p>Cross-domain measurement makes it possible for Analytics to see sessions on two related sites (such as an
+	ecommerce site and a separate shopping cart site) as a single session.</p>
+	<p>
+		<a href="https://www.pixelyoursite.com/documentation/google-analytics-cross-domain-tracking"
+		target="_blank" class="link">Click here for help</a>
+	</p>
+</div>
+
+<div id="pys-woo_bing_enable_purchase" style="display: none; visibility: hidden">
+	<p>You can create a “Conversion Goal” using the Purchase event from inside your Microsoft/Bing Adsaccount:</p>
+	<p><b>1. </b><b>Go to ​Campaigns​</b> › ​<b>Conversion Tracking​</b> › ​<b>Conversion goals​</b>.</p>
+	<p><b>2. </b>Click ​<b>Create conversion goal​</b> to continue.</p>
+	<p><b>3. </b>Enter a name for your goal, and choose ​<b>Event</b>. Click ​<b>Next​</b>.</p>
+	<p><b>4. </b>For <b>Action</b>, add <b>Equals</b> to <i><b>purchase</b></i>.</p>
+	<p><b>5. </b>For ​<b>Revenue Value​</b> select ​<b>The value of this conversion action may vary (for instance, by purchase price)</b>.</p>
+	<p><b>6. </b>Click <b>​Save​</b>
+	</p>
 </div>

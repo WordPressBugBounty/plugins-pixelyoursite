@@ -141,8 +141,8 @@ function adminGdprAjaxNotEnabledNotice() {
                     url: ajaxurl,
                     data: {
                         action: 'pys_notice_dismiss',
-                        nonce: '<?php esc_attr_e( wp_create_nonce( 'pys_notice_dismiss' ) ); ?>',
-                        user_id: '<?php esc_attr_e( $user_id ); ?>',
+                        nonce: '<?php echo esc_attr( wp_create_nonce( 'pys_notice_dismiss' ) ); ?>',
+                        user_id: '<?php echo esc_attr( $user_id ); ?>',
                         addon_slug: 'core',
                         meta_key: 'gdpr_ajax_notice'
                     }

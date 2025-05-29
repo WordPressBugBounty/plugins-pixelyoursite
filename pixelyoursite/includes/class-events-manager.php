@@ -27,9 +27,6 @@ class EventsManager {
 		add_action( 'wp_footer', array( $this, 'outputNoScriptData' ), 10 );
 
         // Classic hook for checkout page
-        add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
-        // Hook for Store API (passes WC_Order object instead of order_id)
-        add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
         add_filter( 'script_loader_tag', array( $this, 'add_data_attribute_to_script' ), 10, 3 );
 	}
 
@@ -665,29 +662,6 @@ class EventsManager {
         </script>
 
         <?php
-
-    }
-    public function saveExternalIDInOrder($order_param) {
-        // Determine whether the WC_Order object or order ID is passed
-        if ( $order_param instanceof WC_Order ) {
-            // If the order object is transferred
-            $order = $order_param;
-        } else {
-            // If order_id is passed
-            $order = wc_get_order( $order_param );
-        }
-        if (!$order && empty($order_param)) return;
-
-        $external_id = PYS()->get_pbid();
-
-        if (isWooCommerceVersionGte('3.0.0') && !empty($order)) {
-            // WooCommerce >= 3.0
-            $order->update_meta_data("external_id", $external_id);
-            $order->save();
-        } elseif ( ! empty( $order_param ) ) {
-            // WooCommerce < 3.0
-            update_post_meta($order_param, 'external_id', $external_id);
-        }
 
     }
     static function isTrackExternalId(){

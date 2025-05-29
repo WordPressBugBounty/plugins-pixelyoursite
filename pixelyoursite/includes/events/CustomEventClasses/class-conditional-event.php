@@ -69,25 +69,27 @@ class ConditionalEvent extends SettingsCustomEvent {
     {
         ?>
 
-            <div class="card-body condition_group"  data-condition_id="<?php esc_attr_e( $this->index ); ?>"
-                 data-new_condition_index="<?php esc_attr_e( $this->index ); ?>">
+        <div class="card-body condition_group"  data-condition_id="<?php echo esc_attr( $this->index ); ?>"
+             data-new_condition_index="<?php echo esc_attr( $this->index ); ?>">
+            <div class="condition_group_head">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <p class="font-semibold"><?php _e('Select the condition type', 'pys'); ?></p>
+                    </div>
 
-                <div class="row">
-                    <div class="col form-inline">
-                        <label><?php _e('Select the condition type', 'pys'); ?></label>
-                        <div>
-                            <?php $this->render_select_input('condition_type' , $this->conditional_type_array, null,'pys_event_condition_type' ); ?>
-                        </div>
+                    <div class="ml-8">
+                        <?php $this->render_select_input('condition_type' , $this->conditional_type_array, null,'select-standard pys_event_condition_type' ); ?>
                     </div>
                 </div>
-                <?php
-                if ($load){ ?>
-                    <div class="event_conditions_panel <?= $this->condition_type ?>_panel" data-condition_type="<?= $this->condition_type ?>">
-                       <?php $this->renderConditionUrlOptions($this->condition_type);?>
-                    </div>
-                <?php } ?>
-
             </div>
+            <?php
+            if ($load){ ?>
+                <div class="event_conditions_panel <?= $this->condition_type ?>_panel" data-condition_type="<?= $this->condition_type ?>">
+                    <?php $this->renderConditionUrlOptions($this->condition_type);?>
+                </div>
+            <?php } ?>
+
+        </div>
         <?php
     }
 
@@ -107,50 +109,46 @@ class ConditionalEvent extends SettingsCustomEvent {
 
     public function renderConditionUrlOptions($conditional_type) {
         $condition_name = $this->conditional_type_array[$conditional_type];
-        $condition_rule = array();
-        switch ($conditional_type) {
-            case 'url_filters' :
-            case 'url_parameters':
-            case 'landing_page' :
-            case 'source' :
-                if(!empty($condition_name) && $condition_name !== 'URL filters') {
-                    $condition_rule['contains'] = $condition_name.' contains';
-                    $condition_rule['match'] = $condition_name.' match';
-                } else {
-                    $condition_rule['contains'] = 'URL contains';
-                    $condition_rule['match'] = 'URL match';
-                }
-                ?>
-                    <div class="row mt-3">
-                            <div class="col-4">
-                                <?php $this->render_select_input('condition_rule', $condition_rule, $conditional_type); ?>
-                            </div>
-                            <div class="col-6">
-                                <?php $this->render_text_input('condition_value' , __('Enter URL', 'pys'), $conditional_type ); ?>
-                            </div>
-                    </div>
-                <?php
-                break;
-            case 'device' :
-                ?>
-                <div class="row mt-3">
-                    <div class="col-12">
+        $condition_rule = array();?>
+        <div class="event_condition_wrapper">
+
+        <?php
+            switch ($conditional_type) {
+                case 'url_filters' :
+                case 'url_parameters':
+                case 'landing_page' :
+                case 'source' :
+                    if(!empty($condition_name) && $condition_name !== 'URL filters') {
+                        $condition_rule['contains'] = $condition_name.' contains';
+                        $condition_rule['match'] = $condition_name.' match';
+                    } else {
+                        $condition_rule['contains'] = 'URL contains';
+                        $condition_rule['match'] = 'URL match';
+                    }
+                    ?>
+                        <?php $this->render_select_input('condition_rule', $condition_rule, $conditional_type, 'select-standard'); ?>
+                        <div class="ml-8">
+                            <?php $this->render_text_input('condition_value' , __('Enter URL', 'pys'), $conditional_type ); ?>
+                        </div>
+                    <?php
+                    break;
+                case 'device' :
+                    ?>
+                    <div class="radio-inputs-wrap">
                         <?php $this->render_radio_input('device', 'Desktop', 'Desktop'); ?>
                         <?php $this->render_radio_input('device' , 'Mobile', 'Mobile' ); ?>
                     </div>
-                </div>
-                <?php
-                break;
-            case 'user_role':
-                ?>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <?php $this->render_multi_select_input('user_role', $this->get_roles(), false, '', 'pys-role-pysselect2'); ?>
-                    </div>
-                </div>
-                <?php
-                break;
+                    <?php
+                    break;
+                case 'user_role':
+                    ?>
+                    <?php $this->render_multi_select_input('user_role', $this->get_roles(), false, '', 'pys-role-pysselect2'); ?>
+                    <?php
+                    break;
         }
+        ?>
+        </div>
+        <?php
     }
 
     public function check()

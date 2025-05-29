@@ -4,24 +4,27 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '10.2.1' );
-define( 'PYS_FREE_PINTEREST_MIN_VERSION', '5.5.3' );
-define( 'PYS_FREE_BING_MIN_VERSION', '3.5.3' );
+define( 'PYS_FREE_VERSION', '11.0.0' );
+define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.0.0' );
+define( 'PYS_FREE_BING_MIN_VERSION', '4.0.0' );
 define( 'PYS_FREE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'PYS_FREE_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
 define( 'PYS_FREE_PLUGIN_FILE', __FILE__ );
 define( 'PYS_FREE_PLUGIN_BASENAME', plugin_basename( PYS_FREE_PLUGIN_FILE ) );
 define( 'PYS_FREE_GTM_CONTAINERS_PATH', untrailingslashit( plugin_dir_url( __FILE__ ) ) .'/containers_gtm/' );
 
+define( 'PYS_FREE_PLUGIN_ICON', PYS_FREE_URL . '/dist/images/pys-logo.svg');
+define( 'PYS_FREE_VIEW_PATH', PYS_FREE_PATH . '/includes/views' );
 
+//Video link in the bottom bar
+define( 'PYS_FREE_VIDEO_URL', 'https://www.youtube.com/watch?v=fAwsayYLo5s' );
+define( 'PYS_FREE_VIDEO_TITLE', 'Meta Pixel and API setup - Boost EMQ'  );
 
-if ( isPysProActive()) {
-    return; // exit early when PYS PRO is active
-}
 require_once PYS_FREE_PATH.'/vendor/autoload.php';
 require_once PYS_FREE_PATH.'/includes/logger/class-pys-logger.php';
 require_once PYS_FREE_PATH.'/includes/class-event-id-generator.php';
 require_once PYS_FREE_PATH.'/includes/functions-common.php';
+require_once PYS_FREE_PATH.'/includes/functions-buttons.php';
 require_once PYS_FREE_PATH.'/includes/functions-admin.php';
 require_once PYS_FREE_PATH.'/includes/events/class-event.php';
 require_once PYS_FREE_PATH.'/includes/events/interface-events.php';
@@ -42,8 +45,8 @@ require_once PYS_FREE_PATH.'/includes/functions-license.php';
 require_once PYS_FREE_PATH.'/includes/functions-update-plugin.php';
 require_once PYS_FREE_PATH.'/includes/functions-gdpr.php';
 require_once PYS_FREE_PATH.'/includes/functions-migrate.php';
-require_once PYS_FREE_PATH.'/includes/functions-optin.php';
 require_once PYS_FREE_PATH.'/includes/class-fixed-notices.php';
+require_once PYS_FREE_PATH.'/includes/class-optin-notices.php';
 require_once PYS_FREE_PATH.'/includes/class-pixel.php';
 require_once PYS_FREE_PATH.'/includes/class-settings.php';
 require_once PYS_FREE_PATH.'/includes/class-plugin.php';

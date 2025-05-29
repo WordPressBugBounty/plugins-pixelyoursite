@@ -50,7 +50,7 @@ class Pinterest extends Settings implements Pixel {
 	
 	public function outputNoScriptEvents() {}
 
-	public function render_switcher_input( $key, $collapse = false, $disabled = false, $default = false) {
+	public function render_switcher_input( $key, $collapse = false, $disabled = false, $default = false, $type = 'secondary') {
 	    //@todo: review
 
 		$attr_name = "pys[pinterest][$key]";
@@ -59,32 +59,33 @@ class Pinterest extends Settings implements Pixel {
 		?>
 
 		<div class="custom-switch disabled">
-			<input type="checkbox" name="<?php esc_attr_e( $attr_name ); ?>" value="1" disabled="disabled"
-			       id="<?php esc_attr_e( $attr_id ); ?>" class="custom-switch-input">
-			<label class="custom-switch-btn" for="<?php esc_attr_e( $attr_id ); ?>"></label>
+			<input type="checkbox" name="<?php echo esc_attr( $attr_name ); ?>" value="1" disabled="disabled"
+			       id="<?php echo esc_attr( $attr_id ); ?>" class="custom-switch-input">
+			<label class="custom-switch-btn" for="<?php echo esc_attr( $attr_id ); ?>"></label>
 		</div>
 
 		<?php
 	}
 
 	public function renderCustomEventOptions( $event ) {}
- 
-	public function renderAddonNotice() {
-	    echo '&nbsp;<a href="https://www.pixelyoursite.com/pinterest-tag?utm_source=pys-free-plugin&utm_medium=pinterest-badge&utm_campaign=requiere-free-add-on" target="_blank" class="badge badge-pill badge-pinterest">Requires paid add-on <i class="fa fa-external-link" aria-hidden="true"></i></a>';
+
+    public function renderAddonNotice() {
+        echo '&nbsp;<a href="https://www.pixelyoursite.com/pinterest-tag" target="_blank" class="badge badge-pill badge-secondary">The paid add-on is required</a>';
     }
 
     public function renderPixelIdField() {
 	    ?>
-        <div class="row align-items-center">
-            <div class="col-2 py-4">
+        <div class="line"></div>
+        <div class="d-flex pixel-wrap align-items-center justify-content-between">
+            <div class="pixel-heading d-flex justify-content-start align-items-center">
                 <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/pinterest-square-small.svg">
-            </div>
-            <div class="col-10">
-                Add the Pinterest tag with our <a href="https://www.pixelyoursite.com/pinterest-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
-                        target="_blank">Paid addon</a>.
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="secondary_heading">Add the Pinterest tag with our <a class="link" href="https://www.pixelyoursite.com/pinterest-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
+                                                                                    target="_blank">Paid addon</a>.</h3>
+                    <?php renderProBadge('https://www.pixelyoursite.com/pinterest-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids', 'Purchase Addon'); ?>
+                </div>
             </div>
         </div>
-        <hr>
         
         <?php
     }

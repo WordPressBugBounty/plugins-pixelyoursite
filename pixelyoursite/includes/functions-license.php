@@ -9,49 +9,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * @param Plugin|Settings $plugin
  */
-function renderLicenseControls( $plugin ) {
+function renderLicenseControls( $plugin, $license_status ) {
 
-	$slug = $plugin->getSlug();
-	$input_name = "pys[{$slug}][license_action]";
-
-	$license_status = $plugin->getOption( 'license_status' );
+    $slug = $plugin->getSlug();
+    $input_name = "pys[{$slug}][license_action]";
 
 	?>
 
-    <div class="row">
-        <?php if( $license_status == 'valid' || $license_status == 'expired') : ?>
-            <div class="col-3">
-                <?php $plugin->render_text_input( 'license_key', 'Enter your license key', true, true, false); ?>
-                <button class="btn btn-block btn-sm btn-primary" name="<?php esc_attr_e( $input_name ); ?>"
-                        value="reactivate">Reactivate License</button>
-            </div>
-        <?php else : ?>
-            <div class="col-9">
-                <?php $plugin->render_text_input( 'license_key', 'Enter your license key', false, false, false ); ?>
-            </div>
-
+    <div class="d-flex align-items-center">
+        <?php $plugin->render_password_input( 'license_key', 'Enter your license key', false, false, false ); ?>
+        <?php if( $license_status == 'valid' ||  $license_status == 'expired') : ?>
+            <button class="btn btn-block btn-sm btn-success" name="<?php echo esc_attr( $input_name ); ?>"
+                    value="reactivate">Reactivate License</button>
+        <?php else: ?>
+            <button class="btn btn-block btn-sm btn-primary" name="<?php echo esc_attr( $input_name ); ?>"
+                    value="activate">Activate License</button>
         <?php endif; ?>
-
-        <div class="col-3">
-            <?php if( $license_status == 'valid' ||  $license_status == 'expired') : ?>
-                <button class="btn btn-block btn-sm btn-danger" name="<?php esc_attr_e( $input_name ); ?>"
-                        value="deactivate">Deactivate License</button>
-            <?php else : ?>
-                <button class="btn btn-block btn-sm btn-primary" name="<?php esc_attr_e( $input_name ); ?>"
-                        value="activate">Activate License</button>
-            <?php endif; ?>
-        </div>
-
-
     </div>
 
 	<?php
 
-	$license_key = $plugin->getOption( 'license_key' );
-	$license_expires = $plugin->getOption( 'license_expires', null );
-
-	$license_expires_soon = false;
-	$license_expired = false;
+    $license_key = $plugin->getOption( 'license_key' );
+    $license_expires = $plugin->getOption( 'license_expires', null );
+    $license_expires_soon = false;
+    $license_expired = false;
 
 	if( $license_expires ) {
 
@@ -67,15 +48,9 @@ function renderLicenseControls( $plugin ) {
 
 	if ( $notice = get_transient( "pys_{$slug}_license_notice" ) ) :
 		?>
-
-		<div class="row mt-3">
-			<div class="col">
-				<div class="alert alert-<?php esc_attr_e( $notice['class'] ); ?> mb-0" role="alert">
-					<?php echo $notice['msg']; ?>
-				</div>
-			</div>
-		</div>
-
+            <div class="alert alert-<?php echo esc_attr( $notice['class'] ); ?>" role="alert">
+                <?php echo $notice['msg']; ?>
+            </div>
 		<?php
 
 		delete_transient(  "pys_{$slug}_license_notice" );
@@ -84,15 +59,9 @@ function renderLicenseControls( $plugin ) {
 
 	if ( $notice = get_transient( "pys_{$slug}_license_notice_403" ) ) :
 		?>
-
-        <div class="row mt-3">
-            <div class="col">
-                <div class="alert alert-<?php esc_attr_e( $notice['class'] ); ?> mb-0" role="alert">
-					<?php echo $notice['msg']; ?>
-                </div>
+            <div class="alert alert-<?php echo esc_attr( $notice['class'] ); ?>" role="alert">
+                <?php echo $notice['msg']; ?>
             </div>
-        </div>
-
 		<?php
 
 		delete_transient(  "pys_{$slug}_license_notice_403" );
@@ -101,38 +70,26 @@ function renderLicenseControls( $plugin ) {
 
 	if ( $license_expires_soon ) :
 		?>
-
-		<div class="row mt-3">
-			<div class="col">
-				<div class="alert alert-warning mb-0">
-					<p>Your license key <strong>expires
-							on <?php echo date( get_option( 'date_format' ), $license_expires ); ?></strong>. Make sure
-						you keep everything updated and in order.</p>
-                    <p>If you renewed your license but you still see this message, click on the "Reactivate License" button.</p>
-					<p class="mb-0"><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php esc_attr_e(
-						$license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license now for a 40% discount</strong></a></p>
-				</div>
-			</div>
-		</div>
-
+            <div class="alert alert-warning">
+                <p>Your license key <strong>expires
+                        on <?php echo date( get_option( 'date_format' ), $license_expires ); ?></strong>. Make sure
+                    you keep everything updated and in order.</p>
+                <p>If you renewed your license but you still see this message, click on the "Reactivate License" button.</p>
+                <p><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php echo esc_attr(
+                    $license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license now for a 40% discount</strong></a></p>
+            </div>
 		<?php
 	endif;
 
 	if ( $license_expired ) :
 		?>
-
-		<div class="row mt-3">
-			<div class="col">
-				<div class="alert alert-danger mb-0">
-					<p><strong>Your license key is expired</strong>, so you no longer get any updates. Don't miss our
-                        latest improvements and make sure that everything works smoothly.</p>
-                    <p>If you renewed your license but you still see this message, click on the "Reactivate License" button.</p>
-					<p class="mb-0"><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php esc_attr_e(
-						$license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license now</strong></a></p>
-				</div>
-			</div>
-		</div>
-
+            <div class="alert alert-danger">
+                <p><strong>Your license key is expired</strong>, so you no longer get any updates. Don't miss our
+                    latest improvements and make sure that everything works smoothly.</p>
+                <p>If you renewed your license but you still see this message, click on the "Reactivate License" button.</p>
+                <p><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php echo esc_attr(
+                    $license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license now</strong></a></p>
+            </div>
 		<?php
 	endif;
 

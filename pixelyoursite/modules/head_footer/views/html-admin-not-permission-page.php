@@ -162,7 +162,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <?php endif; ?>
 
-<h2 class="section-title">Replacements <?php renderHfBadge(); ?></h2>
+<h2 class="section-title">Replacements</h2>
 
 <div class="panel">
     <div class="row">

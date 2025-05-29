@@ -26,12 +26,12 @@ function renderCrossDomainDomain( $index = 0 ) {
     $attr_value = isset( $values[ $index ] ) ? $values[ $index ] : null;
     
     ?>
-    
-    <input type="text" name="<?php esc_attr_e( $attr_name ); ?>"
-           id="<?php esc_attr_e( $attr_id ); ?>"
-           value="<?php esc_attr_e( $attr_value ); ?>"
+
+    <input type="text" class="input-short" name="<?php echo esc_attr( $attr_name ); ?>"
+           id="<?php echo esc_attr( $attr_id ); ?>"
+           value="<?php echo esc_attr( $attr_value ); ?>"
            placeholder="Enter domain"
-           class="form-control">
+    >
     
     <?php
     
@@ -48,21 +48,25 @@ function getWooProductContentId( $product_id ) {
 
     if ( PixelYourSite\GATags()->getOption( 'woo_content_id' ) == 'product_sku' ) {
         $product = wc_get_product( $product_id );
-        if ( $product->is_type( 'variation' ) ) {
+        if ($product && $product->is_type( 'variation' ) ) {
             $content_id = $product->get_sku();
             if ( empty( $content_id ) ) {
                 $parent_id = $product->get_parent_id();
                 $parent_product = wc_get_product( $parent_id );
-                $content_id = $parent_product->get_sku();
+                if($parent_product){
+                    $content_id = $parent_product->get_sku();
+                }
                 if ( empty( $content_id ) ) {
                     $content_id = $product_id;
                 }
             }
-        } else {
+        } elseif($product) {
             $content_id = $product->get_sku();
             if ( empty( $content_id ) ) {
                 $content_id = $product_id;
             }
+        } else {
+            $content_id = $product_id;
         }
     } else {
         $content_id = $product_id;
