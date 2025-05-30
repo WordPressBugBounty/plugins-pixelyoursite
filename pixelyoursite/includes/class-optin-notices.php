@@ -78,24 +78,21 @@ class OptinNotice
         if ( get_option( 'pys_core_opted_in_dismissed_at' ) || get_user_meta( $user_id, 'pys_core_opted_in_dismissed_at', true ) ) {
             return;
         }
-        if (get_option( 'optin_second_time' ) || get_user_meta( $user_id, 'optin_second_time', true )) {
-            return; // was dismissed 3 times
-        }
 
         $first_time_dismissed_at = get_option( 'pys_core_optin_first_time_dismissed_at' ) ?? get_user_meta( $user_id, 'pys_core_optin_first_time_dismissed_at', true );
-
-        /*$second_time_dismissed_at = get_option( 'pys_core_optin_second_time_dismissed_at' ) ?? get_user_meta( $user_id, 'pys_core_optin_second_time_dismissed_at', true );
+        $second_time_dismissed_at = get_option( 'pys_core_optin_second_time_dismissed_at' ) ?? get_user_meta( $user_id, 'pys_core_optin_second_time_dismissed_at', true );
 
         if ($second_time_dismissed_at) {
-            $month_ago = time() - MONTH_IN_SECONDS;
+            /*$month_ago = time() - MONTH_IN_SECONDS;
 
             if ( $month_ago < $second_time_dismissed_at ) {
                 return;
             }
 
             $header = 'Free PIXELYOURSITE HACKS: Improve your ads return and website tracking - LAST CALL';
-            $dismiss_key = 'optin_third_time';
-        }*/
+            $dismiss_key = 'optin_third_time';*/
+            return;
+        }
 
         if ( $first_time_dismissed_at ) {
             $week_ago = time() - WEEK_IN_SECONDS;
@@ -179,8 +176,13 @@ class OptinNotice
                         addon_slug: 'core',
                         meta_key: '<?php echo esc_attr( $dismiss_key ); ?>'
                     },
-                    success: function (resp) {
+                    beforeSend: function () {
                         $container.closest('.pys-notice-wrapper').fadeOut();
+                    },
+                    success: function (resp) {
+                        if (resp.success) {
+                            console.log(resp)
+                        }
                     }
                 })
             });

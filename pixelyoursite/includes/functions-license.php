@@ -199,7 +199,7 @@ function set_data_license($plugin, $license_data)
                     break;
             }
 
-            $license_expires = strtotime( $license_data->expires );
+            $license_expires = $license_data->expires === 'lifetime' ? strtotime('2099-12-31 23:59:59') : strtotime($license_data->expires);;
 
         } else {
 
@@ -403,7 +403,7 @@ function updateLicense( $plugin ) {
                         break;
                 }
 
-                $license_expires = strtotime($license_data->expires);
+                $license_expires = $license_data->expires === 'lifetime' ? strtotime('2099-12-31 23:59:59') : strtotime($license_data->expires);;
 
             } else {
 
