@@ -429,7 +429,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                         if ( !$container[ 'enable' ] || empty( $container[ 'file_name' ] ) ) continue;
                                         ?>
                                         <p class="primary-heading-color mb-8">
-                                            <a href="<?php echo esc_url( buildAdminUrl( 'pixelyoursite', 'containers' ) ); ?>&download_container=<?php echo $container[ 'file_name' ]; ?>"
+                                            <a href="<?php echo esc_url( add_query_arg(['download_container' => $container['file_name'], '_wpnonce_template_logs' => $download_template_nonce],buildAdminUrl( 'pixelyoursite', 'containers' ))); ?>"
                                                target="_blank"
                                                class="link"
                                                download><?php echo $container[ 'show_name' ]; ?></a><?php echo !empty( $container[ 'description' ] ) ? ' - ' . $container[ 'description' ] : ''; ?>

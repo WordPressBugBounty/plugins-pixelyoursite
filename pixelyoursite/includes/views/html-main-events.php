@@ -12,7 +12,7 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
 
 <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24 mb-24">
     <div class="d-flex justify-content-between align-items-center">
-        <span class="font-semibold primary-heading-color fz-18">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
+        <span class="font-semibold primary-heading-color fz-18">With the pro you can fire events on clicks, form submit, video views, number of page views, email clicks, and more.</span>
         <?php renderProBadge();?>
     </div>
 </div>

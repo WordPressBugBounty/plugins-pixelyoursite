@@ -390,39 +390,6 @@ jQuery(document).ready(function($) {
         }
     }
 
-    function cloneEventTrigger() {
-        let cloned = $( '#pys_add_event_trigger .trigger_group' ).clone( true ),
-            triggerWrapper = $( '.pys_triggers_wrapper .insert-marker-add-trigger' ),
-            triggerGroup = $( '.pys_triggers_wrapper .trigger_group' ),
-            triggerId = 0;
-
-        if ( triggerGroup.length > 0 ) {
-            triggerId = parseInt( $( triggerGroup[ triggerGroup.length - 1 ] ).attr( "data-trigger_id" ) ) + 1;
-        }
-
-        $( '.pys_event_trigger_type', cloned ).attr( {
-            name: 'pys[event][triggers][' + triggerId + '][trigger_type]',
-            id: 'pys_event_' + triggerId + '_trigger_type',
-            value: 'page_visit'
-        } );
-
-        $( '.event-delay input', cloned ).attr( {
-            name: 'pys[event][triggers][' + triggerId + '][delay]',
-            id: 'pys_event_' + triggerId + '_delay'
-        } );
-
-        cloned.attr( 'data-trigger_id', triggerId );
-        cloned.css( 'display', 'block' );
-
-        const $inputWrapperList = cloned.find( '.input-number-wrapper');
-        $inputWrapperList.each( function () {
-            addInputNumberListener( $( this ) );
-        } );
-
-        cloned.insertBefore( triggerWrapper );
-        $( '.pys_event_trigger_type', cloned ).trigger( 'change' );
-    }
-
     function checkTriggerTypeAvailability( group, triggerPanel ) {
         let panelAvailability = group.find( '.' + triggerPanel + '_panel' );
 

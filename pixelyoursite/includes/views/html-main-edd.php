@@ -519,7 +519,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <?php PYS()->renderValueOptionsBlock('edd_purchase', false);?>
                         </div>
                         <div class="d-flex pro-feature-container">
-                            <?php renderDummyCheckbox( 'Fire the event on transaction only', true ); ?>
+                            <?php renderDummyCheckbox( 'Fire the event only once for each order (disable when testing)', true ); ?>
                             <?php renderPopoverButton( 'edd_purchase_on_transaction', 'top' ); ?>
                         </div>
                         <div class="pro-feature-container">
@@ -1322,4 +1322,3 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
     </div>
 </div>
-

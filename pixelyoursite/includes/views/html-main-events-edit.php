@@ -16,7 +16,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
 ?>
 <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24 mb-24">
     <div class="d-flex justify-content-between align-items-center">
-        <span class="font-semibold primary-heading-color fz-18">With the pro version, you can fire events on clicks, form submit, video views, and more:</span>
+        <span class="font-semibold primary-heading-color fz-18">With the pro you can fire events on clicks, form submit, video views, number of page views, email clicks, and more.</span>
         <?php renderProBadge();?>
     </div>
 </div>
@@ -72,7 +72,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
             </p>
         </div>
         <div class="card-body pys_triggers_wrapper">
-            <div class="trigger_group" data-trigger_id="0">
+
                 <?php
                 $event_triggers = $event->getTriggers();
                 $main_trigger = [];
@@ -97,7 +97,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                 }
                 $trigger_type = $main_trigger->getTriggerType();
                 ?>
-
+                <div class="trigger_group" data-trigger_id="<?php echo $main_trigger->getTriggerIndex();?>">
                     <div class="trigger_group_head trigger_group_<?php echo esc_attr( $trigger_type ); ?>">
                         <div class="fire_event_when d-flex align-items-center">
                             <div>
@@ -407,9 +407,6 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                                         <button class="increase"><i class="icon-plus"></i></button>
                                     </div>
 
-                                    <div>
-                                        <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
-                                    </div>
                                 </div>
                             </div>
 
@@ -770,67 +767,6 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
             <input type="hidden" name="<?php echo esc_attr( "pys[event][triggers][$new_index][cloned_event]" ); ?>"
                    value="1">
 
-            <div class="trigger_group" data-trigger_id="0"
-                 data-new_trigger_index="<?php echo esc_attr( $new_index ); ?>" style="display: none;">
-
-                <div class="trigger_group_head">
-                    <div class="fire_event_when d-flex align-items-center">
-                        <div>
-                            <p class="font-semibold">Fire event when</p>
-                        </div>
-
-                        <div class="ml-8">
-                            <?php Events\renderTriggerTypeInput( $new_trigger, 'trigger_type' ); ?>
-                        </div>
-                    </div>
-
-                    <div class="d-flex align-items-center">
-                        <div class="insert-marker-trigger post_type_marker"></div>
-
-                        <div class="event-delay ml-24">
-                            <label class="mr-24">with delay</label>
-                            <?php Events\renderTriggerNumberInput( $new_trigger, 'delay', '0' ); ?>
-                            <label class="ml-16">seconds</label>
-                        </div>
-
-                        <div class="insert-marker-trigger number_page_visit_conditional_marker"></div>
-                    </div>
-                </div>
-
-                <div class="insert-marker-trigger page_visit_marker"></div>
-                <div class="insert-marker-trigger number_page_visit_url_marker"></div>
-                <div class="insert-marker-trigger url_click_marker"></div>
-                <div class="insert-marker-trigger css_click_marker"></div>
-                <div class="insert-marker-trigger css_mouseover_marker"></div>
-                <div class="insert-marker-trigger scroll_pos_marker"></div>
-                <div class="insert-marker-trigger email_link_marker"></div>
-                <div class="insert-marker-trigger add_to_cart_marker"></div>
-                <div class="insert-marker-trigger purchase_marker"></div>
-
-                <?php $eventsFormFactory = apply_filters( "pys_form_event_factory", [] );
-                foreach ( $eventsFormFactory as $activeFormPlugin ) : ?>
-                    <div class="insert-marker-trigger <?php echo $activeFormPlugin->getSlug(); ?>_marker"></div>
-                <?php endforeach; ?>
-
-                <div class="event_triggers_panel url_filter_panel" style="display: none;">
-                    <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
-                        <div class="event_trigger_wrapper">
-                            <div>
-                                <input name="" placeholder="Enter URL" type="text" class="input-standard">
-                            </div>
-
-                            <div>
-                                <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="insert-marker"></div>
-                </div>
-
-                <div class="insert-marker-trigger video_view_marker"></div>
-            </div>
-
             <div class="event_triggers_panel page_visit_panel" data-trigger_type="page_visit"
                  style="display: none;">
                 <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
@@ -985,10 +921,6 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <div class="event_trigger_wrapper">
                         <div>
                             <?php Events\renderTriggerNumberInputPercent( $new_trigger, 'scroll_pos_triggers', $new_index, 30 ); ?>
-                        </div>
-
-                        <div>
-                            <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
                         </div>
                     </div>
                 </div>
