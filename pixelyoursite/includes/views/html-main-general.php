@@ -1284,8 +1284,9 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </div>
 
                         <div class="d-flex align-items-center">
-                            <label class="primary_heading mr-16">Fire the AddToCart when scroll to</label>
+                            <label class="primary_heading mr-16">Fire the AddToCart event:</label>
 
+                            <?php Facebook()->render_select_input( 'fdp_add_to_cart_event_fire', $options ); ?>
                             <span id="fdp_add_to_cart_event_fire_scroll_block" class="ml-16">
                                 <?php Facebook()->render_number_input_percent( 'fdp_add_to_cart_event_fire_scroll', 50 ); ?>
                             </span>

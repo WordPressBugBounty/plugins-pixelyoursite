@@ -8,7 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /** @noinspection PhpIncludeInspection */
 require_once PYS_FREE_PATH . '/modules/facebook/function-helpers.php';
-require_once PYS_FREE_PATH . '/modules/facebook/FDPEvent.php';
 
 
 
@@ -85,11 +84,7 @@ class Facebook extends Settings implements Pixel {
 			'advancedMatching'           => $this->getOption( 'advanced_matching_enabled' ) ? Helpers\getAdvancedMatchingParams() : array(),
 			'advancedMatchingEnabled'    => $this->getOption( 'advanced_matching_enabled' ),
 			'removeMetadata'             => $this->getOption( 'remove_metadata' ),
-			'contentParams'              => getTheContentParams(),
-			'commentEventEnabled'        => $this->getOption( 'comment_event_enabled' ),
 			'wooVariableAsSimple'        => $this->getOption( 'woo_variable_as_simple' ),
-			'downloadEnabled'            => $this->getOption( 'download_event_enabled' ),
-			'formEventEnabled'           => $this->getOption( 'form_event_enabled' ),
 			'serverApiEnabled'           => $this->isServerApiEnabled() && count( $this->getApiToken() ) > 0,
 			'wooCRSendFromServer'        => $this->getOption( "woo_complete_registration_send_from_server" ) && $this->getOption( "woo_complete_registration_fire_every_time" ),
 			'send_external_id'           => $this->getOption( 'send_external_id' ),
@@ -481,126 +476,6 @@ class Facebook extends Settings implements Pixel {
 		);
 
 	}
-
-	private function getGeneralEventParams() {
-
-		if ( ! $this->getOption( 'general_event_enabled' ) ) {
-			return false;
-		}
-
-		$eventName = PYS()->getOption( 'general_event_name' );
-		$eventName = sanitizeKey( $eventName );
-
-		if ( empty( $eventName ) ) {
-			$eventName = 'GeneralEvent';
-		}
-
-		$allowedContentTypes = array(
-			'on_posts_enabled'      => PYS()->getOption( 'general_event_on_posts_enabled' ),
-			'on_pages_enables'      => PYS()->getOption( 'general_event_on_pages_enabled' ),
-			'on_taxonomies_enabled' => PYS()->getOption( 'general_event_on_tax_enabled' ),
-			'on_cpt_enabled'        => PYS()->getOption( 'general_event_on_' . get_post_type() . '_enabled', false ),
-			'on_woo_enabled'        => PYS()->getOption( 'general_event_on_woo_enabled' ),
-			'on_edd_enabled'        => PYS()->getOption( 'general_event_on_edd_enabled' ),
-		);
-
-		$params = getTheContentParams( $allowedContentTypes );
-
-		return array(
-			'name'  => $eventName,
-			'data'  => $params,
-			'delay' => (int) PYS()->getOption( 'general_event_delay' ),
-		);
-
-	}
-
-
-
-    public function getFDPEvents() {
-        $events = array();
-        $contentType = $this->getOption("fdp_content_type");
-        if($this->getOption("fdp_view_content_enabled")) {
-            $event = new FDPEvent();
-            $event->event_name = "fdp_view_content";
-            $event->content_type = $contentType;
-            $events[] = $event;
-        }
-        if($this->getOption("fdp_view_category_enabled")) {
-            $event = new FDPEvent();
-            $event->event_name = "fdp_view_category";
-            $event->content_type = $contentType;
-            $events[] = $event;
-        }
-        if($this->getOption("fdp_add_to_cart_enabled")) {
-            $event = new FDPEvent();
-            $event->event_name = "fdp_add_to_cart";
-            $event->content_type = $contentType;
-            $event->trigger_type = "scroll_pos";
-            $event->trigger_value = $this->getOption("fdp_add_to_cart_event_fire_scroll");
-            $events[] = $event;
-        }
-        if($this->getOption("fdp_purchase_enabled")) {
-            $event = new FDPEvent();
-            $event->event_name = "fdp_purchase";
-            $event->content_type = $contentType;
-            $event->trigger_type = $this->getOption("fdp_purchase_event_fire");
-            if($event->trigger_type == "scroll_pos") {
-                $event->trigger_value = $this->getOption("fdp_purchase_event_fire_scroll");
-            }
-            if($event->trigger_type == "css_click") {
-                $event->trigger_value = $this->getOption("fdp_purchase_event_fire_css");
-            }
-
-            $events[] = $event;
-        }
-        return $events;
-    }
-
-    /**
-     * @param FDPEvent $event
-     * @return array
-     */
-
-    private function getFDPEventParams($event){
-
-        $name = "";
-        $params = "";
-
-        if($event->event_name == "fdp_view_content") {
-            $name = "ViewContent";
-            $params = Helpers\getFDPViewContentEventParams();
-        }
-
-        if($event->event_name == "fdp_view_category") {
-            $name = "ViewCategory";
-            $params = Helpers\getFDPViewCategoryEventParams();
-        }
-
-        if($event->event_name == "fdp_add_to_cart") {
-            $name = "AddToCart";
-            $params = Helpers\getFDPAddToCartEventParams();
-            $params["value"] = $this->getOption("fdp_add_to_cart_value");
-            $params["currency"] = $this->getOption("fdp_currency");
-        }
-
-        if($event->event_name == "fdp_purchase") {
-            $name = "Purchase";
-            $params = Helpers\getFDPPurchaseEventParams();
-            $params["value"] = $this->getOption("fdp_purchase_value");
-            $params["currency"] = $this->getOption("fdp_currency");
-        }
-
-
-        if($event->content_type) {
-            $params["content_type"] = $event->content_type;
-        }
-
-        return array(
-            'name'  => $name,
-            'data'  => $params,
-            'delay' => 0,
-        );
-    }
 
 	private function getWooViewContentEventParams() {
 		global $post;

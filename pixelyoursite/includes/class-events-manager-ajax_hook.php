@@ -138,14 +138,16 @@ class AjaxHookEventManager {
             $eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
 
             $dataList[$pixel->getSlug()] = $eventData;
+            if(!PYS()->is_user_agent_bot()){
+                if($pixel->getSlug() === "facebook" && Facebook()->isServerApiEnabled()) {
+                    FacebookServer()->sendEventsNow([$event]);
+                }
 
-            if($pixel->getSlug() === "facebook" && Facebook()->isServerApiEnabled()) {
-                FacebookServer()->sendEventsNow([$event]);
+                if($pixel->getSlug() === "pinterest" && Pinterest()->isServerApiEnabled()) {
+                    PinterestServer()->sendEventsNow(array($event));
+                }
             }
 
-			if($pixel->getSlug() === "pinterest" && Pinterest()->isServerApiEnabled()) {
-                PinterestServer()->sendEventsNow(array($event));
-			}
         }
         AjaxHookEventManager::addPendingEvent("woo_add_to_cart_on_button_click",$dataList);
     }

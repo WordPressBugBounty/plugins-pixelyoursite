@@ -604,8 +604,9 @@ function renderPinterestEventTypeInput( &$event, $key ) {
 		'signup'       => 'Signup',
 		'lead'         => 'Lead',
 		'custom'       => 'Custom',
+        'partner_defined'  => 'Partner Defined',
 		'disabled'     => '',
-		'CustomEvent'  => 'Partner Defined',
+
 	);
 	
 	renderSelectInput( $event, $key, $options );

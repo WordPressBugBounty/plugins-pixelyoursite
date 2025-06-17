@@ -13,10 +13,10 @@ include "html-popovers.php";
 ?>
 
 <div class="cards-wrapper cards-wrapper-style2 gap-24 setting-wrapper">
-    <!-- Extrnal IDs -->
+    <!-- External IDs -->
     <div class="card card-style6 card-static">
         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-            <h4 class="secondary_heading_type2"><?php _e('Extrnal IDs', 'pys');?></h4>
+            <h4 class="secondary_heading_type2"><?php _e('External IDs', 'pys');?></h4>
         </div>
         <div class="card-body">
             <div class="gap-24">

@@ -281,27 +281,29 @@ class EventsManager {
             }
         }
 
+        if(!PYS()->is_user_agent_bot()){
+            if( count($this->facebookServerEvents ) > 0
+                && Facebook()->enabled()
+                && Facebook()->isServerApiEnabled()
+                && !PYS()->isCachePreload()
+                && Consent()->checkConsent( 'facebook' )
+            ) {
+                FacebookServer()->sendEventsAsync( $this->facebookServerEvents );
+                $this->facebookServerEvents = array();
+            }
 
-        if( count($this->facebookServerEvents ) > 0
-            && Facebook()->enabled()
-            && Facebook()->isServerApiEnabled()
-            && !PYS()->isCachePreload()
-			&& Consent()->checkConsent( 'facebook' )
-        ) {
-			FacebookServer()->sendEventsAsync( $this->facebookServerEvents );
-			$this->facebookServerEvents = array();
+            if ( isPinterestActive()
+                && count($this->pinterestServerEvents) > 0
+                &&  Pinterest()->enabled()
+                && Pinterest()->isServerApiEnabled()
+                && !PYS()->isCachePreload()
+                && Consent()->checkConsent( 'pinterest' )
+            ) {
+                PinterestServer()->sendEventsAsync( $this->pinterestServerEvents );
+                $this->pinterestServerEvents = array();
+            }
         }
 
-        if ( isPinterestActive()
-            && count($this->pinterestServerEvents) > 0
-            &&  Pinterest()->enabled()
-            && Pinterest()->isServerApiEnabled()
-            && !PYS()->isCachePreload()
-			&& Consent()->checkConsent( 'pinterest' )
-        ) {
-			PinterestServer()->sendEventsAsync( $this->pinterestServerEvents );
-			$this->pinterestServerEvents = array();
-        }
 
         // remove new user mark
         if($user_id = get_current_user_id()) {
@@ -366,8 +368,12 @@ class EventsManager {
             $eventId = $event->getId();
         }
         $this->triggerEvents[ $eventId ][ $pixel->getSlug() ] = $eventData;
-        if ( !empty( $event->args ) ) {
+        if ( !empty( $event->args ) &&  $event->getCategory() === 'custom') {
             $this->triggerEventTypes = array_replace_recursive( $this->triggerEventTypes, $event->args->__get( 'triggerEventTypes' ) );
+        }
+
+        if($event->getCategory() === 'fdp'){
+            $this->triggerEventTypes[ $eventData['trigger_type'] ][ $eventId ][] = $eventData['trigger_value'];
         }
 
     }

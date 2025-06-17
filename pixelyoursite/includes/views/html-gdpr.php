@@ -258,9 +258,9 @@ if ( !defined( 'ABSPATH' ) ) {
                     <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
                         <div class="disable-card align-items-center">
                             <?php if ( !isCookieLawInfoPluginActivated() ) : ?>
-                                <h4 class="secondary_heading_type2">GDPR Cookie Consent <span class="text-danger">[not detected]</span></h4>
+                                <h4 class="secondary_heading_type2">CookieYes <span class="text-danger">[not detected]</span></h4>
                             <?php else: ?>
-                                <h4 class="secondary_heading_type2">GDPR Cookie Consent <span class="text-success">[detected]</span></h4>
+                                <h4 class="secondary_heading_type2">CookieYes <span class="text-success">[detected]</span></h4>
                             <?php endif; ?>
                         </div>
                         <?php cardCollapseSettings(); ?>
@@ -273,7 +273,7 @@ if ( !defined( 'ABSPATH' ) ) {
                         </div>
                         <div class="d-flex align-items-center mb-24">
                             <?php PYS()->render_switcher_input( 'gdpr_cookie_law_info_integration_enabled', false, !isCookieLawInfoPluginActivated() ); ?>
-                            <h4 class="switcher-label secondary_heading">GDPR Cookie Consent integration</h4>
+                            <h4 class="switcher-label secondary_heading">CookieYes integration</h4>
                         </div>
                     </div>
                 </div>

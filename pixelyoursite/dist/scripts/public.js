@@ -1,77 +1,5 @@
 /* global pysOptions */
 
-// https://bitbucket.org/pixelyoursite/pys_pro_7/issues/7/possible-ie-11-error
-// https://tc39.github.io/ecma262/#sec-array.prototype.includes
-if (!Array.prototype.includes) {
-    Object.defineProperty(Array.prototype, 'includes', {
-        value: function (searchElement, fromIndex) {
-
-            if (this == null) {
-                throw new TypeError('"this" is null or not defined');
-            }
-
-            // 1. Let O be ? ToObject(this value).
-            var o = Object(this);
-
-            // 2. Let len be ? ToLength(? Get(O, "length")).
-            var len = o.length >>> 0;
-
-            // 3. If len is 0, return false.
-            if (len === 0) {
-                return false;
-            }
-
-            // 4. Let n be ? ToInteger(fromIndex).
-            //    (If fromIndex is undefined, this step produces the value 0.)
-            var n = fromIndex | 0;
-
-            // 5. If n ≥ 0, then
-            //  a. Let k be n.
-            // 6. Else n < 0,
-            //  a. Let k be len + n.
-            //  b. If k < 0, let k be 0.
-            var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
-
-            function sameValueZero(x, y) {
-                return x === y || (typeof x === 'number' && typeof y === 'number' && isNaN(x) && isNaN(y));
-            }
-
-            // 7. Repeat, while k < len
-            while (k < len) {
-                // a. Let elementK be the result of ? Get(O, ! ToString(k)).
-                // b. If SameValueZero(searchElement, elementK) is true, return true.
-                if (sameValueZero(o[k], searchElement)) {
-                    return true;
-                }
-                // c. Increase k by 1.
-                k++;
-            }
-
-            // 8. Return false
-            return false;
-        }
-    });
-}
-
-if (!String.prototype.startsWith) {
-    Object.defineProperty(String.prototype, 'startsWith', {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value: function (searchString, position) {
-            position = position || 0;
-            return this.indexOf(searchString, position) === position;
-        }
-    });
-}
-
-if (!String.prototype.trim) {
-    (function () {
-        String.prototype.trim = function () {
-            return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
-        };
-    })();
-}
 
 ! function ($, options) {
     if (options.debug) {
@@ -455,7 +383,7 @@ if (!String.prototype.trim) {
                 }
 
                 if (options.ajaxForServerEvent && !Cookies.get('pbid') && Facebook.isEnabled()) {
-                     jQuery.ajax({
+                    jQuery.ajax({
                         url: options.ajaxUrl,
                         dataType: 'json',
                         data: {
@@ -1170,10 +1098,13 @@ if (!String.prototype.trim) {
                  * Cookie Law Info
                  */
                 if (options.gdpr.cookie_law_info_integration_enabled) {
-                    var cli_cookie = Cookies.get('cookieyes-consent') ?? Cookies.get('viewed_cookie_policy');
+                    var cli_cookie = Cookies.get('cookieyes-consent') ?? Cookies.get('wt_consent') ?? Cookies.get('viewed_cookie_policy');
                     if (options.gdpr[pixel + '_prior_consent_enabled']) {
                         if (typeof cli_cookie === 'undefined') return true;
-                        if (cli_cookie && cli_cookie === Cookies.get('cookieyes-consent')) {
+                        if (
+                            cli_cookie &&
+                            (cli_cookie === Cookies.get('cookieyes-consent') || cli_cookie === Cookies.get('wt_consent'))
+                        ) {
                             if (getCookieYes('analytics') === 'yes') {
                                 return true;
                             }
@@ -1183,7 +1114,10 @@ if (!String.prototype.trim) {
                             }
                         }
                     } else {
-                        if (cli_cookie && cli_cookie === Cookies.get('cookieyes-consent')) {
+                        if (
+                            cli_cookie &&
+                            (cli_cookie === Cookies.get('cookieyes-consent') || cli_cookie === Cookies.get('wt_consent'))
+                        ) {
                             if (getCookieYes('analytics') === 'yes') {
                                 return true;
                             }
@@ -1490,10 +1424,12 @@ if (!String.prototype.trim) {
 
                     $(document).onFirst('click', '#wt-cli-accept-all-btn,#cookie_action_close_header, .cky-btn-accept', function () {
                         setTimeout(function (){
-                            let cli_cookie = Cookies.get('cookieyes-consent') ?? Cookies.get('viewed_cookie_policy');
+                            let cli_cookie = Cookies.get('cookieyes-consent') ?? Cookies.get('wt_consent') ?? Cookies.get('viewed_cookie_policy');
                             if (typeof cli_cookie !== 'undefined') {
-                                if (cli_cookie === Cookies.get('cookieyes-consent') && getCookieYes('analytics') == 'yes') {
-                                    Utils.manageCookies();
+                                if (cli_cookie === Cookies.get('cookieyes-consent') || cli_cookie === Cookies.get('wt_consent')) {
+                                    if (getCookieYes('analytics') === 'yes') {
+                                        Utils.manageCookies();
+                                    }
                                 } else if (cli_cookie === Cookies.get('viewed_cookie_policy') && cli_cookie == 'yes') {
                                     Utils.manageCookies();
                                 }
@@ -3525,24 +3461,24 @@ function getUrlParameter(sParam) {
     return false;
 };
 function getCookieYes(key) {
-    const cookies = document.cookie
+    const cookiesObj = document.cookie
         .split(";")
-        .reduce(
-            (ac, cv, i) =>
-                Object.assign(ac, { [cv.split("=")[0].trim()]: cv.split("=")[1] }),
-            {}
-        )["cookieyes-consent"];
-    const { [key]: value } = cookies
+        .reduce((ac, cv) => {
+            const [k, v] = cv.split("=");
+            if (k && v) ac[k.trim()] = v;
+            return ac;
+        }, {});
+    const consentCookie = cookiesObj["cookieyes-consent"] || cookiesObj["wt_consent"];
+    if (!consentCookie) return undefined;
+    const { [key]: value } = consentCookie
         .split(",")
-        .reduce(
-            (obj, pair) => (
-                (pair = pair.split(":")), (obj[pair[0]] = pair[1]), obj
-            ),
-            {}
-        );
+        .reduce((obj, pair) => {
+            const [k, v] = pair.split(":");
+            if (k && v) obj[k] = v;
+            return obj;
+        }, {});
     return value;
 }
-
 function getRootDomain(useSubdomain = false) {
     const hostname = window.location.hostname; // Get the current hostname
     // Check if tldjs is defined before using it

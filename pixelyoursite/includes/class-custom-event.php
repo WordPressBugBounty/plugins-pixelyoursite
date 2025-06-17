@@ -602,7 +602,7 @@ class CustomEvent {
 			'signup',
 			'lead',
 			'custom',
-			'CustomEvent',
+			'partner_defined',
 		);
 		
 		// enabled
@@ -616,9 +616,7 @@ class CustomEvent {
 			: 'pagevisit';
 		
 		// custom event type
-		$this->data['pinterest_custom_event_type'] = $this->pinterest_event_type == 'CustomEvent' && ! empty( $args['pinterest_custom_event_type'] )
-			? sanitizeKey( $args['pinterest_custom_event_type'] )
-			: null;
+        $this->data[ 'pinterest_custom_event_type' ] = $this->pinterest_event_type == 'partner_defined' && !empty( $args[ 'pinterest_custom_event_type' ] ) ? sanitizeKey( $args[ 'pinterest_custom_event_type' ] ) : null;
 		
 		// params enabled
 		$this->data['pinterest_params_enabled'] = isset( $args['pinterest_params_enabled'] ) && $args['pinterest_params_enabled']
@@ -761,7 +759,7 @@ class CustomEvent {
 	}
 	
 	public function getPinterestEventType() {
-		return $this->pinterest_event_type == 'CustomEvent'
+		return $this->pinterest_event_type == 'partner_defined'
 			? $this->pinterest_custom_event_type
 			: $this->pinterest_event_type;
 	}

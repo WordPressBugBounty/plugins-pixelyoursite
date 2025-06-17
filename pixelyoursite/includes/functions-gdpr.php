@@ -91,9 +91,9 @@ function isCookieLawInfoPluginActivated() {
 	if ( ! function_exists( 'is_plugin_active' ) ) {
 		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 	}
-	
-	return is_plugin_active( 'cookie-law-info/cookie-law-info.php' )
-	       || is_plugin_active( 'webtoffee-gdpr-cookie-consent/cookie-law-info.php' ) ;
+
+    return is_plugin_active( 'cookie-law-info/cookie-law-info.php' )
+        || is_plugin_active( 'webtoffee-cookie-consent/webtoffee-cookie-consent.php' );
 	
 }
 

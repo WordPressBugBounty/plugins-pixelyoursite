@@ -239,7 +239,7 @@ jQuery(document).ready(function($) {
     }
 
     function togglePinterestCustomEventType() {
-        if ( $( "#pys_event_pinterest_event_type" ).val() === "custom" ) {
+        if ( $( "#pys_event_pinterest_event_type" ).val() === "partner_defined" ) {
             $( ".pinterest-custom-event-type" ).slideDown( 400 );
         } else {
             $( ".pinterest-custom-event-type" ).slideUp( 400 );

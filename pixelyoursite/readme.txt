@@ -3,8 +3,8 @@ Contributors: PixelYourSite
 Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, Google Consent Mode V2
 Requires at least: 3.0.1
 Requires PHP: 5.4
-Tested up to: 6.7
-Stable tag: 11.0.0.2
+Tested up to: 6.8
+Stable tag: 11.0.0.3
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -387,6 +387,19 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.0.0.3 =
+
+* Code changes related to the way we send custom and partner-defined events for the Pinterest add-on.
+
+* Consent integration with Webtoffee, a paid add-on for CookieYes. 
+
+* Small code improvements.
+
+* Small text changes and corrections. 
+
+
+June 17, 2025
 
 = PixelYourSite 11.0.0.2 =
 
