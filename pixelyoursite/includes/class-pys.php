@@ -551,7 +551,9 @@ final class PYS extends Settings implements Plugin {
 
             $userAgent = strtolower($_SERVER['HTTP_USER_AGENT']);
             $excludedRobots = PYS()->getOption('exclude_blocked_robots');
-
+            $excludedRobots = array_filter($excludedRobots, function($robot) {
+                return trim($robot) !== '';
+            });
             if (!empty($excludedRobots)) {
                 foreach ($excludedRobots as $robot) {
                     if (stripos($userAgent, strtolower($robot)) !== false) {

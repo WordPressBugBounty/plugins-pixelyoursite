@@ -570,8 +570,6 @@ function sanitizeParams( $params ) {
 
 		if ( is_array( $value ) ) {
 			$sanitized[ $key ] = sanitizeParams( $value );
-		} elseif ( $key == 'value' ) {
-			$sanitized[ $key ] = (float) $value; // do not encode value to avoid error messages on Pinterest
 		} elseif ( is_bool( $value ) ) {
 			$sanitized[ $key ] = (bool) $value;
 		} elseif (is_numeric($value)) {
@@ -585,7 +583,11 @@ function sanitizeParams( $params ) {
 	return $sanitized;
 
 }
-
+function formatPriceTrimZeros($number, $decimals = 2) {
+    $formatted = number_format($number, $decimals, '.', '');
+    // Remove extra zeros on the right and a period if necessary
+    return rtrim(rtrim($formatted, '0'), '.');
+}
 /**
  * Checks if specified event enabled at least for one configured pixel
  *

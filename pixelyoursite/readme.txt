@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.8
-Stable tag: 11.0.0.3
+Stable tag: 11.0.0.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -388,7 +388,17 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 == Changelog ==
 
+= PixelYourSite 11.0.0.4 =
+
+July 2, 2025
+
+* Improving the speed for WooCommerce variable products with a very large number of variations. 
+
+* Fixing a possible issue with Avada theme. 
+
 = PixelYourSite 11.0.0.3 =
+
+June 17, 2025
 
 * Code changes related to the way we send custom and partner-defined events for the Pinterest add-on.
 

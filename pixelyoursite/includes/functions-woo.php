@@ -71,7 +71,7 @@ function getWooProductPriceToDisplay( $product_id, $qty = 1 ) {
         $productPrice = $product->get_price();
     }
 
-    return (float) wc_get_price_to_display( $product, array( 'qty' => $qty,'price'=>$productPrice ) );
+    return formatPriceTrimZeros((float) wc_get_price_to_display( $product, array( 'qty' => $qty,'price'=>$productPrice ) ));
 }
 /**
  * @param SingleEvent $event
@@ -148,7 +148,7 @@ function getWooEventValue( $valueOption, $global, $percent, $product_id,$qty ) {
         } else {
             $value = (float)$amount;
         }
-        return $value;
+        return formatPriceTrimZeros($value);
     }
 
     $amount = getWooProductPriceToDisplay( $product_id, $qty );
@@ -164,7 +164,7 @@ function getWooEventValue( $valueOption, $global, $percent, $product_id,$qty ) {
         default:$value = (float)$amount;
     }
 
-    return $value;
+    return formatPriceTrimZeros($value);
 
 }
 /**
@@ -201,7 +201,7 @@ function getWooEventValueOrder( $valueOption, $order, $global, $percent = 100 ) 
             $value = (float) $amount;
     }
 
-    return $value;
+    return formatPriceTrimZeros($value);
 
 }
 
@@ -251,7 +251,7 @@ function getWooEventValueCart( $valueOption, $global, $percent = 100 ) {
             $value = (float) $amount;
     }
 
-    return $value;
+    return formatPriceTrimZeros($value);
 }
 
 function wooGetOrderIdFromRequest() {
