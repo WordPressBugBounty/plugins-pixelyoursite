@@ -744,7 +744,7 @@ abstract class Settings {
 	 * @param null $visibility_target
 	 * @param null $visibility_value
 	 */
-	public function render_select_input( $key, $options, $disabled = false, $visibility_target = null, $visibility_value = null ) {
+	public function render_select_input( $key, $options, $disabled = false, $visibility_target = null, $visibility_value = null, $searchable = false ) {
 
 		$attr_name = "pys[$this->slug][$key]";
 		$attr_id = 'pys_' . $this->slug . '_' . $key;
@@ -754,6 +754,9 @@ abstract class Settings {
 		if ( $visibility_target ) {
 			$classes[] = 'controls-visibility';
 		}
+        if($searchable){
+            $classes[] = 'pys-pysselect2';
+        }
 
 		$classes = implode( ' ', $classes );
 

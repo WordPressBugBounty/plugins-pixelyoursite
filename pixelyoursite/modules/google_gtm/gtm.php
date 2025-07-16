@@ -333,7 +333,6 @@ class GTM extends Settings implements Pixel {
                 }
             }break;
         }
-
         return $isActive;
     }
 
@@ -1111,7 +1110,20 @@ class GTM extends Settings implements Pixel {
         $params['value'] = getWooEventValueOrder( $value_option, $order, $global_value );
 
         $params['fees'] = get_fees($order);
-
+        if(PYS()->getOption('enable_CwCD')) {
+            if(!empty(PYS()->getOption('aw_merchant_id'))){
+                $params['aw_merchant_id'] = PYS()->getOption('aw_merchant_id');
+            }
+            if(!empty(PYS()->getOption('aw_feed_label'))){
+                $params['aw_feed_label'] = PYS()->getOption('aw_feed_label');
+            }
+            if(!empty(PYS()->getOption('aw_feed_country'))){
+                $params['aw_feed_country'] = PYS()->getOption('aw_feed_country');
+            }
+            if(!empty(PYS()->getOption('aw_feed_language'))){
+                $params['aw_feed_language'] = PYS()->getOption('aw_feed_language');
+            }
+        }
         return array(
             'name' => 'purchase',
             'data' => $params

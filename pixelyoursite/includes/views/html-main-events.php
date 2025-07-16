@@ -48,6 +48,16 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
             'title' => 'How to fire EVENTS with PixelYourSite',
             'time'  => '22:28',
         ),
+				array(
+						'url'   => 'https://www.youtube.com/watch?v=UBwGNlm5ILE',
+						'title' => 'Track Form Progress with Field Events – Includes GA4 add_shipping_info for WooCommerce',
+						'time'  => '6:10',
+				),
+				array(
+						'url'   => 'https://www.youtube.com/watch?v=wUsqwomsYMo',
+						'title' => 'Improved Event Tracking: CONDITIONS',
+						'time'  => '5:09',
+				),
         array(
             'url'   => 'https://www.youtube.com/watch?v=PcXYYGOvahc',
             'title' => 'Track URL tags as event parameters',
@@ -331,4 +341,3 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
         </div>
     </div>
 </div>
-

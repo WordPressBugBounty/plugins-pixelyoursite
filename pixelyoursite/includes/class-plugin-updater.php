@@ -108,7 +108,24 @@ class Plugin_Updater {
 		
 		$version_info = $this->get_cached_version_info();
 
-		if ( false === $version_info || $this->is_cache_expired() ) {
+        $need_refresh = false;
+
+        // Check if cache expired
+        if ( $this->is_cache_expired() ) {
+            $need_refresh = true;
+        }
+
+        // Check if version_info is missing or incomplete
+        if ( ! $version_info || ! isset( $version_info->package ) || empty( $version_info->package ) ) {
+            $need_refresh = true;
+        }
+
+        // Check if package URL exists but is not accessible (only if not already expired)
+        if ( !$need_refresh && ! $this->is_url_working( $version_info->package ) ) {
+            $need_refresh = true;
+        }
+
+        if ( $need_refresh ) {
             $version_info = $this->api_request( 'plugin_latest_version',
                 array( 'slug' => $this->slug, 'beta' => $this->beta ) );
             $timeout = $this->get_timeout();
@@ -166,8 +183,25 @@ class Plugin_Updater {
         if ( empty( $update_cache->response ) || empty( $update_cache->response[ $this->name ] ) ) {
 
             $version_info = $this->get_cached_version_info();
-			
-			if ( false!== $version_info || $this->is_cache_expired() ) {
+
+            $need_refresh = false;
+
+// Cache expired
+            if ( $this->is_cache_expired() ) {
+                $need_refresh = true;
+            }
+
+// Missing or empty download link
+            if ( ! $version_info || ! isset( $version_info->package ) || empty( $version_info->package ) ) {
+                $need_refresh = true;
+            }
+
+// Package exists, but link is broken (only if cache is not already expired)
+            if ( !$need_refresh && ! $this->is_url_working( $version_info->package ) ) {
+                $need_refresh = true;
+            }
+
+            if ( $need_refresh ) {
                 $version_info = $this->api_request( 'plugin_latest_version',
                     array( 'slug' => $this->slug, 'beta' => $this->beta ) );
                 $timeout = $this->get_timeout();
@@ -537,5 +571,18 @@ class Plugin_Updater {
         return ($this->slug == "pixelyoursite-pinterest")
             ? strtotime('+48 hours', current_time('timestamp'))
             : strtotime('+24 hours', current_time('timestamp'));
+    }
+    private function is_url_working( $url ): bool {
+        $response = wp_remote_head( $url, [
+            'timeout'   => 10,
+            'sslverify' => $this->verify_ssl(),
+        ]);
+
+        if ( is_wp_error( $response ) ) {
+            return false;
+        }
+
+        $status_code = wp_remote_retrieve_response_code( $response );
+        return $status_code >= 200 && $status_code < 400;
     }
 }

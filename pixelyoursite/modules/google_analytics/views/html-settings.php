@@ -211,7 +211,6 @@ use PixelYourSite\GA\Helpers;
         </div>
     </div>
 
-
     <!-- Cross-Domain Tracking -->
     <!-- @link: https://developers.google.com/analytics/devguides/collection/gtagjs/cross-domain -->
     <div class="card card-style6 card-static">

@@ -417,6 +417,7 @@ function renderTriggerTypeInput( $trigger, $key ) {
         'css_mouseover'     => 'Mouse over CSS selector - PRO',
         'video_view'        => 'Embedded Video View - PRO',
         'email_link'        => 'Email Link - PRO',
+        'form_field'        => 'Filling out a form field - PRO',
     );
     $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
     foreach ($eventsFormFactory as $activeFormPlugin) :
