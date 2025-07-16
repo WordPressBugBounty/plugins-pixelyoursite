@@ -156,11 +156,11 @@ function adminGetFixedNotices() {
                 ],
 
                 [
-                    'slug'  => 'free_block_3_message_3_v2',
-                    'title' => 'Google Automated Discounts',
-                    'message' => 'How to setup GAD for WooCommerce inside Google Merchant.',
+                    'slug'  => 'free_block_3_message_3_v1',
+                    'title' => 'Medical Content - Meta Tracking',
+                    'message' => 'Meta has restrictions for MEDICAL content. Learn how to adapt!',
                     'button_text' => 'Learn more',
-                    'button_url' => 'https://www.pixelyoursite.com/google-automated-discounts-for-woocommerce',
+                    'button_url' => 'https://www.pixelyoursite.com/medical-site-meta-tracking',
                 ],
             ],
             'optoutEnabel' => true,

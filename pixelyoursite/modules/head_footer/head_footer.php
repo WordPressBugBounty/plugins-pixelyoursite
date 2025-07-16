@@ -47,8 +47,11 @@ class HeadFooter extends Settings {
             add_action( 'save_post', array( $this, 'save_meta_box' ) );
         }
 
+        $license_status = PYS()->getOption( 'license_status' );
 
-        add_action( 'template_redirect', array( $this, 'output_scripts' ) );
+        if ( ! empty( $license_status ) ) {
+            add_action( 'template_redirect', array( $this, 'output_scripts' ) );
+        }
 
     }
 
@@ -186,19 +189,20 @@ class HeadFooter extends Settings {
              * Global
              */
             $disabled_by_post = ! empty( $post_meta ) && isset( $post_meta['disable_global'] ) && $post_meta['disable_global'];
+
             if ( ! $disabled_by_post ) {
                 if ( $this->getOption( 'head_enabled' ) ) {
                     add_action( 'wp_head', array(
                         $this,
                         'output_head_global'
-                    ), 100 );
+                    ) );
                 }
 
                 if ( $this->getOption( 'footer_enabled' ) ) {
                     add_action( 'wp_footer', array(
                         $this,
                         'output_footer_global'
-                    ), 100);
+                    ) );
                 }
             }
         }
@@ -247,6 +251,7 @@ class HeadFooter extends Settings {
     public function output_head_global() {
 
         $scripts_any = $this->getOption( 'head_any' );
+
         if ( $scripts_any ) {
             echo "\r\n" . $this->replace_variables( $scripts_any ) . "\r\n";
         }
