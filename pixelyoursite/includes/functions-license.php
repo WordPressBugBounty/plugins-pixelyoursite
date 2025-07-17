@@ -298,18 +298,13 @@ function singleCheckLicense( $license_key, $plugin)
         return $response;
     }
 	$status_code = wp_remote_retrieve_response_code($response);
-    if($status_code == 403) {
-	    $server_ip = file_get_contents('https://api64.ipify.org?format=json');
-	    $server_ip = $server_ip ? json_decode($server_ip, true)['ip'] : '******';
-        $host= gethostname();
-        $added_ip = gethostbyname($host);
-        if(!empty($added_ip) && $added_ip != $server_ip){
-            $server_ip .= ', '. $added_ip;
-        }
-	    $admin_notice = array(
-		    'class' => 'danger',
-		    'msg'   => __("The request may have been blocked by our firewall, please try again after a few hours. If the problem persists, contact our support and provide your IP address ({$server_ip})", 'pixelyoursite')
-	    );
+    if($status_code == 403 || $status_code == 415) {
+        $ip_list = get_all_server_ips();
+
+        $admin_notice = array(
+            'class' => 'danger',
+            'msg'   => __("The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: {$ip_list}", 'pixelyoursite')
+        );
 
 	    if ( ! empty( $admin_notice ) ) {
 		    set_transient( "pys_{$plugin->getSlug()}_license_notice_403", $admin_notice, 60 * 5 );
@@ -528,19 +523,15 @@ function licenseActivate( $license_key, $plugin ) {
 	if ( is_wp_error( $response ) ) {
 		return $response;
 	}
+
 	$status_code = wp_remote_retrieve_response_code($response);
-	if($status_code == 403) {
-		$server_ip = file_get_contents('https://api64.ipify.org?format=json');
-		$server_ip = $server_ip ? json_decode($server_ip, true)['ip'] : '******';
-        $host= gethostname();
-        $added_ip = gethostbyname($host);
-        if(!empty($added_ip) && $added_ip != $server_ip){
-            $server_ip .= ', '. $added_ip;
-        }
-		$admin_notice = array(
-			'class' => 'danger',
-			'msg'   => __("The request may have been blocked by our firewall, please try again after a few hours. If the problem persists, contact our support and provide your IP address ({$server_ip})", 'pixelyoursite')
-		);
+	if($status_code == 403 || $status_code == 415) {
+        $ip_list = get_all_server_ips();
+
+        $admin_notice = array(
+            'class' => 'danger',
+            'msg'   => __("The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: {$ip_list}", 'pixelyoursite')
+        );
 
 		if ( ! empty( $admin_notice ) ) {
 			set_transient( "pys_{$plugin->getSlug()}_license_notice_403", $admin_notice, 60 * 5 );
@@ -576,18 +567,13 @@ function licenseDeactivate( $license_key, $plugin ) {
 		return $response;
 	}
 	$status_code = wp_remote_retrieve_response_code($response);
-	if($status_code == 403) {
-		$server_ip = file_get_contents('https://api64.ipify.org?format=json');
-		$server_ip = $server_ip ? json_decode($server_ip, true)['ip'] : '******';
-        $host= gethostname();
-        $added_ip = gethostbyname($host);
-        if(!empty($added_ip) && $added_ip != $server_ip){
-            $server_ip .= ', '. $added_ip;
-        }
-		$admin_notice = array(
-			'class' => 'danger',
-			'msg'   => __("The request may have been blocked by our firewall, please try again after a few hours. If the problem persists, contact our support and provide your IP address ({$server_ip})", 'pixelyoursite')
-		);
+	if($status_code == 403 || $status_code == 415) {
+        $ip_list = get_all_server_ips();
+
+        $admin_notice = array(
+            'class' => 'danger',
+            'msg'   => __("The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: {$ip_list}", 'pixelyoursite')
+        );
 
 		if ( ! empty( $admin_notice ) ) {
 			set_transient( "pys_{$plugin->getSlug()}_license_notice_403", $admin_notice, 60 * 5 );
@@ -596,4 +582,53 @@ function licenseDeactivate( $license_key, $plugin ) {
 	// $license_data->license will be either "deactivated" or "failed"
 	return json_decode( wp_remote_retrieve_body( $response ) );
 
+}
+
+function get_all_server_ips(): string {
+    $ips = [];
+
+    // 1. Get external/public IP using an external service
+    $external_ip = @file_get_contents('https://api64.ipify.org?format=json');
+    if ($external_ip) {
+        $decoded = json_decode($external_ip, true);
+        if (!empty($decoded['ip'])) {
+            $ips[] = $decoded['ip'];
+        }
+    }
+
+    // 2. Get IP from the server's hostname
+    $hostname = gethostname();
+    if ($hostname) {
+        $hostname_ip = gethostbyname($hostname);
+        if (filter_var($hostname_ip, FILTER_VALIDATE_IP)) {
+            $ips[] = $hostname_ip;
+        }
+
+        // 3. Get all IPs associated with the hostname
+        $multiple_ips = gethostbynamel($hostname);
+        if (is_array($multiple_ips)) {
+            foreach ($multiple_ips as $ip) {
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    $ips[] = $ip;
+                }
+            }
+        }
+    }
+
+    // 4. Get IP resolved from the server name (e.g., domain)
+    if (!empty($_SERVER['SERVER_NAME'])) {
+        $server_name_ip = gethostbyname($_SERVER['SERVER_NAME']);
+        if (filter_var($server_name_ip, FILTER_VALIDATE_IP)) {
+            $ips[] = $server_name_ip;
+        }
+    }
+
+    // 5. Get the IP address of the interface the server is running on
+    if (!empty($_SERVER['SERVER_ADDR']) && filter_var($_SERVER['SERVER_ADDR'], FILTER_VALIDATE_IP)) {
+        $ips[] = $_SERVER['SERVER_ADDR'];
+    }
+
+    // Remove duplicates and return as a comma-separated string
+    $unique_ips = array_unique($ips);
+    return implode(', ', $unique_ips);
 }

@@ -230,6 +230,11 @@ use PixelYourSite\Facebook\Helpers;
             'title' => 'WooCommerce AddToCart Event FIX',
             'time'  => '4:46',
         ),
+				array(
+            'url'   => 'https://www.youtube.com/watch?v=eoJT1fSIar0',
+            'title' => 'Google Automated Discounts. Step-by-Step Google Merchant Setup Guide',
+            'time'  => '14:26',
+        ),
         array(
             'url'   => 'https://www.youtube.com/watch?v=FjGJYAdZEKc',
             'title' => 'Analyse your WooCommerce data with ChatGPT',
@@ -240,11 +245,7 @@ use PixelYourSite\Facebook\Helpers;
             'title' => 'Enhanced Conversions for Google Ads with PixelYourSite',
             'time'  => '9:14',
         ),
-        array(
-            'url'   => 'https://www.youtube.com/watch?v=zLtXHbp_DDU',
-            'title' => 'Google Analytic 4 (GA4) & WooCommerce: Transaction Reports',
-            'time'  => '6:51',
-        ),
+    
         array(
             'url'   => 'https://www.youtube.com/watch?v=3Ugwlq1EVO4',
             'title' => 'Same Facebook (Meta) pixel or Google tag on multiple WooCommerce websites?',
@@ -1122,6 +1123,57 @@ use PixelYourSite\Facebook\Helpers;
                                     dataLayer</h4>
                             </div>
                         <?php endif; ?>
+
+                        <div class="line"></div>
+                        <!-- Conversion with Card Data (CwCD) -->
+                        <!-- @link: https://support.google.com/google-ads/answer/14944137?hl=en&ref_topic=14944136&sjid=17986014926685062911-EU#zippy=%2Cset-up-with-google-ads%2Cset-up-with-google-analytics -->
+
+                        <div class="gap-24">
+                            <div>
+                                <div class="d-flex align-items-center mb-8">
+                                    <?php PYS()->render_switcher_input( "enable_CwCD" ); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable Conversion with Card Data (CwCD)</h4>
+                                </div>
+                                <p class="text-gray">
+                                    <div class="mt-8">Optional, useful when using <a href="https://www.pixelyoursite.com/google-automated-discounts-for-woocommerce" target="_blank">Google Automated Discounts</a> </div>
+                                </p>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center mb-8">
+                                    <label class="primary_heading"><?php _e('aw_merchant_id:', 'pys');?></label>
+                                    <?php renderPopoverButton( 'aw_merchant_id' ); ?>
+                                </div>
+                                <?php PYS()->render_text_input( 'aw_merchant_id','', false, false, false, 'short' ); ?>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center mb-8">
+                                    <label class="primary_heading"><?php _e('aw_feed_label:', 'pys');?></label>
+                                    <?php renderPopoverButton( 'aw_feed_label' ); ?>
+                                </div>
+                                <?php PYS()->render_text_input( 'aw_feed_label','', false, false, false, 'short' ); ?>
+                                <p class="small-text text-gray">
+                                    Supported only when using Google Analytics as conversion source
+                                </p>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center mb-8">
+                                    <label class="primary_heading"><?php _e('aw_feed_country:', 'pys');?></label>
+                                    <?php renderPopoverButton( 'aw_feed_country' ); ?>
+                                </div>
+                                <?php PYS()->render_select_input( 'aw_feed_country',get_aw_feed_country_codes(), false, false, false, true ); ?>
+                                <p class="small-text text-gray">
+                                    <b>Note:</b> When using Google Analytics as a conversion source, please use the parameter aw_feed_label instead.
+                                </p>
+                            </div>
+
+                            <div>
+                                <div class="d-flex align-items-center mb-8">
+                                    <label class="primary_heading"><?php _e('aw_feed_language:', 'pys');?></label>
+                                    <?php renderPopoverButton( 'aw_feed_language' ); ?>
+                                </div>
+                                <?php PYS()->render_select_input( 'aw_feed_language',get_aw_feed_language_codes(), false, false, false, true ); ?>
+                            </div>
+                        </div>
 
                         <div class="line"></div>
 
@@ -2475,4 +2527,3 @@ use PixelYourSite\Facebook\Helpers;
         </div>
     </div>
 </div>
-

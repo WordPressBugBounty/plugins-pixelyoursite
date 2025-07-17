@@ -647,6 +647,38 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <?php endif; ?>
                     <div class="insert-marker-trigger video_view_marker"></div>
 
+                    <?php if ( $trigger_type == 'form_field' ) : ?>
+                        <div class="event_triggers_panel form_field_panel" data-trigger_type="form_field" style="display: none;">
+                            <?php
+
+                            ?>
+                            <div class="event_trigger" data-trigger_id="0">
+                                <div class="event_trigger_wrapper">
+                                    <div class="w-100">
+                                        <p class="form-text text-small mb-4">Enter form pages URL</p>
+
+                                        <div class="d-flex align-items-center w-100">
+                                            <div class="flex-1">
+                                                <?php renderDummyTextInput('URLs'); ?>
+                                            </div>
+
+                                            <div class="ml-24">
+                                                <button class="btn btn-primary btn-primary-type2 pys-scan-forms"
+                                                        type="button"
+                                                        value="Scan forms">Scan forms
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="elementor_form_error mt-16" style="display: none">
+                                <div class="event_error critical_message"></div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="insert-marker-trigger form_field_marker"></div>
                     <?php if ( $trigger_type == 'email_link' ) : ?>
                         <div class="event_triggers_panel email_link_panel" data-trigger_type="email_link"
                              style="display: none;">
@@ -1067,6 +1099,36 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                 </div>
             </div>
 
+            <div class="event_triggers_panel form_field_panel" data-trigger_type="form_field" style="display: none;">
+                <?php
+
+                ?>
+                <div class="event_trigger pro-feature-container mb-16" data-trigger_id="0">
+                    <div class="event_trigger_wrapper mb-16">
+                        <div class="w-100">
+                            <p class="form-text text-small mb-4">Enter form pages URL</p>
+
+                            <div class="d-flex align-items-center w-100">
+                                <div class="flex-1">
+                                    <?php renderDummyTextInput('URLs'); ?>
+                                </div>
+
+                                <div class="ml-24">
+                                    <button class="btn btn-primary btn-primary-type2 pys-scan-forms"
+                                            type="button"
+                                            value="Scan forms">Scan forms
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="elementor_form_error mt-16" style="display: none">
+                    <div class="event_error critical_message"></div>
+                </div>
+            </div>
+
             <div class="event_triggers_panel email_link_panel" data-trigger_type="email_link" style="display: none;">
                 <div class="event_trigger pro-feature-container mb-16" data-trigger_id="-1" style="display: none;">
                     <div class="event_trigger_wrapper mb-16">
@@ -1395,7 +1457,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                                 </div>
 
                                 <div>
-                                    <?php include PYS_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                    <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
                                 </div>
                             </div>
                         </div>
@@ -1408,6 +1470,25 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                         <?php renderAddCustomParameterButton( 'facebook' ); ?>
                     </div>
                 </div>
+                <div class="pro-feature-container mb-24 mt-24">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-start">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading">Track WooCommerce product data on single product pages</h4>
+                        </div>
+                        <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                    </div>
+                </div>
+                <div class="pro-feature-container mb-24">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-start">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading">Track WooCommerce cart data when possible</h4>
+                        </div>
+                        <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                    </div>
+                </div>
+
                 <p class="primary-heading-color mt-24">
                     <span class="primary-text-color primary_heading">Important: </span>
                     verify your custom events inside your Ads Manager:
@@ -1545,6 +1626,25 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <div class="mt-24">
                         <?php renderAddCustomParameterButton( 'ga-ads' ); ?>
                     </div>
+
+                    <div class="pro-feature-container mb-24 mt-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce product data on single product pages</h4>
+                            </div>
+                            <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
+                    </div>
+                    <div class="pro-feature-container mb-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce cart data when possible</h4>
+                            </div>
+                            <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
+                    </div>
                     <p class="primary-heading-color mt-24">
                         The following parameters are automatically tracked: <span class="event-parameter-list">content_name, event_url,
                     post_id, post_type</span>.
@@ -1643,8 +1743,25 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                         <?php renderDummyTextInput(); ?>
                     </div>
                 </div>
+                <div class="pro-feature-container mb-24 mt-24">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-start">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading">Track WooCommerce product data on single product pages</h4>
+                        </div>
+                        <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                    </div>
+                </div>
+                <div class="pro-feature-container mb-24">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-start">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading">Track WooCommerce cart data when possible</h4>
+                        </div>
+                        <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                    </div>
+                </div>
             </div>
-
         </div>
     </div>
 
@@ -1691,6 +1808,24 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <div class="d-flex align-items-center mt-24">
                         <?php renderDummySwitcher(); ?>
                         <h4 class="switcher-label secondary_heading">Add Parameters</h4>
+                    </div>
+                    <div class="pro-feature-container mb-24 mt-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce product data on single product pages</h4>
+                            </div>
+                            <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
+                    </div>
+                    <div class="pro-feature-container mb-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce cart data when possible</h4>
+                            </div>
+                            <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1846,7 +1981,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                                     </div>
 
                                     <div>
-                                        <?php include PYS_VIEW_PATH . '/UI/button-remove-row.php'; ?>
+                                        <?php include PYS_FREE_VIEW_PATH . '/UI/button-remove-row.php'; ?>
                                     </div>
                                 </div>
                             </div>
@@ -1857,6 +1992,25 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
 
                     <div class="mt-24 mb-24">
                         <?php renderAddCustomParameterButton( 'gtm' ); ?>
+                    </div>
+
+                    <div class="pro-feature-container mb-24 mt-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce product data on single product pages</h4>
+                            </div>
+                            <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
+                    </div>
+                    <div class="pro-feature-container mb-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce cart data when possible</h4>
+                            </div>
+                            <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
                     </div>
 
                     <div class="line mb-24"></div>

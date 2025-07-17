@@ -101,6 +101,11 @@
   "woo_enabled_display_data_to_orders": true,
   "woo_add_enrich_to_admin_email": true,
 
+  "enable_CwCD" : true,
+  "aw_merchant_id": "",
+  "aw_feed_country": "",
+  "aw_feed_label": "",
+  "aw_feed_language": "",
 
   "enable_event_url_param": true,
   "enable_remove_source_url_params": true,

@@ -940,6 +940,18 @@ class GA extends Settings implements Pixel {
 
         $params['fees'] = get_fees($order);
 
+        if(PYS()->getOption('enable_CwCD')) {
+            if(!empty(PYS()->getOption('aw_merchant_id'))){
+                $params['aw_merchant_id'] = PYS()->getOption('aw_merchant_id');
+            }
+            if(!empty(PYS()->getOption('aw_feed_label'))){
+                $params['aw_feed_label'] = PYS()->getOption('aw_feed_label');
+            }
+            if(!empty(PYS()->getOption('aw_feed_language'))){
+                $params['aw_feed_language'] = PYS()->getOption('aw_feed_language');
+            }
+        }
+
 		return array(
 			'name' => 'purchase',
 			'data' => $params

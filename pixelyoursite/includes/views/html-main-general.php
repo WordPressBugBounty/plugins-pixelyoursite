@@ -230,6 +230,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     GA4 properties only.
                                 </p>
                             </div>
+
                             <div class="d-flex align-items-center">
                                 <input type="checkbox" class="custom-control-input"
                                        name="pys[ga][is_enable_debug_mode][-1]" value="0" checked/>
@@ -415,6 +416,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <?php _e( 'Don\'t use GTM and our native integrations for the same tag/pixel ID. A pixel installed with the native integration must not be installed with GTM.', 'pys' ); ?>
                                 </p>
                             </div>
+
                             <div class="line-dark"></div>
                             <?php $containers = new gtmContainers();
                             $download_template_nonce = wp_create_nonce('download_template_nonce');

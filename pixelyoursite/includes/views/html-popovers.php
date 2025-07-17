@@ -610,3 +610,19 @@
 	<p><b>6. </b>Click <b>​Save​</b>
 	</p>
 </div>
+
+<div id="pys-aw_merchant_id" style="display: none; visibility: hidden">
+    <p>This is your Google Merchant Center account ID.</p>
+    <p>To find it, log in to your Google Merchant Center account at <a href="https://merchants.google.com" target="_blank" class="link">https://merchants.google.com</a>.</p>
+    <p>Look in the top-right corner of the page — your <b>10-digit Merchant ID is displayed there</b>.</p>
+</div>
+<div id="pys-aw_feed_country" style="display: none; visibility: hidden">
+    <p>This is the 2-letter country code of your primary feed’s target country.</p>
+    <p>In Google Merchant Center, go to Settings > Data Sources, then click on your Primary Feed, Data source setup.</p>
+    <p>Under "Feed label" you’ll see the country or countries assigned to that feed.</p>
+    <p>Use the 2-letter ISO code (e.g., US, GB, RO, DE).</p>
+</div>
+<div id="pys-aw_feed_language" style="display: none; visibility: hidden">
+    <p>This is the 2-letter language code of the feed’s language.</p>
+    <p>In Google Merchant Center, go to Settings > Data Sources, then click on your Primary Feed, Data source setup and look for "Language"</p>
+</div>

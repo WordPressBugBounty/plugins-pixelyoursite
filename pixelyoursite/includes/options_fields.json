@@ -100,6 +100,12 @@
   "enable_event_url_param":"checkbox",
   "enable_remove_source_url_params":"checkbox",
 
+  "enable_CwCD" : "checkbox",
+  "aw_merchant_id": "text",
+  "aw_feed_country": "select",
+  "aw_feed_label": "text",
+  "aw_feed_language": "select",
+
   "enable_post_id_param": "checkbox",
   "enable_content_name_param": "checkbox",
   "enable_user_role_param":"checkbox",
