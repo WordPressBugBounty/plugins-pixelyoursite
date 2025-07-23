@@ -274,10 +274,13 @@ final class PYS extends Settings implements Plugin {
         if(PYS()->getOption('session_disable')) return;
 
         // Checking if the directory exists and is writable
-        if (!is_admin() && php_sapi_name() !== 'cli' && session_status() != PHP_SESSION_DISABLED) {
-            if (!headers_sent() && session_status() == PHP_SESSION_NONE) {
-                if(!session_start()) return;
+        if (!is_admin() && PHP_SAPI !== 'cli' && session_status() != PHP_SESSION_DISABLED) {
+            if (!headers_sent() && session_status() === PHP_SESSION_NONE) {
+                if (!session_start()) return;
             }
+
+            if (session_status() !== PHP_SESSION_ACTIVE) return;
+
             if (empty($_SESSION['TrafficSource'])) {
                 $_SESSION['TrafficSource'] = getTrafficSource();
             }

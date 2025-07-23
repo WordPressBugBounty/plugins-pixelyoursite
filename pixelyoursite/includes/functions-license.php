@@ -76,7 +76,7 @@ function renderLicenseControls( $plugin, $license_status ) {
                     you keep everything updated and in order.</p>
                 <p>If you renewed your license but you still see this message, click on the "Reactivate License" button.</p>
                 <p><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php echo esc_attr(
-                    $license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license now for a 40% discount</strong></a></p>
+                    $license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license</strong></a></p>
             </div>
 		<?php
 	endif;

@@ -283,6 +283,37 @@ include "html-popovers.php";
             </div>
         </div>
     </div>
+    <!-- Caches -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Caches', 'pys');?></h4>
+        </div>
+        <div class="card-body">
+            <div class="gap-24">
+                <div>
+                    <p class="text-grey">
+                        If you use site or server uses caches and you notice issues with the plugin, you can add these exceptions to "Exclude JavaScript Files" in minification or delay options:
+                    </p>
+                </div>
+                <div>
+                    <div class="example-block">
+                        <label>Example:</label>
+                        <pre class="copy_text">
+pys-js-extra
+pysOptions
+wp-content/plugins/pixelyoursite/dist/scripts/public.js
+wp-content/plugins/pixelyoursite/dist/scripts/js.cookie-2.1.3.min.js
+wp-content/plugins/pixelyoursite/dist/scripts/sha256.js
+wp-content/plugins/pixelyoursite/dist/scripts/tld.min.js
+                            <div class="copy-icon" data-toggle="pys-popover"
+                                 data-tippy-trigger="click" data-tippy-placement="bottom"
+                                 data-popover_id="copied-popover"></div></pre>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Other stuff -->
     <div class="card card-style6 card-static">
         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">

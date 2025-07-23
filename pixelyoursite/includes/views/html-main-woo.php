@@ -245,7 +245,7 @@ use PixelYourSite\Facebook\Helpers;
             'title' => 'Enhanced Conversions for Google Ads with PixelYourSite',
             'time'  => '9:14',
         ),
-    
+
         array(
             'url'   => 'https://www.youtube.com/watch?v=3Ugwlq1EVO4',
             'title' => 'Same Facebook (Meta) pixel or Google tag on multiple WooCommerce websites?',
@@ -1132,7 +1132,7 @@ use PixelYourSite\Facebook\Helpers;
                             <div>
                                 <div class="d-flex align-items-center mb-8">
                                     <?php PYS()->render_switcher_input( "enable_CwCD" ); ?>
-                                    <h4 class="switcher-label secondary_heading">Enable Conversion with Card Data (CwCD)</h4>
+                                    <h4 class="switcher-label secondary_heading">Enable Conversion with Card Data (CwCD) optional fileds</h4>
                                 </div>
                                 <p class="text-gray">
                                     <div class="mt-8">Optional, useful when using <a href="https://www.pixelyoursite.com/google-automated-discounts-for-woocommerce" target="_blank">Google Automated Discounts</a> </div>

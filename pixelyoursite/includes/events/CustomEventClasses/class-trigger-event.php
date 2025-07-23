@@ -9,24 +9,35 @@ if ( !defined( 'ABSPATH' ) ) {
 class TriggerEvent {
 
     private $trigger_type                   = 'page_visit';
-    private $index                          = 0;
-    private $ready                          = false;
-    private $delay                          = null;
-    private $triggers                       = array();
-    private $number_visit                   = null;
-    private $conditional_number_visit       = null;
-    private $forms                          = array();
-    private $video_view_data                = array();
-    private $video_view_urls                = array();
-    private $video_view_triggers            = array();
-    private $video_view_play_trigger        = '0%';
-    private $video_view_disable_watch_video = false;
-    private $disabled_form_action           = false;
-    private $url_filters                    = array();
-    private $post_type_value                = null;
-    private $elementor_form_urls            = array();
-    private $elementor_form_data            = array();
-    private $email_link_disable_email_event = false;
+	private $index                          = 0;
+	private $ready                          = false;
+	private $delay                          = null;
+	private $triggers                       = array();
+	private $number_visit                   = null;
+	private $conditional_number_visit       = null;
+	private $forms                          = array();
+	private $video_view_data                = array();
+	private $video_view_urls                = array();
+	private $video_view_triggers            = array();
+	private $video_view_play_trigger        = '0%';
+	private $video_view_disable_watch_video = false;
+	private $disabled_form_action           = false;
+	private $url_filters                    = array();
+	private $post_type_value                = null;
+	private $elementor_form_urls            = array();
+	private $elementor_form_data            = array();
+
+    private $form_field_data                = array();
+
+    private $form_field_urls                = array();
+
+    private $form_field_forms = '';
+
+    private $form_field_fields = '';
+	private $email_link_disable_email_event = false;
+    private $purchase_transaction_only = false;
+    private $track_value_and_currency = false;
+    private $track_transaction_ID = false;
 
     public static $allowedTriggers = array(
         'page_visit',
