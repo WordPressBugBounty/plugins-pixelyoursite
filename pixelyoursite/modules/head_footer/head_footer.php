@@ -41,17 +41,17 @@ class HeadFooter extends Settings {
             /** @var PYS $core */
             $core->registerPlugin( $this );
         } );
+        add_action( 'template_redirect', array( $this, 'output_scripts' ) );
+        add_action('init', array($this, 'init'));
+    }
 
+    public function init()
+    {
         if ( $this->getOption( 'enabled' ) ) {
             add_action( 'add_meta_boxes', array( $this, 'register_meta_box' ) );
             add_action( 'save_post', array( $this, 'save_meta_box' ) );
         }
-
-
-        add_action( 'template_redirect', array( $this, 'output_scripts' ) );
-
     }
-
     /**
      * Register meta box for each public post type.
      */

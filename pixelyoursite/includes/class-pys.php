@@ -369,8 +369,6 @@ final class PYS extends Settings implements Plugin {
 
 	    }
 
-	    maybeMigrate();
-
     }
 
 	/**

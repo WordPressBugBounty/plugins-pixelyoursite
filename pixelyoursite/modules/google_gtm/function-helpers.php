@@ -133,6 +133,7 @@ function get_all_blacklist_tabs() {
 function custom_wc_get_related_products( $product_id, $limit = 5, $exclude_ids = array() ) {
 
     $product_id     = absint( $product_id );
+    $limit = (int) $limit;
     $limit          = $limit >= -1 ? $limit : 5;
     $exclude_ids    = array_merge( array( 0, $product_id ), $exclude_ids );
     $transient_name = 'wc_related_' . $product_id;

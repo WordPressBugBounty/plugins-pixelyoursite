@@ -495,8 +495,7 @@ class Plugin_Updater {
         if ( empty( $cache_key ) ) {
             $cache_key = $this->cache_key;
         }
-
-        $cache = get_option( $cache_key );
+        $cache = pys_get_option( $cache_key );
 
         if ( empty( $cache['timeout'] ) || current_time( 'timestamp' ) > $cache['timeout'] ) {
             return true; // Cache is expired
@@ -508,8 +507,7 @@ class Plugin_Updater {
         if ( empty( $cache_key ) ) {
             $cache_key = $this->cache_key;
         }
-
-        $cache = get_option( $cache_key );
+        $cache = pys_get_option( $cache_key );
 
         if ( isset( $cache['value'] ) && is_string( $cache['value'] ) ) {
             return json_decode( $cache['value'] );
@@ -534,7 +532,7 @@ class Plugin_Updater {
             'value'   => json_encode( $value )
         );
 
-        update_option( $cache_key, $data, 'no' );
+        pys_update_option( $cache_key, $data, 'no' );
 
     }
 

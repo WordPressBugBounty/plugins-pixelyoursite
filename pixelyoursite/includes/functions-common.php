@@ -1567,3 +1567,49 @@ function get_aw_feed_language_codes() {
     );
     return array_combine(array_keys($language), $result);
 }
+
+function pys_get_option( $option, $default = false ) {
+    global $wpdb;
+
+    $table = $wpdb->prefix . 'pys_options';
+
+    // We are trying to get from our table
+    $value = $wpdb->get_var( $wpdb->prepare(
+        "SELECT option_value FROM {$table} WHERE option_name = %s LIMIT 1",
+        $option
+    ) );
+
+    if ( $value !== null ) {
+        return maybe_unserialize( $value );
+    }
+
+    // If it is not in your table, try wp_options
+    $value = get_option( $option, $default );
+
+    return $value;
+}
+function pys_update_option( $option, $value ) {
+    global $wpdb;
+
+    $table = $wpdb->prefix . 'pys_options';
+
+    $data = [
+        'option_name'  => $option,
+        'option_value' => maybe_serialize( $value ),
+    ];
+    $formats = [ '%s', '%s' ];
+
+    // Update or insert
+    $existing = $wpdb->get_var( $wpdb->prepare(
+        "SELECT COUNT(*) FROM {$table} WHERE option_name = %s",
+        $option
+    ) );
+
+    if ( $existing ) {
+        $wpdb->update( $table, $data, [ 'option_name' => $option ], $formats, [ '%s' ] );
+    } else {
+        $wpdb->insert( $table, $data, $formats );
+    }
+
+    return true;
+}

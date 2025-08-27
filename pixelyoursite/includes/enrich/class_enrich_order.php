@@ -14,8 +14,14 @@ class EnrichOrder {
 
     public function init() {
         //woo
+
         if(PYS()->getOption("woo_enabled_save_data_to_orders")) {
-            add_action( 'woocommerce_new_order',array($this,'woo_save_checkout_fields'),10, 1);
+            // Regular orders
+            add_action( 'woocommerce_new_order', array( $this, 'woo_save_checkout_fields_safe' ), 10, 1 );
+
+            // Paid subscription renewals
+            add_action( 'woocommerce_subscription_renewal_payment_complete', array( $this, 'woo_save_checkout_fields_safe' ), 10, 1 );
+
             add_action( 'add_meta_boxes', array($this,'woo_add_order_meta_boxes') );
             if(PYS()->getOption("woo_add_enrich_to_admin_email")) {
                 add_action( 'woocommerce_email_customer_details', array($this,'woo_add_enrich_to_admin_email'),80,4 );
@@ -66,17 +72,23 @@ class EnrichOrder {
         include 'views/html-order-meta-box.php';
     }
 
-    function woo_save_checkout_fields($order_id) {
-		$order = wc_get_order( $order_id );
-		$renewal_order = false;
-		$created_via = $order->get_created_via();
+    public function woo_save_checkout_fields_safe( $order_id ) {
 
-		// Check if the order is a renewal order
-		if ( function_exists( 'wcs_order_contains_subscription' ) && wcs_order_contains_subscription( $order, 'renewal' ) ) {
-			$renewal_order = true;
-		} elseif ( $created_via === 'subscription_renewal' || $created_via === 'subscription' ) {
-			$renewal_order = true;
-		}
+        $order = wc_get_order( $order_id );
+        if (!$order instanceof \WC_Order) {
+            error_log( "woo_save_checkout_fields_safe: no valid order found for ID: {$order_id}" );
+            return;
+        }
+
+        // We determine whether it is a renewal or not
+        $renewal_order = false;
+        $created_via   = method_exists( $order, 'get_created_via' ) ? $order->get_created_via() : '';
+
+        if ( function_exists( 'wcs_order_contains_subscription' ) && wcs_order_contains_subscription( $order, 'renewal' ) ) {
+            $renewal_order = true;
+        } elseif ( $created_via === 'subscription_renewal' || $created_via === 'subscription' ) {
+            $renewal_order = true;
+        }
 
 		$pysData = $this->getPysData( $renewal_order );
 

@@ -44,7 +44,51 @@ abstract class Settings {
     private $options = array();
 
     private $defaults_json_path;
-    
+    private static ?bool $table_exists = null;
+
+    public static function storage_table(): string {
+        global $wpdb;
+        return $wpdb->prefix . 'pys_options';
+    }
+
+    private static function table_exists(): bool {
+        if (self::$table_exists !== null) {
+            return self::$table_exists;
+        }
+
+        // Try object cache first
+        $cached = wp_cache_get('pys_options_table_exists', 'pys');
+        if ($cached !== false) {
+            return self::$table_exists = (bool) $cached;
+        }
+
+        global $wpdb;
+        $table  = self::storage_table();
+        $exists = (bool) $wpdb->get_var(
+            $wpdb->prepare("SHOW TABLES LIKE %s", $table)
+        );
+        if (!$exists) {
+            // Create table
+            $charset_collate = $wpdb->get_charset_collate();
+            $sql = "CREATE TABLE IF NOT EXISTS $table (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            option_name VARCHAR(191) NOT NULL,
+            option_value LONGTEXT NOT NULL,
+            migrated TINYINT(1) NOT NULL DEFAULT 1,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            UNIQUE KEY option_name (option_name)
+        ) $charset_collate;";
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            dbDelta($sql);
+
+            // After dbDelta table exists
+            $exists = true;
+        }
+        // Cache for 12h; adjust as you like
+        wp_cache_set('pys_options_table_exists', $exists, 'pys', 12 * HOUR_IN_SECONDS);
+        return self::$table_exists = $exists;
+    }
     /**
      * Constructor
      *
@@ -71,7 +115,7 @@ abstract class Settings {
         $this->loadJSON( $defaults, true );
         
         $this->defaults_json_path = $defaults;
-
+        self::table_exists();
     }
 
     public function resetToDefaults() {
@@ -148,8 +192,81 @@ abstract class Settings {
 			$this->options = $values;
 		}
 
-	}
-	
+    }
+
+    /**
+     * Reading from a new table.
+     *
+     * @return array|null  array of values or null if there is no entry
+     */
+    private function pys_get_from_storage( $option_key ) {
+        global $wpdb;
+        if (!self::$table_exists) {
+            return null;
+        }
+
+        $table = self::storage_table();
+
+        // Safe to query the table
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT option_value FROM $table WHERE option_name = %s LIMIT 1",
+                $option_key
+            ),
+            ARRAY_A
+        );
+
+        if ( ! $row ) {
+            return null;
+        }
+
+        $val = maybe_unserialize( $row['option_value'] );
+        return is_array( $val ) ? $val : [];
+    }
+    /**
+     * Write to a new table.
+     *
+     * @return bool
+     */
+    private function pys_set_in_storage( $option_key, $value, $migrated = 1 ) {
+        global $wpdb;
+        if (!self::$table_exists) {
+            return null;
+        }
+        $table = self::storage_table();
+        $data  = [
+            'option_value' => maybe_serialize( $value ),
+            'migrated'     => (int) $migrated,
+        ];
+        $format = [ '%s', '%d' ];
+        // Checking if there is a record
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$table} WHERE option_name = %s",
+                $option_key
+            )
+        );
+
+        if ( $exists ) {
+            // We are updating
+            $result = $wpdb->update(
+                $table,
+                $data,
+                [ 'option_name' => $option_key ],
+                $format,
+                [ '%s' ]
+            );
+        } else {
+            // Insert a new one
+            $result = $wpdb->insert(
+                $table,
+                array_merge( [ 'option_name' => $option_key ], $data ),
+                array_merge( [ '%s' ], $format )
+            );
+        }
+
+        return $result !== false;
+    }
 	/**
 	 * Add new option field
 	 *
@@ -201,14 +318,28 @@ abstract class Settings {
 	 */
 	private function maybeLoad( $force = false ) {
 
-		if ( $force || empty( $this->values ) ) {
-			$this->values = get_option( $this->option_key, null );
-		}
+        if ( ! $force && ! empty( $this->values ) ) {
+            return; // already loaded
+        }
 
-		// if there are no settings defined, use default values
-		if ( ! is_array( $this->values ) ) {
-			$this->values = $this->defaults;
-		}
+        // 1) Let's try a new table
+        $stored = $this->pys_get_from_storage( $this->option_key );
+        if ( is_array( $stored ) ) {
+            $this->values = wp_parse_args( $stored, $this->defaults );
+            return;
+        }
+
+        // 2) Let's try the old way (wp_options)
+        $legacy = get_option( $this->option_key, null );
+        if ( is_array( $legacy ) ) {
+            // Migration to a new table
+            $this->pys_set_in_storage( $this->option_key, $legacy, 1 );
+            $this->values = wp_parse_args( $legacy, $this->defaults );
+            return;
+        }
+
+        // 3) If nothing, we take defaults
+        $this->values = $this->defaults;
 
 	}
 
@@ -225,22 +356,30 @@ abstract class Settings {
 
         $this->maybeLoad();
 
-	    if ( is_array( $values ) ) {
-		    $form_data = $values;
-	    } else {
-		    $form_data = isset( $_POST['pys'][ $this->slug ] ) ? $_POST['pys'][ $this->slug ] : array();
-	    }
-
-	    // save posted fields
-        foreach ( $form_data as $key => $value ) {
-
-	        if ( isset( $this->options[ $key ] ) ) {
-		        $this->values[ $key ] = $this->sanitize_form_field( $key, $value );
-	        }
-
+        if ( is_array( $values ) ) {
+            $form_data = $values;
+        } else {
+            if ( isset( $_POST['pys'][ $this->slug ] ) && is_array( $_POST['pys'][ $this->slug ] ) ) {
+                $form_data = $_POST['pys'][ $this->slug ];
+            } else {
+                $form_data = [];
+            }
         }
 
-        update_option( $this->option_key, $this->values );
+        // We only apply valid fields and sanitize them
+        foreach ( $form_data as $key => $value ) {
+            if ( isset( $this->options[ $key ] ) ) {
+                $this->values[ $key ] = $this->sanitize_form_field( $key, $value );
+            }
+        }
+
+        // We write to a new table (primarily)
+        $written = $this->pys_set_in_storage( $this->option_key, $this->values, 1 );
+
+        if ( ! $written ) {
+            // Fallback: if we couldn't write to our table, we save it in wp_options
+            update_option( $this->option_key, $this->values, false );
+        }
 
     }
 	

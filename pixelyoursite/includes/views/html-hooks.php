@@ -99,6 +99,35 @@ add_filter('pys_gdpr_ajax_enabled',function ($status) {
     <div class="card card-style3 hook-card">
         <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
             <div class="disable-card align-items-center">
+                <h4 class="secondary_heading_type2">pys_check_consent_by_gdpr - Consent status for GDPR</h4>
+            </div>
+            <?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <div class="flex-column-24gap">
+                <div class="double-line-height">
+                    <p>Allows developers to programmatically override consent status for GDPR compliance. Receives the current consent value, allowing you to customize logic to determine whether consent should be enabled or disabled. Useful for integrating with third-party consent management solutions or custom privacy workflows.</p>
+                    <p>Param: bool $status</p>
+                </div>
+                <div class="example-block">
+                    <label>Example:</label>
+                    <pre class="copy_text">
+add_filter('pys_check_consent_by_gdpr',function ($status) {
+    if(get_current_user_id() == 0 ) {
+        return true;
+    }
+    return $status;
+});<div class="copy-icon" data-toggle="pys-popover"
+        data-tippy-trigger="click" data-tippy-placement="bottom"
+        data-popover_id="copied-popover"></div></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-style3 hook-card">
+        <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+            <div class="disable-card align-items-center">
                 <h4 class="secondary_heading_type2">pys_event_data - Edit or add custom data to event</h4>
             </div>
             <div class="pro-badge-block">

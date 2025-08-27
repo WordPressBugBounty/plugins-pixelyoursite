@@ -385,8 +385,8 @@ class GA extends Settings implements Pixel {
                     if (!empty($event['params']['items'])) {
                         foreach ($event['params']['items'] as $key => $item) {
 
-                            $args["pr" . ($key + 1) . "id"] = isset($item['id']) ? urlencode($item['id']) : '';
-                            $args["pr" . ($key + 1) . "nm"] = isset($item['name']) ? urlencode($item['name']) : '';
+                            $args["pr" . ($key + 1) . "id"] = isset($item['item_id']) ? urlencode($item['item_id']) : '';
+                            $args["pr" . ($key + 1) . "nm"] = isset($item['item_name']) ? urlencode($item['item_name']) : '';
                             $args["pr" . ($key + 1) . "pr"] = isset($item['price']) ? (float)$item['price'] : 0;
                             $args["pr" . ($key + 1) . "qt"] = isset($item['quantity']) ? (int)$item['quantity'] : 1;
                             $args["pr" . ($key + 1) . "ca"] = isset($item['item_category']) ? urlencode($item['item_category']) : '';
@@ -487,8 +487,8 @@ class GA extends Settings implements Pixel {
 			}
 
 			$item = array(
-				'id'            => GA\Helpers\getWooProductContentId($posts[ $i ]->ID),
-				'name'          => $posts[ $i ]->post_title,
+				'item_id'            => GA\Helpers\getWooProductContentId($posts[ $i ]->ID),
+				'item_name'          => $posts[ $i ]->post_title,
 				'quantity'      => 1,
 				'price'         => getWooProductPriceToDisplay( $posts[ $i ]->ID ),
 			);
@@ -498,7 +498,7 @@ class GA extends Settings implements Pixel {
                 $item = array_merge($item, $category);
             }
 			$items[] = $item;
-			$product_ids[] = $item['id'];
+			$product_ids[] = $item['item_id'];
 			$total_value += $item['price'];
 
 		}
@@ -533,8 +533,8 @@ class GA extends Settings implements Pixel {
 
         $items = array();
         $general_item = array(
-            'id'       => $productId,
-            'name'     => $product->get_name(),
+            'item_id'       => $productId,
+            'item_name'     => $product->get_name(),
             'quantity' => $quantity,
             'price'    => getWooProductPriceToDisplay($product->get_id(), $quantity, $customProductPrice),
         );
@@ -557,8 +557,8 @@ class GA extends Settings implements Pixel {
                 $category = $this->getCategoryArrayWoo($variation['variation_id'], true);
 
                 $item = array(
-                    'id'       => $variationProductId,
-                    'name'     => GATags()->getOption('woo_variations_use_parent_name') ? $variationProduct->get_title() : $variationProduct->get_name(),
+                    'item_id'       => $variationProductId,
+                    'item_name'     => GATags()->getOption('woo_variations_use_parent_name') ? $variationProduct->get_title() : $variationProduct->get_name(),
                     'quantity' => $quantity,
                     'price'    => getWooProductPriceToDisplay($variationProduct->get_id(), $quantity, $customProductPrice)
                 );
@@ -621,8 +621,8 @@ class GA extends Settings implements Pixel {
                         $price += $cart_item['line_subtotal_tax'];
                     }
                     $item = array(
-                        'id'       => $content_id,
-                        'name'     => GATags()->getOption('woo_variations_use_parent_name') && $product->is_type('variation') ? $product->get_title() : $product->get_name(),
+                        'item_id'       => $content_id,
+                        'item_name'     => GATags()->getOption('woo_variations_use_parent_name') && $product->is_type('variation') ? $product->get_title() : $product->get_name(),
                         'quantity' => $cart_item['quantity'],
                         'price'    => $cart_item['quantity'] > 0 ? pys_round($price / $cart_item['quantity']) : $price,
                     );
@@ -641,7 +641,7 @@ class GA extends Settings implements Pixel {
                     }
 
                     $items[] = $item;
-                    $product_ids[] = $item['id'];
+                    $product_ids[] = $item['item_id'];
                 }
             }
         }
@@ -690,8 +690,8 @@ class GA extends Settings implements Pixel {
                 $variation_name = null;
             }
             $item = array(
-                'id'       => $content_id,
-                'name'     => $name,
+                'item_id'       => $content_id,
+                'item_name'     => $name,
                 'quantity' => $quantity,
                 'price'    => $price,
                 'variant'  => $variation_name,
@@ -791,8 +791,8 @@ class GA extends Settings implements Pixel {
             'currency'        => get_woocommerce_currency(),
             'items'           => array(
                 array(
-                    'id'       => $product_id,
-                    'name'     => $name,
+                    'item_id'       => $product_id,
+                    'item_name'     => $name,
                     'quantity' => $cart_item['quantity'],
                     'price'    => getWooProductPriceToDisplay( $product_id, $cart_item['quantity'] ),
                     'variant'  => $variation_name,
@@ -912,8 +912,8 @@ class GA extends Settings implements Pixel {
 			}
 
 			$item = array(
-				'id'       => $content_id,
-				'name'     => $name,
+				'item_id'       => $content_id,
+				'item_name'     => $name,
 				'quantity' => $qty,
 				'price'    => $price,
 				'variant'  => $variation_name,
@@ -922,7 +922,7 @@ class GA extends Settings implements Pixel {
                 $item = array_merge($item, $categories);
             }
 			$items[] = $item;
-			$product_ids[] = $item['id'];
+			$product_ids[] = $item['item_id'];
 			$total_value   += $item['price' ];
 
 		}
@@ -993,8 +993,8 @@ class GA extends Settings implements Pixel {
 			}
 
 			$item = array(
-				'id'       => $content_id,
-				'name'     => $name,
+				'item_id'       => $content_id,
+				'item_name'     => $name,
 				'quantity' => $cart_item['quantity'],
 				'price'    => getWooProductPriceToDisplay( $product_id ),
 				'variant'  => $variation_name,
@@ -1004,7 +1004,7 @@ class GA extends Settings implements Pixel {
                 $item = array_merge($item, $categories);
             }
 			$items[] = $item;
-			$product_ids[] = $item['id'];
+			$product_ids[] = $item['item_id'];
 			$total_value += $item['price'];
 
 		}
@@ -1053,8 +1053,8 @@ class GA extends Settings implements Pixel {
             'currency' => edd_get_currency(),
 			'items'           => array(
 				array(
-					'id'       => $post->ID,
-					'name'     => $post->post_title,
+					'item_id'       => $post->ID,
+					'item_name'     => $post->post_title,
 					'category' => implode( '/', getObjectTerms( 'download_category', $post->ID ) ),
 					'quantity' => 1,
 					'price'    => getEddDownloadPriceToDisplay( $post->ID ),
@@ -1093,8 +1093,8 @@ class GA extends Settings implements Pixel {
             'currency' => edd_get_currency(),
 			'items'           => array(
 				array(
-					'id'       => GA\Helpers\getEddDownloadContentId($download_id),
-					'name'     => $download_post->post_title,
+					'item_id'       => GA\Helpers\getEddDownloadContentId($download_id),
+					'item_name'     => $download_post->post_title,
 					'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
 					'quantity' => 1,
 					'price'    => getEddDownloadPriceToDisplay( $download_id, $price_index ),
@@ -1186,8 +1186,8 @@ class GA extends Settings implements Pixel {
 			}
 
 			$item = array(
-				'id'       => GA\Helpers\getEddDownloadContentId($download_id),
-				'name'     => $download_post->post_title,
+				'item_id'       => GA\Helpers\getEddDownloadContentId($download_id),
+				'item_name'     => $download_post->post_title,
 				'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
 				'quantity' => $cart_item['quantity'],
 				'price'    => $price
@@ -1247,8 +1247,8 @@ class GA extends Settings implements Pixel {
 				'currency'        => edd_get_currency(),
 				'items'           => array(
 					array(
-						'id'       => GA\Helpers\getEddDownloadContentId($download_id),
-						'name'     => $download_post->post_title,
+						'item_id'       => GA\Helpers\getEddDownloadContentId($download_id),
+						'item_name'     => $download_post->post_title,
 						'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
 						'quantity' => $cart_item['quantity'],
 						'price'    => getEddDownloadPriceToDisplay( $download_id, $price_index ),
@@ -1288,8 +1288,8 @@ class GA extends Settings implements Pixel {
 		for ( $i = 0; $i < count( $posts ); $i ++ ) {
 
 			$item = array(
-				'id'            => GA\Helpers\getEddDownloadContentId($posts[ $i ]->ID),
-				'name'          => $posts[ $i ]->post_title,
+				'item_id'            => GA\Helpers\getEddDownloadContentId($posts[ $i ]->ID),
+				'item_name'          => $posts[ $i ]->post_title,
 				'category'      => implode( '/', getObjectTerms( 'download_category', $posts[ $i ]->ID ) ),
 				'quantity'      => 1,
 				'price'         => getEddDownloadPriceToDisplay( $posts[ $i ]->ID ),
@@ -1298,7 +1298,7 @@ class GA extends Settings implements Pixel {
 			);
 
 			$items[] = $item;
-			$product_ids[] = $item['id'];
+			$product_ids[] = $item['item_id'];
 			$total_value += $item['price'];
 
 		}

@@ -85,7 +85,7 @@ class Consent {
 	}
 
 	public function checkConsent( $pixel ): bool {
-		return $this->consentData[ $pixel ];
+        return (bool) apply_filters( 'pys_check_consent_by_gdpr', $this->consentData[ $pixel ], $pixel );
 	}
 }
 

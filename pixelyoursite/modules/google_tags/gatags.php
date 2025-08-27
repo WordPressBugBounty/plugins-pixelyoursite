@@ -42,7 +42,12 @@ class GATags extends Settings {
             PYS_FREE_PATH . '/modules/google_tags/options_defaults.json'
 		);
 
-		$this->isEnabled = GA()->configured();
+        add_action('init', array($this, 'init'));
+	}
+
+    public function init()
+    {
+        $this->isEnabled = GA()->configured();
         if($this->isEnabled){
             if(!is_admin() && $this->getOption('gtag_datalayer_type') !== 'disable') {
                 add_action( 'wp_head', array($this,'pys_wp_header_top'), 1, 0 );
@@ -55,8 +60,8 @@ class GATags extends Settings {
             }
 
         }
-		$this->googleBusinessVertical = PYS()->getOption( 'google_retargeting_logic' ) == 'ecomm' ? 'retail' : 'custom';
-	}
+        $this->googleBusinessVertical = PYS()->getOption( 'google_retargeting_logic' ) == 'ecomm' ? 'retail' : 'custom';
+    }
 	public function enabled() {
 		return $this->isEnabled;
 	}

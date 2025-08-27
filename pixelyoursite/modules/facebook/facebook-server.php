@@ -41,7 +41,11 @@ class FacebookServer {
 
 
     public function __construct() {
+        add_action('init', array($this, 'init'));
+    }
 
+    public function init()
+    {
         $this->isEnabled = Facebook()->enabled() && Facebook()->isServerApiEnabled();
         $this->isDebug = PYS()->getOption( 'debug_enabled' );
 

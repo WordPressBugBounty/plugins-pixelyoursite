@@ -776,16 +776,19 @@ class CustomEvent {
 		return (bool) $this->ga_enabled;
 	}
 
-    public function isGoogleAnalyticsPresent(){
-        $allValues = GA()->getPixelIDs();
+    public function isGoogleAnalyticsPresent() {
+        $allValues = array_merge(GA()->getAllPixels(), Ads()->getAllPixels());
         $selectedValues = (array) $this->ga_ads_pixel_id;
+
         $hasAWElement = !empty($selectedValues) && (
-                ( in_array( 'all', $selectedValues ) &&
-                    (bool) array_filter( $allValues, function ( $value ) {
-                        return strpos( $value, 'G' ) === 0;
-                    } ) ) ||
+                (
+                    in_array('all', $selectedValues) &&
+                    (bool) array_filter($allValues, function($value) {
+                        return is_string($value) && strpos($value, 'G') === 0;
+                    })
+                ) ||
                 (bool) array_filter($selectedValues, function($value) {
-                    return strpos($value, 'G') === 0;
+                    return is_string($value) && strpos($value, 'G') === 0;
                 })
             );
 

@@ -71,9 +71,8 @@ class ServerEventHelper {
             $fbc = self::getFbc() ?? $eventParams['_fbc'] ?? '';
         }
 
-
-        $user_data->setFbp($fbp);
-        $user_data->setFbc($fbc);
+        if(!empty($fbp)) { $user_data->setFbp($fbp); }
+        if(!empty($fbc)) { $user_data->setFbc($fbc); }
 
         $customData = self::paramsToCustomData($eventParams);
         $uri = self::getRequestUri(PYS()->getOption('enable_remove_source_url_params'));

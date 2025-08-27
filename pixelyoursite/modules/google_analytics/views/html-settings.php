@@ -29,6 +29,27 @@ use PixelYourSite\GA\Helpers;
                     </p>
                 </div>
                 <div class="line"></div>
+                <div class="pro-feature-container d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="mb-16">
+                            <label class="primary_heading">Send event to GA4 and Google ads</label>
+                        </div>
+                        <div class="d-flex align-items-center mb-16">
+                            <div class="radio-inputs-wrap">
+                                <?php renderDummyRadioInput('Send a single event to GA4 and Google ads'); ?>
+                                <?php renderDummyRadioInput('Send separate events to GA4 and Google Ads'); ?>
+                            </div>
+                        </div>
+                        <p class="form-text about-params">
+													Google Analytics and Google Ads events with Conversions with Card Data (CwCD) use different parameter names
+													(e.g., GA4 uses <span class="parameters-list">item_id</span>, Google Ads uses <span class="parameters-list">id</span>; GA4 supports <span class="parameters-list">item_name</span>, Google Ads doesn’t; Google Ads supports order-level discount, GA4 doesn’t).
+													You can fire a single event with all parameters, or separate events with supported parameters.
+													This applies to WooCommerce or EDD events like <span class="parameters-list">purchase, add_to_cart</span>, and <span class="parameters-list">view_item</span>. It will also affect manually configured events that track WooCommerce product or cart data.
+											</p>
+                    </div>
+                    <?php renderProBadge(); ?>
+                </div>
+                <div class="line"></div>
                 <div>
                     <div class="d-flex align-items-center mb-24">
                         <h4 class="secondary_heading"><?php echo esc_html( __('DataLayer Setting:', 'pys') ); ?></h4>
