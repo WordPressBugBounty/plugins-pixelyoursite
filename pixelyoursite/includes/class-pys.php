@@ -230,10 +230,15 @@ final class PYS extends Settings implements Plugin {
         $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
         if(!$eventsFormFactory)
         {
-            $options = array(
-                'enable_success_send_form'     => false
-            );
-            PYS()->updateOptions($options);
+            // Check current option value before updating to avoid unnecessary database updates
+            $current_value = $this->getOption('enable_success_send_form');
+            if($current_value !== false)
+            {
+                $options = array(
+                    'enable_success_send_form'     => false
+                );
+                PYS()->updateOptions($options);
+            }
         }
 
         if (isRealCookieBannerPluginActivated()) {
@@ -636,6 +641,8 @@ final class PYS extends Settings implements Plugin {
             array( $this, 'adminPageMain' ), PYS_FREE_URL . '/dist/images/favicon.png' );
         add_submenu_page( 'pixelyoursite', 'Global Settings', 'Global Settings',
             'manage_pys', 'pixelyoursite_settings', array( $this, 'adminSinglePage' ) );
+        add_submenu_page('pixelyoursite',__('Queue Settings PRO', 'pixelyoursite'),__('Queue Settings PRO', 'pixelyoursite'),
+            'manage_options','pixelyoursite_queue_settings',array($this, 'adminSinglePage'),3);
         $addons = $this->registeredPlugins;
 
         if ( $addons['head_footer'] ) {
@@ -667,6 +674,7 @@ final class PYS extends Settings implements Plugin {
         $this->adminPagesSlugs = array(
             'pixelyoursite',
             'pixelyoursite_settings',
+            'pixelyoursite_queue_settings',
             'pixelyoursite_licenses',
             'pixelyoursite_report',
             'pixelyoursite_woo_reports',
@@ -693,6 +701,7 @@ final class PYS extends Settings implements Plugin {
             wp_register_style( 'select2_css', PYS_FREE_URL . '/dist/styles/select2.min.css' );
             wp_enqueue_script( 'select2_js', PYS_FREE_URL . '/dist/scripts/select2.min.js',
                 array( 'jquery' ) );
+            wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css', array(), '4.7.0' );
 
             wp_enqueue_script( 'popper', PYS_FREE_URL . '/dist/scripts/popper.min.js', 'jquery' );
             wp_enqueue_script( 'tippy', PYS_FREE_URL . '/dist/scripts/tippy.min.js', 'jquery' );

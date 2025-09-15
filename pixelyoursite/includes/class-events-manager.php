@@ -59,7 +59,7 @@ class EventsManager {
         wp_enqueue_script( 'js-tld' );
 
         if ( PYS()->getOption( 'compress_front_js' )){
-            wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.bundle.js',
+            wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.min.js',
                 array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION );
         }
         else
@@ -106,6 +106,7 @@ class EventsManager {
 			'enable_success_send_form'         => PYS()->getOption( 'enable_success_send_form' ),
 			'ajaxForServerEvent'               => PYS()->getOption( 'server_event_use_ajax' ),
             "ajaxForServerStaticEvent"         => PYS()->getOption( 'server_static_event_use_ajax' ),
+            "useSendBeacon"                     => PYS()->getOption( 'use_send_beacon' ),
 			"send_external_id"                 => PYS()->getOption( 'send_external_id' ),
 			"external_id_expire"               => PYS()->getOption( 'external_id_expire' ),
             "track_cookie_for_subdomains"      => PYS()->getOption( 'track_cookie_for_subdomains' ),

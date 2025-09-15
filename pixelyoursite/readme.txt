@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 6.8
-Stable tag: 11.1.0
+Stable tag: 11.1.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -387,6 +387,24 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.1.1 =
+
+September 15, 2025
+
+* Fixing a possible error related to custom events.
+
+* Fixing various deprecated warnings on PHP 8.3.
+
+* Fixing possible hight server load related to admin-post requests. 
+
+* Fixing a possible CSS conflict with a plugin (Email Verifications, SMS Verification, Mobile Verification).
+
+* Improve API events speed with sendBeacon.
+
+* Fix for getPixelBySlag not defined.
+
+
 
 = PixelYourSite 11.1.0 =
 

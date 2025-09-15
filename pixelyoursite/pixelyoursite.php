@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.1.0' );
+define( 'PYS_FREE_VERSION', '11.1.1' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.0.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.0.0' );
 define( 'PYS_FREE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
@@ -62,6 +62,7 @@ require_once PYS_FREE_PATH.'/includes/events/CustomEventClasses/class-trigger-ev
 require_once PYS_FREE_PATH.'/includes/events/CustomEventClasses/class-conditional-event.php';
 require_once PYS_FREE_PATH.'/modules/facebook/facebook.php';
 require_once PYS_FREE_PATH.'/modules/facebook/facebook-server.php';
+require_once PYS_FREE_PATH.'/modules/facebook/class-facebook-rest-api.php';
 require_once PYS_FREE_PATH.'/modules/google_analytics/ga.php';
 require_once PYS_FREE_PATH.'/modules/google_tags/gatags.php';
 require_once PYS_FREE_PATH.'/modules/google_gtm/gtm.php';
@@ -80,3 +81,7 @@ require_once PYS_FREE_PATH.'/includes/formEvents/WSForm/class-formEvent-WSForm.p
 require_once PYS_FREE_PATH.'/includes/formEvents/ElementorForm/ElementorForm.php';
 // here we go...
 PixelYourSite\PYS();
+
+add_action( 'init', function() {
+    \PixelYourSite\Facebook_REST_API();
+}, 9 );

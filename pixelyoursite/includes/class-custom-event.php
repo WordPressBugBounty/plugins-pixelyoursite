@@ -777,7 +777,7 @@ class CustomEvent {
 	}
 
     public function isGoogleAnalyticsPresent() {
-        $allValues = array_merge(GA()->getAllPixels(), Ads()->getAllPixels());
+        $allValues = GA()->getPixelIDs();
         $selectedValues = (array) $this->ga_ads_pixel_id;
 
         $hasAWElement = !empty($selectedValues) && (

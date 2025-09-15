@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'pixelyoursite/pro',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
-        'reference' => '454f7621fa4eaac6965cb685696bcc8792755e49',
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '99850709df475dfa7474a557228edc5fc6906184',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -38,9 +38,9 @@
             'dev_requirement' => false,
         ),
         'pixelyoursite/pro' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => '454f7621fa4eaac6965cb685696bcc8792755e49',
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '99850709df475dfa7474a557228edc5fc6906184',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

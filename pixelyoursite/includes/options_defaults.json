@@ -164,5 +164,7 @@
   "server_static_event_use_ajax": true,
   "google_consent_mode": true,
 
+  "use_send_beacon": true,
+
   "data_persistency": "keep_data"
 }

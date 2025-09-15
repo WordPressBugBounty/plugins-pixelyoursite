@@ -140,7 +140,7 @@ class EventsWoo extends EventsFactory {
                     $order_key = sanitize_key($_REQUEST['key']);
                     $cache_key = 'order_id_' . $order_key;
                     $order_id = get_transient( $cache_key );
-                    if (PYS()->woo_is_order_received_page() && empty($order_id) && $wp->query_vars['order-received']) {
+                    if (PYS()->woo_is_order_received_page() && empty($order_id) && isset($wp->query_vars['order-received']) && $wp->query_vars['order-received']) {
 
                         $order_id = absint( $wp->query_vars['order-received'] );
                         if ($order_id) {
@@ -222,7 +222,7 @@ class EventsWoo extends EventsFactory {
                 $cache_key = 'order_id_' . $order_key;
                 $order_id = get_transient( $cache_key );
                 global $wp;
-                if (PYS()->woo_is_order_received_page() && empty($order_id) && $wp->query_vars['order-received']) {
+                if (PYS()->woo_is_order_received_page() && empty($order_id) && isset($wp->query_vars['order-received']) && $wp->query_vars['order-received']) {
                     $order_id = absint( $wp->query_vars['order-received'] );
                     if ($order_id) {
                         set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );

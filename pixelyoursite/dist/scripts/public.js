@@ -398,7 +398,7 @@
 
                                 if(options.hasOwnProperty('facebook')) {
                                     options.facebook.advancedMatching = {
-                                        ...options.facebook.advancedMatching,  // распыляем текущие значения advancedMatching
+                                        ...options.facebook.advancedMatching,  // spread current advancedMatching values
                                         external_id: res.data.pbid
                                     };
                                 }
@@ -573,15 +573,151 @@
                     return event.eventID;
                 }
             },
+
+            // Flatten object for sendBeacon compatibility
+            flattenObject: function (obj, prefix = '', res = {}) {
+                for (const [key, value] of Object.entries(obj)) {
+                    const prefixedKey = prefix
+                        ? (Array.isArray(obj) ? `${prefix}[${key}]` : `${prefix}[${key}]`)
+                        : key;
+                    if (value !== null && typeof value === 'object' && !(value instanceof File)) {
+                        this.flattenObject(value, prefixedKey, res);
+                    } else {
+                        res[prefixedKey] = value;
+                    }
+                }
+                return res;
+            },
+
             sendServerAjaxRequest : function(url, data) {
-                jQuery.ajax({
+                if (data.action === 'pys_api_event' && data.pixel === 'facebook' && window.pysFacebookRest) {
+                    // Use Facebook REST API
+                    this.sendRestAPIRequest(data, 'facebook');
+                    return;
+                }
+
+                // Check if sendBeacon is enabled and supported
+                if (options.useSendBeacon && navigator.sendBeacon) {
+                    try {
+                        // Flatten the data object for sendBeacon compatibility
+                        const flattenedData = this.flattenObject(data);
+                        const formData = new URLSearchParams();
+
+                        // Convert flattened data to URLSearchParams
+                        for (const [key, value] of Object.entries(flattenedData)) {
+                            if (value !== null && value !== undefined) {
+                                formData.append(key, value);
+                            }
+                        }
+
+                        // Try to send using sendBeacon
+                        const success = navigator.sendBeacon(url, formData);
+                        if (success) {
+                            return; // Successfully sent via sendBeacon
+                        }
+                    } catch (e) {
+                        // If sendBeacon fails, fall back to jQuery.ajax
+                        if (options.debug) {
+                            console.log('PYS: sendBeacon failed, falling back to jQuery.ajax:', e);
+                        }
+                    }
+                }
+
+                // Fallback to jQuery.ajax
+                jQuery.ajax( {
                     type: 'POST',
                     url: url,
                     data: data,
                     headers: {
                         'Cache-Control': 'no-cache'
                     },
-                    success: function () {},
+                    success: function () {
+                    },
+                } );
+            },
+
+            sendRestAPIRequest: function (data, platform) {
+                let restApiUrl;
+
+                // Get platform-specific REST API configuration
+                switch (platform) {
+                    case 'facebook':
+                        restApiUrl = window.pysFacebookRest ? window.pysFacebookRest.restApiUrl : '/wp-json/pys-facebook/v1/event';
+                        break;
+                    default:
+                        console.error('PYS: Unknown platform for REST API:', platform);
+                        this.sendAjaxFallback(data);
+                        return;
+                }
+
+                // Prepare data for REST API
+                const restApiData = {
+                    event: data.event,
+                    data: JSON.stringify(data.data || {}),
+                    ids: JSON.stringify(data.ids || []),
+                    eventID: data.event_id || data.eventID || '',
+                    woo_order: data.woo_order || '0',
+                    edd_order: data.edd_order || '0'
+                };
+
+                // Try to send using sendBeacon first (if enabled)
+                if (options.useSendBeacon && navigator.sendBeacon) {
+                    try {
+                        const formData = new URLSearchParams();
+                        for (const [key, value] of Object.entries(restApiData)) {
+                            formData.append(key, value);
+                        }
+
+                        if (navigator.sendBeacon(restApiUrl, formData)) {
+                            return;
+                        }
+                    } catch (e) {
+                        // sendBeacon failed, continue to fetch
+                    }
+                }
+
+                // Try to send using fetch with REST API
+                if (window.fetch) {
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+
+                    fetch(restApiUrl, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(restApiData)
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(platform + ' REST API request failed: ' + response.status);
+                            }
+                        })
+                        .catch(error => {
+                            // Fallback to AJAX if REST API fails
+                            if (options.debug) {
+                                console.log('PYS: ' + platform + ' REST API failed, falling back to AJAX:', error);
+                            }
+                            this.sendAjaxFallback(data);
+                        });
+                } else {
+                    // Fallback to AJAX if fetch is not supported
+                    this.sendAjaxFallback(data);
+                }
+            },
+
+
+
+            // Fallback AJAX method
+            sendAjaxFallback: function (data) {
+                jQuery.ajax({
+                    type: 'POST',
+                    url: options.ajaxUrl,
+                    data: data,
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    },
+                    success: function () {
+                    },
                 });
             },
             // clone object
@@ -2067,6 +2203,72 @@
                 }
                 return JSON.parse(data)[key];
             },
+
+            sendFacebookRestAPIRequest: function(allData, name, params) {
+                if (typeof window.pysFacebookRest === 'undefined' || !window.pysFacebookRest.restApiUrl) {
+                    return;
+                }
+
+                const restApiData = {
+                    event: name,
+                    data: JSON.stringify(params),
+                    ids: allData.pixelIds || options.facebook.pixelIds,
+                    eventID: allData.eventID,
+                    woo_order: allData.woo_order || 0,
+                    edd_order: allData.edd_order || 0
+                };
+
+                // Try sendBeacon first
+                if (navigator.sendBeacon) {
+                    const formData = new FormData();
+                    Object.keys(restApiData).forEach(key => {
+                        if (Array.isArray(restApiData[key])) {
+                            restApiData[key].forEach(value => {
+                                formData.append(key + '[]', value);
+                            });
+                        } else {
+                            formData.append(key, restApiData[key]);
+                        }
+                    });
+
+                    if (navigator.sendBeacon(window.pysFacebookRest.restApiUrl, formData)) {
+                        return;
+                    }
+                }
+
+                // Fallback to fetch
+                fetch(window.pysFacebookRest.restApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(restApiData)
+                }).catch(() => {
+                    // Fallback to AJAX if fetch fails
+                    this.sendAjaxFallback(allData, name, params);
+                });
+            },
+
+            sendAjaxFallback: function(allData, name, params) {
+                var json = {
+                    action: 'pys_api_event',
+                    pixel: 'facebook',
+                    event: name,
+                    data: params,
+                    ids: allData.pixelIds || options.facebook.pixelIds,
+                    eventID: allData.eventID,
+                    url: window.location.href,
+                    ajax_event: options.ajax_event
+                };
+                if (allData.hasOwnProperty('woo_order')) {
+                    json['woo_order'] = allData.woo_order;
+                }
+                if (allData.hasOwnProperty('edd_order')) {
+                    json['edd_order'] = allData.edd_order;
+                }
+
+                Utils.sendServerAjaxRequest(options.ajaxUrl, json);
+            },
         };
 
     }(options);
@@ -2516,7 +2718,7 @@
                     return isGTM(element);
                 });
             } else if(isGTM(tag)) {
-                // tag является строкой и соответствует GTM
+                // tag is a string and matches GTM
                 hasGTM = true;
             }
             if(hasGTM) {
@@ -2786,13 +2988,25 @@
 
     }(options);
 
+    var getPixelBySlag = function getPixelBySlag(slug) {
+        switch (slug) {
+            case "facebook": return window.pys.Facebook;
+            case "ga": return window.pys.Analytics;
+            case "gtm": return window.pys.GTM;
+            case "bing": return window.pys.Bing;
+            case "pinterest": return window.pys.Pinterest;
+        }
+    }
+
     window.pys = window.pys || {};
     window.pys.Facebook = Facebook;
     window.pys.Analytics = Analytics;
     window.pys.GTM = GTM;
     window.pys.Utils = Utils;
+    window.pys.getPixelBySlag = getPixelBySlag;
 
-
+    // Export getPixelBySlag globally for backward compatibility
+    window.getPixelBySlag = getPixelBySlag;
 
 
     $(document).ready(function () {
@@ -3434,16 +3648,6 @@ function getBundlePriceOnSingleProduct(data) {
         }
     });
     return items_sum;
-}
-
-function getPixelBySlag(slug) {
-    switch (slug) {
-        case "facebook": return window.pys.Facebook;
-        case "ga": return window.pys.Analytics;
-        case "gtm": return window.pys.GTM;
-        case "bing": return window.pys.Bing;
-        case "pinterest": return window.pys.Pinterest;
-    }
 }
 function getUrlParameter(sParam) {
     var sPageURL = window.location.search.substring(1),

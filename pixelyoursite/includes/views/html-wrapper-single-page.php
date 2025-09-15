@@ -66,6 +66,9 @@ include_once "html-popovers.php";
         case 'pixelyoursite_settings':
             $title = 'Global Settings';
             break;
+        case 'pixelyoursite_queue_settings':
+            $title = 'Queue System PRO';
+            break;
         default:
             $title = 'Welcome to PixelYourSite Pro';
     }
@@ -104,6 +107,15 @@ include_once "html-popovers.php";
                         </form>
                         <?php
                         break;
+                    case 'pixelyoursite_queue_settings': ?>
+                        <form method="post" enctype="multipart/form-data" id="pys-form">
+                            <?php
+                            wp_nonce_field( 'pys_save_settings' );
+                            include_once "html-queue-settings.php";
+                            ?>
+                        </form>
+                        <?php
+                        break;
                     default:
                         do_action( 'pys_admin_' . getCurrentAdminPage() );
                 }
@@ -120,6 +132,9 @@ include_once "html-popovers.php";
                 include_once PYS_FREE_VIEW_PATH . '/UI/button-download-report.php';
                 break;
             case 'pixelyoursite_settings':
+                include_once PYS_FREE_VIEW_PATH . '/UI/button-save.php';
+                break;
+            case 'pixelyoursite_queue_settings':
                 include_once PYS_FREE_VIEW_PATH . '/UI/button-save.php';
                 break;
         }

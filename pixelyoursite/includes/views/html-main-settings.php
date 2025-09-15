@@ -70,6 +70,15 @@ include "html-popovers.php";
                         <?php _e('Do not use AJAX requests for static events if it interferes with page loading, or if the requests during loading block other site functions (such as updating the cart during loading).', 'pys');?>
                     </p>
                 </div>
+                <div>
+                    <div class="d-flex align-items-center">
+                        <?php PYS()->render_switcher_input("use_send_beacon" ); ?>
+                        <h4 class="switcher-label secondary_heading"><?php _e('Use <b>navigator.sendBeacon</b> instead of jQuery.ajax for better performance', 'pys');?></h4>
+                    </div>
+                    <p class="text-gray mt-4">
+                        <?php _e('This option improves site performance by using the modern sendBeacon API which allows the browser to reliably deliver events in the background while prioritizing resources for the page itself. Falls back to jQuery.ajax if sendBeacon is not supported.', 'pys');?>
+                    </p>
+                </div>
             </div>
         </div>
     </div>

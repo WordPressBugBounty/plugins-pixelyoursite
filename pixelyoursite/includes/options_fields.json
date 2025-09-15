@@ -154,5 +154,7 @@
   "server_static_event_use_ajax": "checkbox",
   "google_consent_mode": "checkbox",
 
+  "use_send_beacon": "checkbox",
+
   "data_persistency": "radio"
 }
