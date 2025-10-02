@@ -72,11 +72,11 @@ function adminGetFixedNotices() {
                     'button_url' => 'https://www.youtube.com/watch?v=uXTpgFu2V-E'
                 ],
                 [
-                    'slug'  => 'free_block_1_message_2_v3',
-                    'title' => 'Google Tag Manager Support',
-                    'message' => 'NEW: Learn how to use GTM with PixelYourSite',
-                    'button_text' => 'Watch video',
-                    'button_url' => 'https://www.youtube.com/watch?v=qKJ3mmCgT3M',
+                    'slug'  => 'free_block_1_message_2_v4',
+                    'title' => 'Fix SAFARI Google Ads Tracking Problem!',
+                    'message' => 'Safari removes click identifiers, breaking Google tracking. We have a solution.',
+                    'button_text' => 'Learn more',
+                    'button_url' => 'https://www.pixelyoursite.com/safari-click-id-removal-fix-google-ads',
                 ],
                 [
                     'slug'  => 'free_block_1_message_3_v2',

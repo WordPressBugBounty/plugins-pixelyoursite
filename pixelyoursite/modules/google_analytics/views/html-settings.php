@@ -66,6 +66,27 @@ use PixelYourSite\GA\Helpers;
                 <div class="line"></div>
                 <div class="pro-feature-container d-flex align-items-center justify-content-between">
                     <div>
+                        <div class="d-flex align-items-center mb-24">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="switcher-label secondary_heading"><?php _e('Enable alternative GCLID parameter for Safari compatibility (Beta)', 'pys');?></h4>
+                        </div>
+                        <p class="text-gray mb-16">
+                            <?php _e('Safari removes GCLID from URLs starting September 2025. Enable this option to use a custom parameter that contains the same GCLID value.', 'pys');?>
+                        </p>
+                        <div class="gap-24 mb-16">
+                            <div class="d-flex align-items-center">
+                                <?php renderDummyTextInput( 'Custom parameter name (e.g., gclid_custom)' ); ?>
+                            </div>
+                        </div>
+                        <p class="text-gray">
+                            <?php _e('Configure this parameter in Google Ads as a custom parameter with the same value as GCLID. The plugin will automatically save this value in a first-party cookie and use it for conversion tracking only when the standard _gcl_aw cookie is not available.', 'pys');?>
+                        </p>
+                    </div>
+                    <?php renderProBadge(); ?>
+                </div>
+                <div class="line"></div>
+                <div class="pro-feature-container d-flex align-items-center justify-content-between">
+                    <div>
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <div class="d-flex align-items-center flex-with-badge">
                                 <?php renderDummySwitcher(); ?>

@@ -427,11 +427,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                                         <?php _e( 'GTM Container Import:', 'pys' ); ?>
                                     </p>
                                     <?php
-                                    foreach ( $containers->getContainers() as $container ) {
+                                    foreach ( $containers->getContainersForDisplay() as $container ) {
                                         if ( !$container[ 'enable' ] || empty( $container[ 'file_name' ] ) ) continue;
                                         ?>
                                         <p class="primary-heading-color mb-8">
-                                            <a href="<?php echo esc_url( add_query_arg(['download_container' => $container['file_name'], '_wpnonce_template_logs' => $download_template_nonce],buildAdminUrl( 'pixelyoursite', 'containers' ))); ?>"
+                                            <a href="<?php echo esc_url( add_query_arg(['download_container' => $container['file_name'], '_wpnonce_template_logs' => $download_template_nonce],buildAdminUrl( 'pixelyoursite' ))); ?>"
                                                target="_blank"
                                                class="link"
                                                download><?php echo $container[ 'show_name' ]; ?></a><?php echo !empty( $container[ 'description' ] ) ? ' - ' . $container[ 'description' ] : ''; ?>
@@ -468,6 +468,17 @@ if ( ! defined( 'ABSPATH' ) ) {
     <!-- video -->
     <?php
     $videos = array(
+
+      array(
+          'url'   => 'https://www.youtube.com/watch?v=WUrl-2fgTxg',
+          'title' => 'Fix SAFARI Google Ads Tracking - GCLID missing solution',
+          'time'  => '4:59',
+      ),
+      array(
+          'url'   => 'https://www.youtube.com/watch?v=eoJT1fSIar0',
+          'title' => 'Google AUTOMATED Discounts + WooCommerce',
+          'time'  => '14:26',
+      ),
         array(
             'url'   => 'https://www.youtube.com/watch?v=Wv6KhJQqFL4',
             'title' => 'HOT: Secret Trick to Boost Your Meta EMQ Score: Facebook Login Integration',

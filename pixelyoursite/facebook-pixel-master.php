@@ -4,7 +4,7 @@
  * Plugin Name: PixelYourSite
  * Plugin URI: http://www.pixelyoursite.com/
  * Description: Meta Pixel & CAPI, GA4, and GTM support with ZERO CODING. Track events, WooCommerce/EDD ready, with Pinterest & Bing add-ons, plus consent support.
- * Version: 11.1.1
+ * Version: 11.1.2
  * Author: PixelYourSite
  * Author URI: http://www.pixelyoursite.com
  * License: GPLv3
@@ -13,7 +13,7 @@
  * Tested up to: 6.8
  *
  * WC requires at least: 2.6.0
- * WC tested up to: 10.1
+ * WC tested up to: 10.2
  *
  * Text Domain: pys
  */

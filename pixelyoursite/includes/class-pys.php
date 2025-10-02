@@ -177,7 +177,7 @@ final class PYS extends Settings implements Plugin {
                 if (!isset($_GET['_wpnonce_template_logs']) || !wp_verify_nonce($_GET['_wpnonce_template_logs'], 'download_template_nonce')) {
                     wp_die(__('Invalid nonce', 'pixelyoursite'));
                 }
-                $this->containers->downloadLogFile($_GET[ 'download_container' ]);
+                $this->containers->downloadContainerFile($_GET[ 'download_container' ]);
             }
         }
 

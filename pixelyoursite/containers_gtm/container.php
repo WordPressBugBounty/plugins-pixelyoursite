@@ -11,7 +11,7 @@ class gtmContainers extends containerDownloads {
         parent::__construct(trailingslashit(PYS_FREE_PATH) . 'containers_gtm/');
     }
 
-    public function getContainers() {
+    protected function getContainers() {
         return [
             [
                 'enable' => true,
@@ -20,5 +20,14 @@ class gtmContainers extends containerDownloads {
                 'description' => 'Once the file is imported, the GTM Container will have triggers for our events, and variables for our parameters. Version 1.1 comes with GA4 tag support. You must edit the GA4 ID variable and add your own GA4 tag ID.'
             ]
         ];
+    }
+
+    /**
+     * Public method to get containers for display purposes
+     *
+     * @return array Array of containers with file information
+     */
+    public function getContainersForDisplay() {
+        return $this->getContainers();
     }
 }
