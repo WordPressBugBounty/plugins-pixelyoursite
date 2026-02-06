@@ -232,6 +232,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
 
                             <div class="d-flex align-items-center">
+                                <input type="text" class="custom-control-input"
+                                       name="pys[ga][first_party_collection][-1]" value="0" checked/>
+                                <?php GA()->render_checkbox_input( "first_party_collection", "First party cookies selector first_party_collection (recommended)" ); ?>
+                            </div>
+                            <div class="d-flex align-items-center">
                                 <input type="checkbox" class="custom-control-input"
                                        name="pys[ga][is_enable_debug_mode][-1]" value="0" checked/>
                                 <?php GA()->render_checkbox_input_array( "is_enable_debug_mode", "Enable Analytics Debug mode for this property" ); ?>
@@ -267,11 +272,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <input type="text" class="custom-control-input"
                                        name="pys[ga][transport_url][-1]" value="0" checked/>
                                 <?php GA()->render_text_input_array_item( "transport_url", "https://tagging.mywebsite.com", 0 ); ?>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <input type="text" class="custom-control-input"
-                                       name="pys[ga][first_party_collection][-1]" value="0" checked/>
-                                <?php GA()->render_checkbox_input( "first_party_collection", "First party cookies selector first_party_collection (recommended)" ); ?>
                             </div>
 
                             <div class="line-dark"></div>
@@ -470,6 +470,18 @@ if ( ! defined( 'ABSPATH' ) ) {
     $videos = array(
 
       array(
+          'url'   => 'https://www.youtube.com/watch?v=rmkZZcLxP2I',
+          'title' => 'How to install the Reddit Pixel',
+          'time'  => '4:19',
+      ),
+
+      array(
+          'url'   => 'https://www.youtube.com/watch?v=Jm8dFTOLjJE',
+          'title' => 'WooCommerce Google Ads Conversion Import',
+          'time'  => '9:19',
+      ),
+
+      array(
           'url'   => 'https://www.youtube.com/watch?v=WUrl-2fgTxg',
           'title' => 'Fix SAFARI Google Ads Tracking - GCLID missing solution',
           'time'  => '4:59',
@@ -506,7 +518,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         ),
         array(
             'url'   => 'https://www.youtube.com/watch?v=DZzFP4pSitU',
-            'title' => 'Meta Pixel (formerly Facebook Pixel), CAPI, and PixelYourSite MUST WATCH',
+            'title' => 'Meta Pixel, CAPI, and PixelYourSite MUST WATCH',
             'time'  => '8:19',
         ),
         array(
@@ -620,6 +632,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 Form
                             </p>
 
+	                        <?php if ( isRedditActive() ) : ?>
+                                <p class="primary-heading-color">
+                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                    FormSubmit (custom event)
+                                </p>
+	                        <?php endif; ?>
+
                             <p class="primary-heading-color">
                                 <span class="primary-text-color primary_heading">Specific parameters:</span>
                                 <span class="purple-label">text</span>
@@ -691,6 +710,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
                         <?php endif; ?>
 
+                        <?php if ( Reddit()->enabled() ) : ?>
+                            <div class="d-flex align-items-center">
+                                <?php Reddit()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                            </div>
+                        <?php endif; ?>
+
                         <?php if ( GTM()->enabled() ) : ?>
                             <div class="line"></div>
                                 <div class="d-flex align-items-center">
@@ -715,6 +741,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     event).</p>
                                 <p class="primary-heading-color mb-8">On Bing the event is called sign_up (custom
                                     event).</p>
+	                            <?php if ( isRedditActive() ) : ?>
+                                    <p class="primary-heading-color mt-8">On Reddit the event is called SignUp (standard
+                                        event).</p>
+	                            <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -741,7 +771,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     (standard event).</p>
                                 <p class="primary-heading-color mb-8">On Google Ads the event is called login (custom
                                     event).</p>
-                                <p class="primary-heading-color mb-8">On Facebook, Pinterest and Bing, the event is
+                                <p class="primary-heading-color mb-8">On Facebook, Pinterest, Bing<?php if ( isRedditActive() ) : ?>, Reddit<?php endif; ?> the event is
                                     called
                                     Login (custom event).</p>
                             </div>
@@ -774,6 +804,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span class="primary-text-color primary_heading">Event name:</span>
                                 Download
                             </p>
+
+	                        <?php if ( isRedditActive() ) : ?>
+                                <p class="primary-heading-color">
+                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                    Download (custom event)
+                                </p>
+	                        <?php endif; ?>
 
                             <p class="primary-heading-color">
                                 <span class="primary-text-color primary_heading">Specific parameters:</span>
@@ -808,11 +845,16 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span class="primary-text-color primary_heading">Event name:</span>
                                 Comment
                             </p>
+
+	                        <?php if ( isRedditActive() ) : ?>
+                                <p class="primary-heading-color">
+                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                    Comment (custom event)
+                                </p>
+	                        <?php endif; ?>
                         </div>
                     </div>
                 </div>
-
-
 
                 <div class="card card-style6">
                     <div class="card-header card-header-style2 has_switch">
@@ -838,6 +880,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span class="primary-text-color primary_heading">Event name:</span>
                                 PageScroll
                             </p>
+
+	                        <?php if ( isRedditActive() ) : ?>
+                                <p class="primary-heading-color">
+                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                    PageScroll (custom event)
+                                </p>
+	                        <?php endif; ?>
 
                             <p class="form-text text-small">*Google Analytics 4 automatically tracks 90% page scroll
                                 with an event called "scroll". If you want, you can disable this event for Google
@@ -869,6 +918,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span class="primary-text-color primary_heading">Event name:</span>
                                 TimeOnPage
                             </p>
+
+	                        <?php if ( isRedditActive() ) : ?>
+                                <p class="primary-heading-color">
+                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                    TimeOnPage (custom event)
+                                </p>
+	                        <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -917,6 +973,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     event).</p>
                                 <p class="primary-heading-color mb-8">On Bing the event is called search (custom
                                     event).</p>
+	                            <?php if ( isRedditActive() ) : ?>
+                                    <p class="primary-heading-color mt-8">On Reddit the event is called Search (standard
+                                        event).</p>
+	                            <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -979,6 +1039,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     ClickButton
                                 </p>
 
+	                            <?php if ( isRedditActive() ) : ?>
+                                    <p class="primary-heading-color">
+                                        <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                        ClickButton (custom event)
+                                    </p>
+	                            <?php endif; ?>
+
                                 <p class="primary-heading-color">
                                     <span class="primary-text-color primary_heading">Specific parameters:</span>
                                     <span class="purple-label">text</span>
@@ -1018,6 +1085,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <span class="primary-text-color primary_heading">Event name on TikTok:</span>
                                     ClickButton
                                 </p>
+
+	                            <?php if ( isRedditActive() ) : ?>
+                                    <p class="primary-heading-color">
+                                        <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                        ClickButton (custom event)
+                                    </p>
+	                            <?php endif; ?>
 
                                 <p class="primary-heading-color">
                                     <span class="primary-text-color primary_heading">Specific parameters:</span>
@@ -1105,6 +1179,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <?php renderDummyCheckbox('Track Vimeo embedded video');?>
                                 </div>
 
+	                            <?php if ( Reddit()->enabled() ) : ?>
+                                    <div class="d-flex align-items-center">
+			                            <?php Reddit()->render_switcher_input( 'automatic_event_video_enabled' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                    </div>
+	                            <?php endif; ?>
+
                                 <?php if ( GTM()->enabled() ) : ?>
                                     <div class="d-flex align-items-center">
                                         <?php renderDummySwitcher(); ?>
@@ -1119,6 +1200,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <span class="primary-text-color primary_heading">Event name:</span>
                                     WatchVideo
                                 </p>
+
+	                            <?php if ( isRedditActive() ) : ?>
+                                    <p class="primary-heading-color">
+                                        <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                        WatchVideo (custom event)
+                                    </p>
+	                            <?php endif; ?>
 
                                 <p class="primary-heading-color">
                                     <span class="primary-text-color primary_heading">Specific parameters:</span>
@@ -1154,7 +1242,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 DummyEventForEachPixel();
                                 ?>
 
-                                <p>Fires when the website visitor watches embedded YouTube or Vimeo videos.</p>
+                                <p>Fires when the website visitor clicks on HTML links marked with "tel".</p>
 
                                 <p class="primary-heading-color">
                                     <span class="primary-text-color primary_heading">Event name:</span>
@@ -1626,7 +1714,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     } );
 </script>
 <?php
-	function enableEventForEachPixel( $event, $fb = true, $ga = true, $ads = true, $gtm = true, $bi = true, $tic = true, $pin = true ) { ?>
+	function enableEventForEachPixel( $event, $fb = true, $ga = true, $ads = true, $gtm = true, $bi = true, $tic = true, $pin = true, $red = true ) { ?>
         <div class="gap-24">
 			<?php if ( $fb && Facebook()->enabled() ) : ?>
                 <div class="d-flex align-items-center">
@@ -1655,6 +1743,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <h4 class="switcher-label secondary_heading">Enable on Pinterest</h4>
                 </div>
 			<?php endif; ?>
+
+	        <?php if ( $red && Reddit()->enabled() ) : ?>
+                <div class="d-flex align-items-center">
+			        <?php Reddit()->render_switcher_input( $event . '_enabled' ); ?>
+                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                </div>
+	        <?php endif; ?>
 
 			<?php if ( $gtm && GTM()->enabled() ) : ?>
                 <div class="d-flex align-items-center">
@@ -1695,6 +1790,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <h4 class="switcher-label secondary_heading">Enable on Pinterest</h4>
                 </div>
 			<?php endif; ?>
+
+	        <?php if ( Reddit()->enabled() ) : ?>
+                <div class="d-flex align-items-center">
+			        <?php renderDummySwitcher(); ?>
+                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                </div>
+	        <?php endif; ?>
 
 			<?php if ( GTM()->enabled() ) : ?>
                 <div class="d-flex align-items-center">

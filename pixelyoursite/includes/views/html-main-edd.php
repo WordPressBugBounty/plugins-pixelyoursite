@@ -28,26 +28,26 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <div class="d-flex align-items-center">
                         <div class="d-flex align-items-center flex-with-badge">
                             <?php renderDummySwitcher( false); ?>
-                            <h4 class="switcher-label secondary_heading"><?php _e( 'Facebook auto-renewals purchase tracking', 'pys' ); ?></h4>
+                            <h4 class="switcher-label secondary_heading"><?php _e( 'Facebook backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                         </div>
                     </div>
                     <div class="d-flex align-items-center">
                         <div class="d-flex align-items-center flex-with-badge">
                             <?php renderDummySwitcher( false); ?>
-                            <h4 class="switcher-label secondary_heading"><?php _e( 'Google Analytics auto-renewals purchase tracking', 'pys' ); ?></h4>
+                            <h4 class="switcher-label secondary_heading"><?php _e( 'Google Analytics backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                         </div>
                     </div>
                     <div class="d-flex align-items-center">
                         <div class="d-flex align-items-center flex-with-badge">
                             <?php renderDummySwitcher( false); ?>
-                            <h4 class="switcher-label secondary_heading"><?php _e( 'TikTok Advanced Purchase Tracking', 'pys' ); ?></h4>
+                            <h4 class="switcher-label secondary_heading"><?php _e( 'TikTok backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                         </div>
                     </div>
                     <?php if ( Pinterest()->enabled() ) : ?>
                         <div class="d-flex align-items-center">
                             <div class="d-flex align-items-center flex-with-badge">
                                 <?php renderDummySwitcher( false); ?>
-                                <h4 class="switcher-label secondary_heading"><?php _e( 'Pinterest Advanced Purchase Tracking', 'pys' ); ?></h4>
+                                <h4 class="switcher-label secondary_heading"><?php _e( 'Pinterest backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -401,6 +401,56 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </div>
                 <?php endif; ?>
 
+	            <?php if ( Reddit()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>
+                            </div>
+
+				            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+						            <?php Reddit()->render_select_input( 'edd_content_id', array(
+							            'download_id' => 'Download ID',
+							            'download_sku'   => 'Download SKU',
+						            ) ); ?>
+                                </div>
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+						            <?php Reddit()->render_text_input( 'edd_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+						            <?php Reddit()->render_text_input( 'edd_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+	            <?php else: ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>&nbsp;
+                                <a class="link"
+                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin"
+                                   target="_blank">The paid add-on is required</a>
+                            </div>
+                        </div>
+                    </div>
+	            <?php endif; ?>
+
                 <?php if ( GTM()->enabled() ) : ?>
 
                     <div class="card card-style6">
@@ -578,6 +628,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
                         <?php endif; ?>
 
+	                    <?php if(Reddit()->enabled()) : ?>
+                            <div class="d-flex align-items-center">
+                                <?php Reddit()->render_switcher_input('edd_purchase_enabled'); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the Purchase event on Reddit</h4>
+                            </div>
+	                    <?php endif; ?>
+
                         <?php if ( GTM()->enabled() ) : ?>
                             <div class="line"></div>
                             <div class="d-flex align-items-center">
@@ -714,7 +771,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </div>
 
 
-                        <?php if ( Pinterest()->enabled() || Bing()->enabled() ) : ?>
+                        <?php if ( Pinterest()->enabled() || Bing()->enabled() || Reddit()->enabled() ) : ?>
                             <div class="line"></div>
                         <?php endif; ?>
                         <?php if ( Pinterest()->enabled() ) : $configured = true; ?>
@@ -729,6 +786,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <h4 class="switcher-label secondary_heading">Enable the AddToCart event on Bing</h4>
                             </div>
                         <?php endif; ?>
+
+	                    <?php if ( Reddit()->enabled() ) : $configured = true; ?>
+                            <div class="d-flex align-items-center">
+			                    <?php Reddit()->render_switcher_input( 'edd_add_to_cart_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the AddToCart event on Reddit</h4>
+                            </div>
+	                    <?php endif; ?>
 
                         <?php if ( GTM()->enabled() ) : ?>
                             <div>
@@ -784,7 +848,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
                         <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
 
-                        <?php if ( Pinterest()->enabled() || Bing()->enabled() ) : ?>
+                        <?php if ( Pinterest()->enabled() || Bing()->enabled() || Reddit()->enabled() ) : ?>
                             <div class="line"></div>
                         <?php endif; ?>
                         <?php if ( Pinterest()->enabled() ) :
@@ -803,6 +867,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <h4 class="switcher-label secondary_heading">Enable the PageVisit event on Bing</h4>
                             </div>
                         <?php endif; ?>
+
+	                    <?php if ( Reddit()->enabled() ) :
+		                    $configured = true; ?>
+                            <div class="d-flex align-items-center">
+			                    <?php Reddit()->render_switcher_input( 'edd_view_content_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the ViewContent event on Reddit</h4>
+                            </div>
+	                    <?php endif; ?>
 
                         <?php if ( GTM()->enabled() ) : ?>
                             <div>
@@ -954,6 +1026,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 </div>
                             <?php endif; ?>
 
+	                        <?php if ( Reddit()->enabled() ) : ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
+
                             <?php if ( GTM()->enabled() ) : ?>
                                 <?php if ( $configured ) : ?>
                                     <div class="line"></div>
@@ -1034,6 +1113,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <h4 class="switcher-label secondary_heading">Enable on Bing</h4>
                                 </div>
                             <?php endif; ?>
+
+	                        <?php if ( Reddit()->enabled() ) :
+		                        $configured = true; ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
 
 
                             <?php if ( GTM()->enabled() ) : ?>
@@ -1121,6 +1208,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <h4 class="switcher-label secondary_heading">Enable on Bing</h4>
                                 </div>
                             <?php endif; ?>
+
+	                        <?php if ( Reddit()->enabled() ) :
+		                        $configured = true; ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
 
                             <?php if ( GTM()->enabled() ) : ?>
                                 <?php if ( $configured ) : ?>

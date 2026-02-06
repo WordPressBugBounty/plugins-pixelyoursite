@@ -267,6 +267,301 @@ jQuery(document).ready(function($) {
         }
     }
 
+    function updateFacebookEventParamsFrom() {
+        let $select = $( '#pys_event_facebook_event_type' );
+        if ( $select.length === 0 ) return;
+        let $panel = $( '#facebook_params_panel' );
+        let $custom = $( '.facebook-custom-event-type' );
+
+        if ( $select.val() === 'CustomEvent' ) {
+            $custom.slideDown( 400 );
+            $panel.slideUp( 400, function () {
+                // Save custom params before clearing
+                let customParamsHtml = $( '.facebook-custom-param', $panel ).clone();
+                let insertMarker = $( '.insert-marker', $panel ).clone();
+                let addButton = $( '.mt-24:has(.add-facebook-parameter)', $panel ).clone();
+
+                $( this ).html( '' );
+
+                // Restore custom params
+                customParamsHtml.each(function() {
+                    $panel.append( $(this) );
+                });
+                $panel.append( insertMarker );
+                $panel.append( addButton );
+            } );
+        } else {
+            let fields = $select.find( ":selected" ).data( 'fields' );
+
+            if ( fields.length === 0 || !$( '#pys_event_facebook_params_enabled' ).is( ":checked" ) ) {
+                $panel.slideUp( 400, function () {
+                    // Save custom params before clearing
+                    let customParamsHtml = $( '.facebook-custom-param', $panel ).clone();
+                    let insertMarker = $( '.insert-marker', $panel ).clone();
+                    let addButton = $( '.mt-24:has(.add-facebook-parameter)', $panel ).clone();
+
+                    $( this ).html( '' );
+
+                    // Restore custom params
+                    customParamsHtml.each(function() {
+                        $panel.append( $(this) );
+                    });
+                    $panel.append( insertMarker );
+                    $panel.append( addButton );
+                } );
+            } else {
+                // Save custom params before clearing
+                let customParamsHtml = $( '.facebook-custom-param', $panel ).clone();
+                let insertMarker = $( '.insert-marker', $panel ).clone();
+                let addButton = $( '.mt-24:has(.add-facebook-parameter)', $panel ).clone();
+
+                $panel.html( '' )
+                fields.forEach( function ( item ) {
+                    $panel.append( renderField( item ) )
+                } );
+
+                // Restore custom params
+                customParamsHtml.each(function() {
+                    $panel.append( $(this) );
+                });
+                $panel.append( insertMarker );
+                $panel.append( addButton );
+
+                $panel.slideDown( 400 );
+            }
+
+            $custom.slideUp( 400 );
+        }
+    }
+
+    function updateFacebookParamFormVisibility( new_form = false ) {
+        if ( $( '#pys_event_facebook_params_enabled:checked' ).length > 0 ) {
+            if ( new_form ) {
+                updateFacebookEventParamsFrom();
+            }
+            $( '#facebook_params_panel' ).slideDown( 400 );
+        } else {
+            $( '#facebook_params_panel' ).slideUp( 400 );
+        }
+    }
+
+    function updatePinterestEventParamsFrom() {
+        let $select = $( '#pys_event_pinterest_event_type' );
+        if ( $select.length === 0 ) return;
+        let $panel = $( '#pinterest_params_panel' );
+        let $custom = $( '.pinterest-custom-event-type' );
+
+        if ( $select.val() === 'partner_defined' ) {
+            $custom.slideDown( 400 );
+        } else {
+            $custom.slideUp( 400 );
+        }
+
+        let fields = $select.find( ":selected" ).data( 'fields' );
+
+        if ( fields.length === 0 || !$( '#pys_event_pinterest_params_enabled' ).is( ":checked" ) ) {
+            $panel.slideUp( 400, function () {
+                // Save custom params before clearing
+                let customParamsHtml = $( '.pinterest-custom-param', $panel ).clone();
+                let insertMarker = $( '.insert-marker', $panel ).clone();
+                let addButton = $( '.mt-24:has(.add-pinterest-parameter)', $panel ).clone();
+
+                $( this ).html( '' );
+
+                // Restore custom params
+                customParamsHtml.each(function() {
+                    $panel.append( $(this) );
+                });
+                $panel.append( insertMarker );
+                $panel.append( addButton );
+            } );
+        } else {
+            // Save custom params before clearing
+            let customParamsHtml = $( '.pinterest-custom-param', $panel ).clone();
+            let insertMarker = $( '.insert-marker', $panel ).clone();
+            let addButton = $( '.mt-24:has(.add-pinterest-parameter)', $panel ).clone();
+
+            $panel.html( '' )
+            fields.forEach( function ( item ) {
+                $panel.append( renderField( item ) )
+            } );
+
+            // Restore custom params
+            customParamsHtml.each(function() {
+                $panel.append( $(this) );
+            });
+            $panel.append( insertMarker );
+            $panel.append( addButton );
+
+            $panel.slideDown( 400 );
+        }
+    }
+
+    function updatePinterestParamFormVisibility( new_form = false ) {
+        if ( $( '#pys_event_pinterest_params_enabled:checked' ).length > 0 ) {
+            if ( new_form ) {
+                updatePinterestEventParamsFrom();
+            }
+            $( '#pinterest_params_panel' ).slideDown( 400 );
+        } else {
+            $( '#pinterest_params_panel' ).slideUp( 400 );
+        }
+    }
+
+    function updateBingEventParamsFrom() {
+        let $select = $( '#pys_event_bing_event_type' );
+        if ( $select.length === 0 ) return;
+        let $panel = $( '#bing_params_panel' );
+        let $custom = $( '.bing-custom-event-type' );
+
+        if ( $select.val() === 'Custom' ) {
+            $custom.slideDown( 400 );
+        } else {
+            $custom.slideUp( 400 );
+        }
+
+        let fields = $select.find( ":selected" ).data( 'fields' );
+
+        if ( fields.length === 0 || !$( '#pys_event_bing_params_enabled' ).is( ":checked" ) ) {
+            $panel.slideUp( 400, function () {
+                // Save custom params before clearing
+                let customParamsHtml = $( '.bing-custom-param', $panel ).clone();
+                let insertMarker = $( '.insert-marker', $panel ).clone();
+                let addButton = $( '.mt-24:has(.add-bing-parameter)', $panel ).clone();
+                $( this ).html( '' );
+
+                // Restore custom params
+                customParamsHtml.each(function() {
+                    $panel.append( $(this) );
+                });
+                $panel.append( insertMarker );
+                $panel.append( addButton );
+                console.log( $panel );
+            } );
+        } else {
+            // Save custom params before clearing
+            let customParamsHtml = $( '.bing-custom-param', $panel ).clone();
+            let insertMarker = $( '.insert-marker', $panel ).clone();
+            let addButton = $( '.mt-24:has(.add-bing-parameter)', $panel ).clone();
+
+            $panel.html( '' )
+            fields.forEach( function ( item ) {
+                $panel.append( renderField( item ) )
+            } );
+
+            // Restore custom params
+            customParamsHtml.each(function() {
+                $panel.append( $(this) );
+            });
+            $panel.append( insertMarker );
+            $panel.append( addButton );
+
+            $panel.slideDown( 400 );
+        }
+    }
+
+    function updateBingParamFormVisibility( new_form = false ) {
+        if ( $( '#pys_event_bing_params_enabled:checked' ).length > 0 ) {
+            if ( new_form ) {
+                updateBingEventParamsFrom();
+            }
+            $( '#bing_params_panel' ).slideDown( 400 );
+        } else {
+            $( '#bing_params_panel' ).slideUp( 400 );
+        }
+    }
+
+    /**
+     * Toggle Reddit pixel panel
+     */
+    function toggleRedditPanel() {
+        let event_reddit_enabled = $( "#pys_event_reddit_enabled" ),
+            card = event_reddit_enabled.closest( '.card' ),
+            configured = +card.attr( 'data-configured' ) === 1,
+            pixel_status = card.find( '.custom-event-pixel-status .pixel-status' );
+
+        if ( configured ) {
+            if ( event_reddit_enabled.is( ":checked" ) ) {
+                $( "#reddit_panel" ).removeClass( 'disabled' );
+                pixel_status.find( '.pixel-enabled' ).show();
+                pixel_status.find( '.pixel-disabled' ).hide();
+            } else {
+                $( "#reddit_panel" ).addClass( 'disabled' );
+                pixel_status.find( '.pixel-enabled' ).hide();
+                pixel_status.find( '.pixel-disabled' ).show();
+            }
+        } else {
+            $( '.reddit-not-configured-error' ).show();
+            $( "#reddit_panel" ).addClass( 'disabled' );
+            event_reddit_enabled.prop( 'checked', false ).prop( 'disabled', true );
+        }
+    }
+
+    function toggleRedditCustomEventType() {
+        if ( $( "#pys_event_reddit_event_type" ).val() === "Custom" ) {
+            $( ".reddit-custom-event-type" ).slideDown( 400 );
+        } else {
+            $( ".reddit-custom-event-type" ).slideUp( 400 );
+        }
+    }
+
+    function toggleRedditParamsPanel( new_form = false ) {
+        if ( $( '#pys_event_reddit_params_enabled:checked' ).length > 0 ) {
+            if ( new_form ) {
+                updateRedditEventParamsFrom();
+            }
+            $( '#reddit_params_panel' ).slideDown( 400 );
+        } else {
+            $( '#reddit_params_panel' ).slideUp( 400 );
+        }
+    }
+
+    toggleRedditPanel();
+    toggleRedditCustomEventType();
+    toggleRedditParamsPanel();
+
+    $( "#pys_event_reddit_enabled" ).on( 'click', function () {
+        toggleRedditPanel();
+    } );
+
+    $( "#pys_event_reddit_event_type" ).on( 'change', function () {
+        updateRedditEventParamsFrom();
+    } );
+
+    $( "#pys_event_reddit_params_enabled" ).on( 'click', function () {
+        toggleRedditParamsPanel( true );
+    } );
+
+    function updateRedditEventParamsFrom() {
+        let $select = $( '#pys_event_reddit_event_type' );
+        if ( $select.length === 0 ) {
+            return;
+        }
+        let $panel = $( '#reddit_params_panel' );
+        let $custom = $( '.reddit-custom-event-type' );
+
+        if ( $select.val() === 'Custom' ) {
+            $custom.slideDown( 400 );
+        } else {
+            $custom.slideUp( 400 );
+        }
+
+        let fields = $select.find( ":selected" ).data( 'fields' );
+
+        if ( fields.length === 0 || !$( '#pys_event_reddit_params_enabled' ).is( ":checked" ) ) {
+            $panel.slideUp( 400, function () {
+                $( this ).html( '' );
+            } );
+        } else {
+            $panel.html( '' )
+            fields.forEach( function ( item ) {
+                $panel.append( renderField( item ) )
+            } );
+
+            $panel.slideDown( 400 );
+        }
+    }
+
     function toggleGoogleAnalyticsPanel() {
         if ( $( "#pys_event_ga_enabled" ).is( ":checked" ) ) {
             $( "#analytics_panel" ).show();
@@ -757,18 +1052,18 @@ jQuery(document).ready(function($) {
         checkConditionTypeAvailability( conditionGroup, panel );
     } );
 
-    $( ".add-event-trigger" ).on( 'click', function () {
+    $( document ).on( 'click', '.add-event-trigger', function () {
         let triggerPanel = $( this ).closest( ".event_triggers_panel" ),
             triggerType = triggerPanel.data( "trigger_type" );
         cloneAndInsertTrigger( triggerPanel, triggerType );
     } );
 
-    $( ".add-url-filter" ).on( 'click', function () {
+    $( document ).on( 'click', '.add-url-filter', function () {
         cloneAndInsertTrigger( $( this ).closest( ".event_triggers_panel" ), "url_filter" );
     } );
 
     $( document ).on( 'click', '.button-remove-row', function ( e ) {
-        $( this ).closest( ".event_trigger, .facebook-custom-param, .pinterest-custom-param, .ga-ads-custom-param" ).remove();
+        $( this ).closest( ".event_trigger, .facebook-custom-param, .pinterest-custom-param, .ga-ads-custom-param, .bing-custom-param, .reddit-custom-param" ).remove();
     } );
 
     toggleFacebookPanel();
@@ -780,16 +1075,15 @@ jQuery(document).ready(function($) {
         toggleFacebookPanel();
     } );
     $( "#pys_event_facebook_event_type" ).on( 'change', function () {
-        toggleFacebookCustomEventType();
-        updateFacebookParamsPanelClass();
+        updateFacebookEventParamsFrom();
     } );
     $( "#pys_event_facebook_params_enabled" ).on( 'click', function () {
-        toggleFacebookParamsPanel();
+        updateFacebookParamFormVisibility( true );
     } );
     $( "#pys_event_facebook_params_currency" ).on( 'change', function () {
         toggleFacebookCustomCurrency();
     } );
-    $( ".add-facebook-parameter" ).on( 'click', function () {
+    $( document ).on( 'click', '.add-facebook-parameter', function () {
         var facebookParamsPanel = $( "#facebook_params_panel" ),
             customParams = $( ".facebook-custom-param", facebookParamsPanel ),
             clonedParam = $( customParams[ 0 ] ).clone( true ),
@@ -812,16 +1106,15 @@ jQuery(document).ready(function($) {
         togglePinterestPanel();
     } );
     $( "#pys_event_pinterest_event_type" ).on( 'change', function () {
-        togglePinterestCustomEventType();
-        updatePinterestParamsPanelClass();
+        updatePinterestEventParamsFrom();
     } );
     $( "#pys_event_pinterest_params_enabled" ).on( 'click', function () {
-        togglePinterestParamsPanel();
+        updatePinterestParamFormVisibility( true );
     } );
     $( "#pys_event_pinterest_params_currency" ).on( 'change', function () {
         togglePinterestCustomCurrency();
     } );
-    $( ".add-pinterest-parameter" ).on( 'click', function () {
+    $( document ).on( 'click', '.add-pinterest-parameter', function () {
         var pinterestParamsPanel = $( "#pinterest_params_panel" ),
             customParams = $( ".pinterest-custom-param", pinterestParamsPanel ),
             clonedParam = $( customParams[ 0 ] ).clone( true ),
@@ -848,7 +1141,7 @@ jQuery(document).ready(function($) {
     $( "#pys_event_google_ads_event_action" ).on( 'change', function () {
         toggleGoogleAdsCustomEventAction();
     } );
-    $( ".add-google_ads-parameter" ).on( 'click', function () {
+    $( document ).on( 'click', '.add-google_ads-parameter', function () {
         var googleAdsParamsPanel = $( "#google_ads_params_panel" ),
             customParams = $( ".google_ads-custom-param", googleAdsParamsPanel ),
             clonedParam = $( customParams[ 0 ] ).clone( true ),
@@ -865,6 +1158,54 @@ jQuery(document).ready(function($) {
     toggleBingPanel();
     $( "#pys_event_bing_enabled" ).on( 'click', function () {
         toggleBingPanel();
+    } );
+    $( "#pys_event_bing_event_type" ).on( 'change', function () {
+        updateBingEventParamsFrom();
+    } );
+    $( "#pys_event_bing_params_enabled" ).on( 'click', function () {
+        updateBingParamFormVisibility( true );
+    } );
+    $( document ).on( 'click', '.add-bing-parameter', function () {
+        var bingParamsPanel = $( "#bing_params_panel" ),
+            customParams = $( ".bing-custom-param", bingParamsPanel ),
+            clonedParam = $( customParams[ 0 ] ).clone( true ),
+            newParamId = $( customParams[ customParams.length - 1 ] ).data( "param_id" ) + 1,
+            newParamName = "pys[event][bing_custom_params][" + newParamId + "]";
+
+        clonedParam.data( "param_id", newParamId );
+        $( "input.custom-param-name", clonedParam ).attr( "name", newParamName + "[name]" );
+        $( "input.custom-param-value", clonedParam ).attr( "name", newParamName + "[value]" );
+        clonedParam.css( "display", "flex" );
+        clonedParam.insertBefore( $( ".insert-marker", bingParamsPanel ) );
+    } );
+
+    toggleRedditPanel();
+    toggleRedditCustomEventType();
+    $( "#pys_event_reddit_enabled" ).on( 'click', function () {
+        toggleRedditPanel();
+    } );
+    $( "#pys_event_reddit_event_type" ).on( 'change', function () {
+        updateRedditEventParamsFrom();
+    } );
+    $( "#pys_event_reddit_params_enabled" ).on( 'click', function () {
+        if ( $( this ).is( ":checked" ) ) {
+            updateRedditEventParamsFrom();
+        } else {
+            $( "#reddit_params_panel" ).slideUp( 400 );
+        }
+    } );
+    $( document ).on( 'click', '.add-reddit-parameter', function () {
+        var redditParamsPanel = $( "#reddit_params_panel" ),
+            customParams = $( ".reddit-custom-param", redditParamsPanel ),
+            clonedParam = $( customParams[ 0 ] ).clone( true ),
+            newParamId = $( customParams[ customParams.length - 1 ] ).data( "param_id" ) + 1,
+            newParamName = "pys[event][reddit_custom_params][" + newParamId + "]";
+
+        clonedParam.data( "param_id", newParamId );
+        $( "input.custom-param-name", clonedParam ).attr( "name", newParamName + "[name]" );
+        $( "input.custom-param-value", clonedParam ).attr( "name", newParamName + "[value]" );
+        clonedParam.css( "display", "flex" );
+        clonedParam.insertBefore( $( ".insert-marker", redditParamsPanel ) );
     } );
 
     $( '#pys-add-condition .add-condition' ).on( 'click', function ( e ) {
@@ -1008,15 +1349,15 @@ jQuery(document).ready(function($) {
                     ga_fields[ i ].fields.forEach( function ( el ) {
                         ga_param_list += '<div class="ga_param mb-24">\n' +
                             '<div class="mb-8">' +
-                            '<label class="custom-event-label">' + el + '</label>' +
+                            '<label class="custom-event-label">' + el.name + '</label>' +
                             '</div>' +
-                            '<input type="text" name="pys[event][ga_params][' + el + ']" class="input-standard">' +
+                            '<input type="text" name="pys[event][ga_params][' + el.name + ']" class="input-standard">' +
                             ' </div>';
                         ga_ads_param_list += '<div class="ga_ads_param mb-24">\n' +
                             '<div class="mb-8">' +
-                            '<label class="custom-event-label">' + el + '</label>' +
+                            '<label class="custom-event-label">' + el.name + '</label>' +
                             '</div>' +
-                            '<input type="text" name="pys[event][ga_ads_params][' + el + ']" class="input-standard">' +
+                            '<input type="text" name="pys[event][ga_ads_params][' + el.name + ']" class="input-standard">' +
                             ' </div>';
                     } );
                     break;
@@ -1052,9 +1393,9 @@ jQuery(document).ready(function($) {
                 if ( ga_fields[ i ].name == value ) {
                     ga_fields[ i ].fields.forEach( function ( el ) {
                         $( ".ga-ads-param-list" ).append( '<div class="row mb-3 ga_ads_param">\n' +
-                            '<label class="col-5">' + el + '</label>' +
+                            '<label class="col-5">' + el.name + '</label>' +
                             '<div class="col-4">' +
-                            '<input type="text" name="pys[event][ga_ads_params][' + el + ']" class="form-control">' +
+                            '<input type="text" name="pys[event][ga_ads_params][' + el.name + ']" class="form-control">' +
                             '</div>' +
                             ' </div>' );
                     } );
@@ -1111,9 +1452,9 @@ jQuery(document).ready(function($) {
                     gtm_fields[ i ].fields.forEach( function ( el ) {
                         gtm_param_list += '<div class="mb-24 gtm_param">' +
                             '<div class="mb-8">' +
-                            '<label class="custom-event-label">' + el + '</label>' +
+                            '<label class="custom-event-label">' + el.name + '</label>' +
                             '</div>' +
-                            '<input type="text" name="pys[event][gtm_params][' + el + ']" class="form-control input-standard">' +
+                            '<input type="text" name="pys[event][gtm_params][' + el.name + ']" class="form-control input-standard">' +
                             ' </div>';
                     } );
                     break;
@@ -1146,9 +1487,9 @@ jQuery(document).ready(function($) {
                     gtm_fields[ i ].fields.forEach( function ( el ) {
                         gtm_param_list += '<div class="mb-24 gtm_param">' +
                             '<div class="mb-8">' +
-                            '<label class="custom-event-label">' + el + '</label>' +
+                            '<label class="custom-event-label">' + el.name + '</label>' +
                             '</div>' +
-                            '<input type="text" name="pys[event][gtm_params][' + el + ']" class="form-control input-standard">' +
+                            '<input type="text" name="pys[event][gtm_params][' + el.name + ']" class="form-control input-standard">' +
                             ' </div>';
                     } );
                     break;

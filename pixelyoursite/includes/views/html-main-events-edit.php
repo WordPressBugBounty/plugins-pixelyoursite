@@ -16,8 +16,8 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
 ?>
 <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24 mb-24">
     <div class="d-flex justify-content-between align-items-center">
-        <span class="font-semibold primary-heading-color fz-18">With the pro you can fire events on clicks, form submit, video views, number of page views, email clicks, and more.</span>
-        <?php renderProBadge();?>
+        <span class="font-semibold primary-heading-color fz-18">With the pro version, you can track any actions without coding. Clicks, time on page, number of pages, form submited, video views and more.</span>
+        <?php renderEventSetupToolBadge();?>
     </div>
 </div>
 
@@ -1321,97 +1321,27 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <h4 class="switcher-label secondary_heading">Add Parameters</h4>
                 </div>
                 <div id="facebook_params_panel">
-                    <div class="mt-24 ViewContent Search AddToCart AddToWishlist InitiateCheckout AddPaymentInfo Purchase Lead CompleteRegistration Subscribe StartTrial">
-                        <div class="mb-8">
-                            <label class="custom-event-label">value</label>
+                    <?php
+                    $facebook_events = PYS_Event_Definitions::get_facebook_events();
+                    $fields = $facebook_events[ $event->facebook_event_type ];
+                    foreach ( $fields as $field ) :
+                        $param_key = $field[ 'label' ];
+                        $param_data = isset( $event->facebook_params[ $param_key ] ) ? $event->facebook_params[ $param_key ] : null;
+                        $param_value = $param_data[ 'value' ] ?? $param_data;
+                        ?>
+                        <div class="mt-24">
+                            <div class="mb-8">
+                                <label class="custom-event-label"><?= $field[ 'label' ] ?></label>
+                            </div>
+
+                            <input type="text"
+                                   name="pys[event][facebook_params][<?= $field[ 'label' ] ?>]"
+                                   value="<?= $param_value; ?>"
+                                   class="input-standard"
+                                   placeholder=""
+                            />
                         </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'value' ); ?>
-                    </div>
-
-                    <div class="mt-24 ViewContent Search AddToCart AddToWishlist InitiateCheckout AddPaymentInfo Purchase Lead CompleteRegistration Subscribe StartTrial">
-                        <div class="mb-8">
-                            <label class="custom-event-label">currency</label>
-                        </div>
-
-                        <?php Events\renderCurrencyParamInput( $event, 'currency' ); ?>
-
-                        <div class="facebook-custom-currency mt-24">
-                            <?php Events\renderFacebookParamInput( $event, 'custom_currency' ); ?>
-                        </div>
-                    </div>
-
-                    <div class="mt-24 ViewContent AddToCart AddToWishlist InitiateCheckout Purchase Lead CompleteRegistration">
-                        <div class="mb-8">
-                            <label class="custom-event-label">content_name</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'content_name' ); ?>
-                    </div>
-
-                    <div class="mt-24 ViewContent AddToCart AddToWishlist InitiateCheckout Purchase Lead CompleteRegistration">
-                        <div class="mb-8">
-                            <label class="custom-event-label">content_ids</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'content_ids' ); ?>
-                    </div>
-
-                    <div class="mt-24 ViewContent AddToCart InitiateCheckout Purchase">
-                        <div class="mb-8">
-                            <label class="custom-event-label">content_type</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'content_type' ); ?>
-                    </div>
-
-                    <div class="mt-24 Search AddToWishlist InitiateCheckout AddPaymentInfo Lead">
-                        <div class="mb-8">
-                            <label class="custom-event-label">content_category</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'content_category' ); ?>
-                    </div>
-
-                    <div class="mt-24 InitiateCheckout Purchase">
-                        <div class="mb-8">
-                            <label class="custom-event-label">num_items</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'num_items' ); ?>
-                    </div>
-
-                    <div class="mt-24 Purchase">
-                        <div class="mb-8">
-                            <label class="custom-event-label">order_id</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'order_id' ); ?>
-                    </div>
-
-                    <div class="mt-24 Search">
-                        <div class="mb-8">
-                            <label class="custom-event-label">search_string</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'search_string' ); ?>
-                    </div>
-
-                    <div class="mt-24 CompleteRegistration">
-                        <div class="mb-8">
-                            <label class="custom-event-label">status</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'status' ); ?>
-                    </div>
-
-                    <div class="mt-24 Subscribe StartTrial">
-                        <div class="mb-8">
-                            <label class="custom-event-label">predicted_ltv</label>
-                        </div>
-
-                        <?php Events\renderFacebookParamInput( $event, 'predicted_ltv' ); ?>
-                    </div>
+                    <?php endforeach; ?>
 
                     <!-- Custom Facebook Params -->
                     <div class="facebook-custom-param" data-param_id="0"
@@ -1550,7 +1480,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <script>
                         <?php
                         $fields = array();
-                        foreach ( $event->GAEvents as $group => $items ) {
+                        foreach ( PYS_Event_Definitions::get_ga_events() as $group => $items ) {
                             foreach ( $items as $name => $elements ) {
                                 $fields[] = array(
                                     "name"   => $name,
@@ -1840,6 +1770,10 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
         <?php Bing()->renderCustomEventOptions( $event ); ?>
     <?php endif; ?>
 
+	<?php if ( Reddit()->enabled() ) : ?>
+		<?php Reddit()->renderCustomEventOptions( $event ); ?>
+	<?php endif; ?>
+
     <?php if ( GTM()->enabled() ) :
         $gtm_configured = GTM()->enabled() && !empty( GTM()->getPixelIDs() );
         ?>
@@ -1917,7 +1851,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <script>
                         <?php
                         $fields = array();
-                        foreach ( $event->GAEvents as $group => $items ) {
+                        foreach ( PYS_Event_Definitions::get_ga_events() as $group => $items ) {
                             foreach ( $items as $name => $elements ) {
                                 $fields[] = array(
                                     "name"   => $name,

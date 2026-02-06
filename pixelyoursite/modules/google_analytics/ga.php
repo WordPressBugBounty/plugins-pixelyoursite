@@ -1319,27 +1319,37 @@ class GA extends Settings implements Pixel {
 
 
 
-    private function getCategoryArrayWoo($contentID, $isVariant = false)
-    {
-        $category_array = array();
+	public function getCategoryArrayWoo($contentID, $isVariant = false)
+	{
+		$category_array = array();
 
-        if ($isVariant) {
-            $parent_product_id = wp_get_post_parent_id($contentID);
-            $category = getObjectTerms('product_cat', $parent_product_id);
-        } else {
-            $category = getObjectTerms('product_cat', $contentID);
-        }
-        $category_index = 1;
+		// Get product categories based on whether it's a variant or simple product
+		if ($isVariant) {
+			$parent_product_id = wp_get_post_parent_id($contentID);
+			$categories = getObjectTerms('product_cat', $parent_product_id);
+		} else {
+			$categories = getObjectTerms('product_cat', $contentID);
+		}
 
-        foreach ($category as $cat) {
-            if ($category_index >= 6) {
-                break; // Stop the loop if the maximum limit of 5 categories is exceeded
-            }
-            $category_array['item_category' . ($category_index > 1 ? $category_index : '')] = $cat;
-            $category_index++;
-        }
-        return $category_array;
-    }
+		// Reverse categories to get parent categories first (GA4 hierarchy requirement)
+		$categories = array_reverse($categories);
+
+		$category_index = 1;
+		$max_categories = 5;
+
+		// Build category array with proper GA4 naming convention
+		foreach ($categories as $category_name) {
+			if ($category_index > $max_categories) {
+				break; // Limit to maximum 5 categories as per GA4 requirements
+			}
+
+			$key = ($category_index === 1) ? 'item_category' : 'item_category' . $category_index;
+			$category_array[$key] = $category_name;
+			$category_index++;
+		}
+
+		return $category_array;
+	}
 }
 
 /**

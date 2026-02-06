@@ -38,6 +38,9 @@ class TriggerEvent {
     private $purchase_transaction_only = false;
     private $track_value_and_currency = false;
     private $track_transaction_ID = false;
+    private $form_submit_mode = 'both';
+    private $form_field_type = '';
+    private $created_via_est = false;
 
     public static $allowedTriggers = array(
         'page_visit',

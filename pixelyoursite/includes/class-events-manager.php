@@ -49,12 +49,12 @@ class EventsManager {
     }
 	public function enqueueScripts() {
 
-        wp_register_script( 'jquery-bind-first', PYS_FREE_URL . '/dist/scripts/jquery.bind-first-0.2.3.min.js', array( 'jquery' ) );
-        wp_enqueue_script( 'jquery-bind-first' );
+        wp_register_script( 'jquery-bind-first', PYS_FREE_URL . '/dist/scripts/jquery.bind-first-0.2.3.min.js', array( 'jquery' ), '0.2.3', false);
 
         wp_register_script( 'js-cookie-pys', PYS_FREE_URL . '/dist/scripts/js.cookie-2.1.3.min.js', array(), '2.1.3' );
         wp_register_script( 'js-tld', PYS_FREE_URL . '/dist/scripts/tld.min.js', array( 'jquery' ), '2.3.1' );
 
+        wp_enqueue_script( 'jquery-bind-first' );
         wp_enqueue_script( 'js-cookie-pys' );
         wp_enqueue_script( 'js-tld' );
 
@@ -121,6 +121,7 @@ class EventsManager {
 			'google_ads_disabled_by_api' => apply_filters( 'pys_disable_google_ads_by_gdpr', false ),
 			'pinterest_disabled_by_api'  => apply_filters( 'pys_disable_pinterest_by_gdpr', false ),
 			'bing_disabled_by_api'       => apply_filters( 'pys_disable_bing_by_gdpr', false ),
+			'reddit_disabled_by_api'     => apply_filters( 'pys_disable_reddit_by_gdpr', false ),
 
 			'externalID_disabled_by_api' => apply_filters( 'pys_disable_externalID_by_gdpr', false ),
 
@@ -245,19 +246,23 @@ class EventsManager {
 
 		// initial event
 		$initEvent = new SingleEvent('init_event',EventTypes::$STATIC,'');
-		if(get_post_type() == "post" && !is_archive()) {
-			global $post;
-			$catIds = wp_get_object_terms( $post->ID, 'category', array( 'fields' => 'names' ) );
-			$initEvent->addParams([
-				'post_category' => implode(", ",$catIds)
-			]);
-		}
 
 		foreach ( PYS()->getRegisteredPixels() as $pixel ) {
 
 			$events = $pixel->generateEvents( $initEvent );
 			foreach ($events as $event) {
-				$event->addParams($this->standardParams);
+				$params = array();
+				if( get_post_type() == "post" && !is_archive() ) {
+					global $post;
+					$catIds = wp_get_object_terms( $post->ID, 'category', array( 'fields' => 'names' ) );
+					$params[ 'post_category' ] = implode(", ",$catIds) ;
+				}
+
+				$slug = $pixel->getSlug();
+				if( $slug !== "reddit" ) {
+					$event->addParams( $params );
+					$event->addParams( $this->standardParams );
+				}
 				$this->addStaticEvent( $event,$pixel,"" );
 			}
 		}
@@ -330,7 +335,9 @@ class EventsManager {
                 }
                 $event->addPayload(['eventID'=>$this->uniqueId[$event->getId()]]);
 
-                $event->addParams($this->standardParams);
+	            if( $pixelSlug !== "reddit" ) {
+		            $event->addParams( $this->standardParams );
+	            }
                 //save different types of events
                 if($event->getType() == EventTypes::$STATIC) {
                     $this->addStaticEvent( $event,$pixel,$slug );

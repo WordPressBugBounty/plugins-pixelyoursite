@@ -75,6 +75,23 @@ final class PYS extends Settings implements Plugin {
         add_action( 'admin_enqueue_scripts', array( $this, 'adminEnqueueScripts' ) );
         add_action( 'admin_notices', 'PixelYourSite\adminRenderNotices' );
         add_action( 'admin_init', array( $this, 'adminProcessRequest' ), 11 );
+        add_action( 'admin_init', function () {
+
+            // Activate only on PixelYourSite pages
+            if (
+                isset($_GET['page']) &&
+                strpos($_GET['page'], 'pixelyoursite') !== false
+            ) {
+                ob_start(function ($html) {
+
+                    // Remove all integrity and crossorigin attributes
+                    $html = preg_replace('/\s+integrity="[^"]*"/i', '', $html);
+                    $html = preg_replace('/\s+crossorigin="[^"]*"/i', '', $html);
+
+                    return $html;
+                });
+            }
+        });
 
         // run Events Manager
         add_action( 'template_redirect', array( $this, 'managePixels' ), 1);
@@ -118,7 +135,10 @@ final class PYS extends Settings implements Plugin {
 	    /**
 		 * For EDD
 		 */
-		if(!$this->isCachePreload()){
+        // Hook for EDD payment insertion to save external_id
+        add_action( 'edd_insert_payment', array( $this, 'saveExternalIDInEddOrder' ), 10, 2 );
+
+        if(!$this->isCachePreload()){
 			add_action( 'edd_recurring_record_payment', array( $this, 'edd_recurring_payment' ), 10, 1 );
 		}
 
@@ -140,7 +160,7 @@ final class PYS extends Settings implements Plugin {
                 'clear_plugin_logs' => [$this->logger, 'remove'],
             ];
 
-            if (isPinterestActive() && class_exists('Pinterest')){
+            if (isPinterestActive() && class_exists('PixelYourSite\Pinterest')){
                 $loggers['pinterest'] = [Pinterest()->getLog(), 'downloadLogFile'];
                 $clearLoggers['clear_pinterest_logs'] = [Pinterest()->getLog(), 'remove'];
             }
@@ -208,6 +228,12 @@ final class PYS extends Settings implements Plugin {
             /** @noinspection PhpIncludeInspection */
             require_once PYS_FREE_PATH . '/modules/bing/bing.php';
         }
+
+	    // load dummy Reddit plugin for admin UI
+	    if ( ! array_key_exists( 'reddit', $this->registeredPlugins ) ) {
+		    /** @noinspection PhpIncludeInspection */
+		    require_once PYS_FREE_PATH . '/modules/reddit/reddit.php';
+	    }
 
         // maybe disable Facebook for WooCommerce pixel output
 	    if ( isWooCommerceActive()
@@ -485,12 +511,18 @@ final class PYS extends Settings implements Plugin {
         if (is_admin() || is_customize_preview() || is_preview()) {
             return;
         }
-        if ($this->is_user_agent_bot() && !$this->isCachePreload()) {
-            if (!defined('DONOTCACHEPAGE')) {
-                define('DONOTCACHEPAGE', true);
-            }
-            return;
-        }
+
+        // Note: We intentionally DON'T disable Events Manager for bots
+        // Reasons:
+        // 1. Bots don't execute JavaScript, so no actual tracking happens for them
+        // 2. If we disable Events Manager for bots, cached pages won't have tracking scripts
+        // 3. Real users would then get cached pages WITHOUT tracking (critical issue!)
+        // 4. It's better to include tracking scripts in HTML (even for bots) to ensure
+        //    cached pages always have tracking for real users
+        // 5. The minimal overhead of including scripts in HTML for bots is acceptable
+        //    compared to the risk of breaking tracking for real users
+
+
         // disable Events Manager on Elementor editor
         if (did_action('elementor/preview/init')
             || did_action('elementor/editor/init')
@@ -617,6 +649,7 @@ final class PYS extends Settings implements Plugin {
                 'analytics_disabled_by_api' => apply_filters( 'pys_disable_analytics_by_gdpr', false ),
                 'pinterest_disabled_by_api' => apply_filters( 'pys_disable_pinterest_by_gdpr', false ),
                 'bing_disabled_by_api' => apply_filters( 'pys_disable_bing_by_gdpr', false ),
+                'reddit_disabled_by_api' => apply_filters( 'pys_disable_reddit_by_gdpr', false ),
                 'externalID_disabled_by_api' => apply_filters( 'pys_disable_externalID_by_gdpr', false ),
                 'disabled_all_cookie'       => apply_filters( 'pys_disable_all_cookie', false ),
                 'disabled_start_session_cookie' => apply_filters( 'pys_disabled_start_session_cookie', false ),
@@ -991,6 +1024,18 @@ final class PYS extends Settings implements Plugin {
 			    Pinterest()->updateOptions( $old_options );
 
 		    }
+
+		    if ( isRedditActive() ) {
+			    $old_options = array(
+				    'license_key'     => Reddit()->getOption( 'license_key' ),
+				    'license_status'  => Reddit()->getOption( 'license_status' ),
+				    'license_expires' => Reddit()->getOption( 'license_expires' ),
+				    'pixel_id'        => Reddit()->getPixelIDs(),
+			    );
+
+			    Reddit()->resetToDefaults();
+			    Reddit()->updateOptions( $old_options );
+		    }
 		    
 		    PYS()->resetToDefaults();
 		    Facebook()->resetToDefaults();
@@ -1009,7 +1054,10 @@ final class PYS extends Settings implements Plugin {
         if ( ! $this->adminSecurityCheck() ) {
             return;
         }
-        
+	    // Verify nonce specifically for GDPR AJAX action
+	    if ( ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'pys_enable_gdpr_ajax' ) ) {
+		    return;
+	    }
         if ( isset( $_REQUEST['pys']['enable_gdpr_ajax'] ) ) {
             $this->updateOptions( array(
                 'gdpr_ajax_enabled' => true,
@@ -1161,6 +1209,18 @@ final class PYS extends Settings implements Plugin {
 		}
 
 	}
+
+    public function saveExternalIDInEddOrder($payment_id, $payment_data) {
+        if ( empty( $payment_id ) ) {
+            return;
+        }
+
+        $external_id = PYS()->get_pbid();
+
+        if ( ! empty( $external_id ) ) {
+            edd_update_payment_meta( $payment_id, 'external_id', $external_id );
+        }
+    }
 }
 
 /**

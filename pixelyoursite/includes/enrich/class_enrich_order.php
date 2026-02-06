@@ -125,69 +125,17 @@ class EnrichOrder {
 
     function edd_save_checkout_fields( $payment_meta ,$init_payment_data) {
 
-		$edd_subscription = $init_payment_data[ 'status' ] == 'edd_subscription';
+        $edd_subscription = $init_payment_data['status'] == 'edd_subscription';
 
-		if ( 0 !== did_action( 'edd_pre_process_purchase' ) || $edd_subscription ) {
-			$pysData = [];
-			$utms = getUtms( true );
-			$utms_id = getUtmsId( true );
-
-			$pys_browser_time = getBrowserTime();
-
-            $pys_landing = $pys_source = defined( 'REST_REQUEST' ) && REST_REQUEST ? 'REST API' : '';
-			if ( isset( $_REQUEST[ 'pys_landing' ] ) ) {
-				$pys_landing = sanitize_text_field( $_REQUEST[ 'pys_landing' ] );
-			} elseif ( isset( $_COOKIE[ 'pys_landing_page' ] ) || isset( $_SESSION[ 'LandingPage' ] ) ) {
-				$pys_landing = $_COOKIE[ 'pys_landing_page' ] ?? $_SESSION[ 'LandingPage' ];
-			}
-
-			if ( $edd_subscription ) {
-				$pys_source = 'recurring payment';
-			} elseif ( isset( $_REQUEST[ 'pys_source' ] ) ) {
-				$pys_source = sanitize_text_field( $_REQUEST[ 'pys_source' ] );
-			} elseif ( isset( $_COOKIE[ 'pysTrafficSource' ] ) || isset( $_SESSION[ 'TrafficSource' ] ) ) {
-				$pys_source = $_COOKIE[ 'pysTrafficSource' ] ?? $_SESSION[ 'TrafficSource' ];
-			}
-
-			if ( $edd_subscription ) {
-				$pys_utm = implode( "|", array_map( function ( $key ) {
-					return "$key:recurring payment";
-				}, array_keys( $utms ), $utms ) );
-			} elseif ( isset( $_REQUEST[ 'pys_utm' ] ) ) {
-				$pys_utm = sanitize_text_field( $_REQUEST[ 'pys_utm' ] );
-			} else {
-				$pys_utm = implode( "|", array_map( function ( $key, $value ) {
-					return "$key:$value";
-				}, array_keys( $utms ), $utms ) );
-			}
-
-			if ( $edd_subscription ) {
-				$pys_utm_id = implode( "|", array_map( function ( $key, $value ) {
-					return "$key:recurring payment";
-				}, array_keys( $utms_id ), $utms_id ) );
-			} elseif ( isset( $_REQUEST[ 'pys_utm_id' ] ) ) {
-				$pys_utm_id = sanitize_text_field( $_REQUEST[ 'pys_utm_id' ] );
-			} else {
-				$pys_utm_id = implode( "|", array_map( function ( $key, $value ) {
-					return "$key:$value";
-				}, array_keys( $utms_id ), $utms_id ) );
-			}
-
-			$pysData[ 'pys_landing' ] = $pys_landing;
-			$pysData[ 'pys_source' ] = $pys_source;
-			$pysData[ 'pys_utm' ] = $pys_utm;
-			$pysData[ 'pys_browser_time' ] = isset( $_REQUEST[ 'pys_browser_time' ] ) ? sanitize_text_field( $_REQUEST[ 'pys_browser_time' ] ) : $pys_browser_time;
-
-			$pysData[ 'last_pys_landing' ] = $pys_landing;
-			$pysData[ 'last_pys_source' ] = $pys_source;
-			$pysData[ 'last_pys_utm' ] = $pys_utm;
-			$pysData[ 'pys_utm_id' ] = $pys_utm_id;
-			$pysData[ 'last_pys_utm_id' ] = $pys_utm_id;
-
-			$payment_meta[ 'pys_enrich_data' ] = $pysData;
+        if ( 0 !== did_action( 'edd_pre_process_purchase' ) || $edd_subscription ) {
+            $pysData = $this->getPysData( $edd_subscription );
+            $payment_meta['pys_enrich_data'] = $pysData;
         }
+
         return $payment_meta;
     }
+
+
 
 	/**
 	 * Save subscription meta for recurring payments
@@ -198,84 +146,191 @@ class EnrichOrder {
 
 		$payment_meta = edd_get_payment_meta( $payment_id );
 
-		$utms = getUtms( true );
-		$utms_id = getUtmsId( true );
-
-		$pysData = array();
-		$utms_recurring = implode( "|", array_map( function ( $key ) {
-			return "$key:recurring payment";
-		}, array_keys( $utms ), $utms ) );
-		$utms_id_recurring = implode( "|", array_map( function ( $key ) {
-			return "$key:recurring payment";
-		}, array_keys( $utms_id ), $utms_id ) );
-		$pysData[ 'pys_landing' ] = '';
-		$pysData[ 'pys_source' ] = 'recurring payment';
-		$pysData[ 'pys_utm' ] = $utms_recurring;
-		$pysData[ 'last_pys_landing' ] = '';
-		$pysData[ 'last_pys_source' ] = 'recurring payment';
-		$pysData[ 'last_pys_utm' ] = $utms_recurring;
-		$pysData[ 'pys_utm_id' ] = $utms_id_recurring;
-		$pysData[ 'last_pys_utm_id' ] = $utms_id_recurring;
-
-		$pys_browser_time = getBrowserTime();
-		$pysData[ 'pys_browser_time' ] = isset( $_REQUEST[ 'pys_browser_time' ] ) ? sanitize_text_field( $_REQUEST[ 'pys_browser_time' ] ) : $pys_browser_time;
+		$pysData = $this->getPysData( true );
 
 		$payment_meta[ 'pys_enrich_data' ] = $pysData;
 		edd_update_payment_meta( $payment_id, '_edd_payment_meta', $payment_meta );
 	}
 
-    function getPysData( $renewal_order = false ){
-		$pysData = array();
-		$utms = getUtms( true );
-		$utms_id = getUtmsId( true );
+    function getPysData( $renewal_order = false ) {
+        $utms = getUtms( true );
+        $utms_id = getUtmsId( true );
 
-		if ( $renewal_order ) {
-			$utms_recurring = implode( "|", array_map( function ( $key ) {
-				return "$key:recurring payment";
-			}, array_keys( $utms ), $utms ) );
+        if ( $renewal_order ) {
+            $pysData = $this->buildRenewalPysData( $utms, $utms_id );
+        } else {
+            $pysData = $this->buildRegularPysData( $utms, $utms_id );
+        }
 
-			$utms_id_recurring = implode( "|", array_map( function ( $key, $value ) {
-				return "$key:recurring payment";
-			}, array_keys( $utms_id ), $utms_id ) );
+        $pysData['pys_browser_time'] = $this->getRequestValue( 'pys_browser_time', getBrowserTime() );
+        return $pysData;
+    }
 
-			$pysData[ 'pys_landing' ] = '';
-			$pysData[ 'pys_source' ] = 'recurring payment';
-			$pysData[ 'pys_utm' ] = $utms_recurring;
-			$pysData[ 'pys_utm_id' ] = $utms_id_recurring;
-			$pysData[ 'last_pys_landing' ] = '';
-			$pysData[ 'last_pys_source' ] = 'recurring payment';
-			$pysData[ 'last_pys_utm' ] = $utms_recurring;
-			$pysData[ 'last_pys_utm_id' ] = $utms_id_recurring;
-		} else {
-			$pys_landing = $pys_source = '';
-			if ( isset( $_COOKIE[ 'pys_landing_page' ] ) || isset( $_SESSION[ 'LandingPage' ] ) ) {
-				$pys_landing = $_COOKIE[ 'pys_landing_page' ] ?? $_SESSION[ 'LandingPage' ];
-			}
-			if ( isset( $_COOKIE[ 'pysTrafficSource' ] ) || isset( $_SESSION[ 'TrafficSource' ] ) ) {
-				$pys_source = $_COOKIE[ 'pysTrafficSource' ] ?? $_SESSION[ 'TrafficSource' ];
-			}
+    /**
+     * Build PYS data for renewal/subscription orders
+     *
+     * @param array $utms UTM parameters
+     * @param array $utms_id UTM ID parameters
+     * @return array
+     */
+    private function buildRenewalPysData( $utms, $utms_id ) {
+        $utms_recurring = $this->formatUtmsAsRecurring( $utms );
+        $utms_id_recurring = $this->formatUtmsAsRecurring( $utms_id );
 
-			$pys_utm = implode( "|", array_map( function ( $key, $value ) {
-				return "$key:$value";
-			}, array_keys( $utms ), $utms ) );
-			$pys_utm_id = implode( "|", array_map( function ( $key, $value ) {
-				return "$key:$value";
-			}, array_keys( $utms_id ), $utms_id ) );
+        return [
+            'pys_landing'      => '',
+            'pys_source'       => 'recurring payment',
+            'pys_utm'          => $utms_recurring,
+            'pys_utm_id'       => $utms_id_recurring,
+            'last_pys_landing' => '',
+            'last_pys_source'  => 'recurring payment',
+            'last_pys_utm'     => $utms_recurring,
+            'last_pys_utm_id'  => $utms_id_recurring,
+        ];
+    }
 
-			$pysData[ 'pys_landing' ] = isset( $_REQUEST[ 'pys_landing' ] ) ? sanitize_text_field( $_REQUEST[ 'pys_landing' ] ) : $pys_landing;
-			$pysData[ 'pys_source' ] = isset( $_REQUEST[ 'pys_source' ] ) ? sanitize_text_field( $_REQUEST[ 'pys_source' ] ) : $pys_source;
-			$pysData[ 'pys_utm' ] = isset( $_REQUEST[ 'pys_utm' ] ) ? sanitize_text_field( $_REQUEST[ 'pys_utm' ] ) : $pys_utm;
-			$pysData[ 'pys_utm_id' ] = isset( $_REQUEST[ 'pys_utm_id' ] ) ? sanitize_text_field( $_REQUEST[ 'pys_utm_id' ] ) : $pys_utm_id;
-			$pysData[ 'last_pys_landing' ] = isset( $_REQUEST[ 'last_pys_landing' ] ) ? sanitize_text_field( $_REQUEST[ 'last_pys_landing' ] ) : $pys_landing;
-			$pysData[ 'last_pys_source' ] = isset( $_REQUEST[ 'last_pys_source' ] ) ? sanitize_text_field( $_REQUEST[ 'last_pys_source' ] ) : $pys_source;
-			$pysData[ 'last_pys_utm' ] = isset( $_REQUEST[ 'last_pys_utm' ] ) ? sanitize_text_field( $_REQUEST[ 'last_pys_utm' ] ) : $pys_utm;
-			$pysData[ 'last_pys_utm_id' ] = isset( $_REQUEST[ 'last_pys_utm_id' ] ) ? sanitize_text_field( $_REQUEST[ 'last_pys_utm_id' ] ) : $pys_utm_id;
-		}
+    /**
+     * Build PYS data for regular orders
+     *
+     * @param array $utms UTM parameters (first visit)
+     * @param array $utms_id UTM ID parameters (first visit)
+     * @return array
+     */
+    private function buildRegularPysData( $utms, $utms_id ) {
+        // First visit defaults
+        $default_landing = $this->getDefaultLanding();
+        $default_source = $this->getDefaultSource();
+        $default_utm = $this->formatUtms( $utms );
+        $default_utm_id = $this->formatUtms( $utms_id );
 
-		$pys_browser_time = getBrowserTime();
-		$pysData[ 'pys_browser_time' ] = isset( $_REQUEST[ 'pys_browser_time' ] ) ? sanitize_text_field( $_REQUEST[ 'pys_browser_time' ] ) : $pys_browser_time;
+        // Last visit defaults
+        $default_last_landing = $this->getDefaultLastLanding();
+        $default_last_source = $this->getDefaultLastSource();
+        $default_last_utm = $this->formatUtms( getUtms( true, true ) );
+        $default_last_utm_id = $this->formatUtms( getUtmsId( true, true ) );
 
-		return $pysData;
+        return [
+            'pys_landing'      => $this->getRequestValue( 'pys_landing', $default_landing, 'undefined' ),
+            'pys_source'       => $this->getRequestValue( 'pys_source', $default_source, 'undefined' ),
+            'pys_utm'          => $this->getRequestValue( 'pys_utm', $default_utm ),
+            'pys_utm_id'       => $this->getRequestValue( 'pys_utm_id', $default_utm_id ),
+            'last_pys_landing' => $this->getRequestValue( 'last_pys_landing', $default_last_landing, 'undefined' ),
+            'last_pys_source'  => $this->getRequestValue( 'last_pys_source', $default_last_source, 'undefined' ),
+            'last_pys_utm'     => $this->getRequestValue( 'last_pys_utm', $default_last_utm ),
+            'last_pys_utm_id'  => $this->getRequestValue( 'last_pys_utm_id', $default_last_utm_id ),
+        ];
+    }
+
+    /**
+     * Get sanitized value from REQUEST or use fallback
+     *
+     * @param string $key Request key
+     * @param mixed $fallback Fallback value
+     * @param mixed $empty_fallback Value to use if fallback is empty
+     * @return string
+     */
+    private function getRequestValue( $key, $fallback = '', $empty_fallback = null ) {
+        if ( isset( $_REQUEST[ $key ] ) ) {
+            return sanitize_text_field( $_REQUEST[ $key ] );
+        }
+
+        if ( $empty_fallback !== null && empty( $fallback ) ) {
+            return $empty_fallback;
+        }
+
+        return $fallback ?? '';
+    }
+
+    /**
+     * Get default landing page from session/cookie (first visit)
+     *
+     * @return string
+     */
+    private function getDefaultLanding() {
+        $landingPage = $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'];
+
+        if ( !empty($landingPage) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+            $landingPage = 'REST API';
+        }
+
+        return sanitize_text_field($landingPage ?? '');
+    }
+
+    /**
+     * Get default traffic source from session/cookie (first visit)
+     *
+     * @return string
+     */
+    private function getDefaultSource() {
+        $trafficSource = $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'];
+        if ( !empty($trafficSource) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+            $trafficSource = 'REST API';
+        }
+
+        return  sanitize_text_field($trafficSource ?? '');
+    }
+
+    /**
+     * Get default last landing page from cookie (last visit)
+     *
+     * @return string
+     */
+    private function getDefaultLastLanding() {
+        $lastLanding = $_COOKIE['last_pys_landing_page'] ?? $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'];
+        if ( !empty($lastLanding) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+            $lastLanding = 'REST API';
+        }
+
+        return  sanitize_text_field($lastLanding ?? '');
+    }
+
+    /**
+     * Get default last traffic source from cookie (last visit)
+     *
+     * @return string
+     */
+    private function getDefaultLastSource() {
+        $lastSource = $_COOKIE['last_pysTrafficSource'] ?? $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'];
+        if ( !empty($lastSource) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+            return 'REST API';
+        }
+
+        return sanitize_text_field($lastSource ?? '');
+    }
+
+    /**
+     * Format UTMs array as pipe-separated string (key:value|key:value)
+     *
+     * @param array $utms UTM parameters
+     * @return string
+     */
+    private function formatUtms( $utms ) {
+        if ( empty( $utms ) ) {
+            return '';
+        }
+
+        return implode( '|', array_map(
+            function ( $key, $value ) { return "$key:$value"; },
+            array_keys( $utms ),
+            $utms
+        ) );
+    }
+
+    /**
+     * Format UTMs array as recurring payment string (key:recurring payment|...)
+     *
+     * @param array $utms UTM parameters
+     * @return string
+     */
+    private function formatUtmsAsRecurring( $utms ) {
+        if ( empty( $utms ) ) {
+            return '';
+        }
+
+        return implode( '|', array_map(
+            function ( $key ) { return "$key:recurring payment"; },
+            array_keys( $utms )
+        ) );
     }
 }
 

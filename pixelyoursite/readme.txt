@@ -3,8 +3,8 @@ Contributors: PixelYourSite
 Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, Google Consent Mode V2
 Requires at least: 3.0.1
 Requires PHP: 5.4
-Tested up to: 6.8
-Stable tag: 11.1.2
+Tested up to: 6.9
+Stable tag: 11.2.0.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -13,13 +13,13 @@ Add Meta Pixel with Conversion API, Google Analytics (GA4) + Consent Mode, Googl
 == Description ==
 **PixelYourSite Free Version: Complete Tracking Solution for the Meta Pixel, Google Analytics 4, and Google Tag Manager.**
 
-Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4, and Google Tag Manager into your WordPress site. Plus, use our simple Head and Footer script option to add any custom script you need for advanced tracking and optimization. The Pinterest Tag can be implemented via this [paid add-on](https://www.pixelyoursite.com/pinterest-tag). Similar paid add-on for the [Bing tag](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on)
+Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4, and Google Tag Manager into your WordPress site. Plus, use our simple Head and Footer script option to add any custom script you need for advanced tracking and optimization. The Pinterest Tag can be implemented via this [paid add-on](https://www.pixelyoursite.com/pinterest-tag). Similar paid add-ons for the [Bing tag](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on) and for the [Reddit Pixel](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin).
 
 **Free training:** 
 
-We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this to learn **how to improve your Meta EMQ score with Facebook Login** (facebook_login_id):
+We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this one to lean how to setup Meta Conversion API and a few tips to improve your EMQ score:
 
-[youtube https://www.youtube.com/watch?v=Wv6KhJQqFL4]
+[youtube https://www.youtube.com/watch?v=iIbk23Hy_6A]
 
 **PixelYourSite will help you:**
 
@@ -387,6 +387,89 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.2.0.1 =
+
+February 5, 2026
+
+* Fix for Uncaught Error: Cannot access offset of type array on array
+
+* Security improvements. 
+
+
+= PixelYourSite 11.2.0 =
+
+February 2, 2026
+
+* Various code changes to ensure full compatibility with the Event Setup Tool supported by our add-ons.
+
+* Small code improvements.
+
+* Declaring compatibility with WooCommerce 10.4.
+
+
+= PixelYourSite 11.1.5.2 =
+
+January 5, 2026
+
+* Fixing a possible issue with event logs file download and delete. 
+
+
+= PixelYourSite 11.1.5.1 =
+
+December 20, 2025
+
+* Additional improvements the way we handle the API logs.
+
+
+= PixelYourSite 11.1.5 =
+
+December 10, 2025
+
+* Improving the way we handle the API logs.
+
+
+= PixelYourSite 11.1.4.2 =
+
+December 8, 2025
+
+* WordPress 6.9 compatibility check. 
+
+* Fixing an issue with Google Analytics debug mode option.
+
+* Video links and messages updates.
+
+* Fixing deprecated and Fatal PHP error on custom events.
+
+
+= PixelYourSite 11.1.4.1 =
+
+December 1, 2025
+
+* The Google Tags first_party_collection option has been moved to a more visible location, and its default is ON.
+
+* Fix for a possible warning Uncaught Error: Undefined constant PixelYourSite PYS_URL.
+
+
+= PixelYourSite 11.1.4 =
+
+November 24, 2025
+
+* Support for our dedicated Reddit Pixel add-on.
+
+* Fixing some warnings and deprecation notices.
+
+* Small code changes and improvements. 
+
+
+= PixelYourSite 11.1.3 =
+
+October 15, 2025
+
+* Security fix.
+
+* Fix the GA4 category hierarchy for products under multiple categories.
+
 
 = PixelYourSite 11.1.2 =
 

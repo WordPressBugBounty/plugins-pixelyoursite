@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             'order' => '1', // message display order
             'wait' => 0, // timeout after closing the previous message
             'type' => 'event chain', // Message type, if included in the message sequence then type MUST be 'event chain'
-            'location' => 'backend', // can be "backend","plugin". backend is show in WP admin on all pages. plugin is show only in plugin page.
+            'location' => 'backend', // can be "backend","plugin". backend is shown in WP admin on all pages. plugin is show only in plugin page.
             'enabelYoutubeLink' => false, // enables or disables the link to the channel at the bottom of the block
             'enabelLogo' => false, // enable or disable the logo on the left in the block
             'enabelDismiss' => false, // enable or disable dismiss button, default enable
@@ -87,7 +87,7 @@ function adminGetFixedNotices() {
                 ]
             ],
             'optoutEnabel' => true,
-            'optoutMessage' => "This is message 1 of a series of 3 notifications containing tips and tricks about how to use our plugin.",
+            'optoutMessage' => "This is message 1 of a series of 4 notifications containing tips and tricks about how to use our plugin.",
             'optoutButtonText' => "Don't show me more tips"
         ],
         [
@@ -97,6 +97,7 @@ function adminGetFixedNotices() {
             'location' => 'backend',
             'enabelYoutubeLink' => true,
             'enabelLogo' => true,
+            'enabelDismiss' => true,
             'color' => 'green',
             'multiMessage' => [
 
@@ -127,7 +128,7 @@ function adminGetFixedNotices() {
 
             ],
             'optoutEnabel' => true,
-            'optoutMessage' => "This is message 2 of a series of 3 notifications containing tips and tricks about how to use our plugin.",
+            'optoutMessage' => "This is message 2 of a series of 4 notifications containing tips and tricks about how to use our plugin.",
             'optoutButtonText' => "Don't show me more tips"
         ],
 
@@ -138,6 +139,7 @@ function adminGetFixedNotices() {
             'type' => 'event chain',
             'location' => 'backend',
             'enabelYoutubeLink' => true,
+            'enabelDismiss' => true,
             'enabelLogo' => true,
             'multiMessage' => [
                 [
@@ -150,7 +152,7 @@ function adminGetFixedNotices() {
                 [
                     'slug'  => 'free_block_3_message_2_v1',
                     'title' => 'What WooCommerce products your ads sold',
-                    'message' => 'Meta doesn"t show you what products your ads sold, but there is an easy way to find out.',
+                    'message' => 'Meta does not show you what products your ads sold, but there is an easy way to find out.',
                     'button_text' => 'Watch video',
                     'button_url' => 'https://www.youtube.com/watch?v=b-eYdx9QK0Q',
                 ],
@@ -158,13 +160,53 @@ function adminGetFixedNotices() {
                 [
                     'slug'  => 'free_block_3_message_3_v2',
                     'title' => 'Google Automated Discounts',
-                    'message' => 'How to setup GAD for WooCommerce inside Google Merchant.',
+                    'message' => 'How to set up GAD for WooCommerce inside Google Merchant.',
                     'button_text' => 'Learn more',
                     'button_url' => 'https://www.pixelyoursite.com/google-automated-discounts-for-woocommerce',
                 ],
             ],
             'optoutEnabel' => true,
-            'optoutMessage' => "This is message 3 (the last one) of a series of 3 notifications containing tips and tricks about how to use our plugin.",
+            'optoutMessage' => "This is message 3 of a series of 4 notifications containing tips and tricks about how to use our plugin.",
+            'optoutButtonText' => "Don't show me more tips"
+
+        ],
+
+
+        [
+            'order' => '4',
+            'wait' => 24,
+            'type' => 'event chain',
+            'location' => 'backend',
+            'enabelYoutubeLink' => true,
+            'enabelDismiss' => false,
+            'enabelLogo' => true,
+            'multiMessage' => [
+                [
+                    'slug'  => 'free_block_4_message_1_v2',
+                    'title' => 'Reddit Pixel',
+                    'message' => 'Learn how you can configure the Reddit Pixel with our dedicated add-on.',
+                    'button_text' => 'Read More',
+                    'button_url' => 'https://www.pixelyoursite.com/how-to-use-the-reddit-pixel-add-on',
+                ],
+                [
+                    'slug'  => 'free_block_4_message_2_v2',
+                    'title' => 'Fix Google Ads Conversion Tracking',
+                    'message' => 'Send your data to Google Ads with Conversion Exporter.',
+                    'button_text' => 'Watch video',
+                    'button_url' => 'https://www.youtube.com/watch?v=Jm8dFTOLjJE',
+                ],
+                [
+                    'slug'  => 'free_block_4_message_3_v2',
+                    'title' => 'Track ANYTHING without coding!',
+                    'message' => 'This is how the Event Setup Tool works.',
+                    'button_text' => 'Learn More',
+                    'button_url' => 'https://www.pixelyoursite.com/event-setup-tool',
+                ],
+
+
+            ],
+            'optoutEnabel' => true,
+            'optoutMessage' => "This is message 4 (the last one) of a series of 4 notifications containing tips and tricks about how to use our plugin.",
             'optoutButtonText' => "Don't show me more tips"
 
         ],

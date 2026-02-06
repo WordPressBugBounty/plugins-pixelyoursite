@@ -314,6 +314,7 @@ wp-content/plugins/pixelyoursite/dist/scripts/public.js
 wp-content/plugins/pixelyoursite/dist/scripts/js.cookie-2.1.3.min.js
 wp-content/plugins/pixelyoursite/dist/scripts/sha256.js
 wp-content/plugins/pixelyoursite/dist/scripts/tld.min.js
+wp-content/plugins/pixelyoursite-pro/dist/jquery.bind-first-0.2.3.min.js
                             <div class="copy-icon" data-toggle="pys-popover"
                                  data-tippy-trigger="click" data-tippy-placement="bottom"
                                  data-popover_id="copied-popover"></div></pre>

@@ -4,9 +4,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.1.2' );
-define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.0.0' );
-define( 'PYS_FREE_BING_MIN_VERSION', '4.0.0' );
+define( 'PYS_FREE_VERSION', '11.2.0.1' );
+define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.0' );
+define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
+define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );
 define( 'PYS_FREE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'PYS_FREE_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
 define( 'PYS_FREE_PLUGIN_FILE', __FILE__ );
@@ -23,6 +24,7 @@ define( 'PYS_FREE_VIDEO_TITLE', 'Meta Pixel and API setup - Boost EMQ'  );
 require_once PYS_FREE_PATH.'/vendor/autoload.php';
 require_once PYS_FREE_PATH.'/includes/logger/class-pys-logger.php';
 require_once PYS_FREE_PATH.'/includes/class-event-id-generator.php';
+require_once PYS_FREE_PATH.'/includes/class-event-definitions.php';
 require_once PYS_FREE_PATH.'/includes/functions-common.php';
 require_once PYS_FREE_PATH.'/includes/functions-buttons.php';
 require_once PYS_FREE_PATH.'/includes/functions-admin.php';

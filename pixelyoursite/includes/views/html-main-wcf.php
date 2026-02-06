@@ -167,6 +167,16 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
                         </div>
                     <?php endif; ?>
+
+	                <?php if ( Reddit()->enabled() ) : ?>
+                        <div class="plate gap-24">
+                            <div>
+                                <h4 class="secondary_heading_type2 mb-24">Reddit Tag</h4>
+                                <h4 class="primary_heading mb-8">Reddit Tag ID:</h4>
+				                <?php renderDummyTextInput('Add your ID there'); ?>
+                            </div>
+                        </div>
+	                <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -339,6 +349,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                             <h4 class="switcher-label secondary_heading">Bing</h4>
                                         </div>
                                     <?php endif; ?>
+
+	                                <?php if ( Reddit()->enabled() ) : ?>
+                                        <div class="d-flex align-items-center">
+			                                <?php renderDummySwitcher(); ?>
+                                            <h4 class="switcher-label secondary_heading">Reddit</h4>
+                                        </div>
+	                                <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -386,6 +403,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                             <h4 class="switcher-label secondary_heading">Bing</h4>
                                         </div>
                                     <?php endif; ?>
+
+	                                <?php if ( Reddit()->enabled() ) : ?>
+                                        <div class="d-flex align-items-center">
+			                                <?php renderDummySwitcher(); ?>
+                                            <h4 class="switcher-label secondary_heading">Reddit</h4>
+                                        </div>
+	                                <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -432,6 +456,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                                             <h4 class="switcher-label secondary_heading">Bing</h4>
                                         </div>
                                     <?php endif; ?>
+
+	                                <?php if ( Reddit()->enabled() ) : ?>
+                                        <div class="d-flex align-items-center">
+			                                <?php renderDummySwitcher(); ?>
+                                            <h4 class="switcher-label secondary_heading">Reddit</h4>
+                                        </div>
+	                                <?php endif; ?>
                                 </div>
                             </div>
                         </div>

@@ -130,7 +130,10 @@ class AjaxHookEventManager {
             $event = $events[0];
 
             // add standard params
-            $event->addParams($standardParams);
+	        $slug = $pixel->getSlug();
+	        if( $slug !== "reddit" ) {
+		        $event->addParams($standardParams);
+	        }
 
             // prepare event data
             $eventData = $event->getData();

@@ -585,7 +585,7 @@ add_filter('pys_bing_ad_storage_mode',function ($mode) {
     <div class="card card-style3 hook-card">
         <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
             <div class="disable-card align-items-center">
-                <h4 class="secondary_heading_type2">pys_meta_ldu_mode - The filter turn ON/OFF the Limited Data Use option</h4>
+                <h4 class="secondary_heading_type2">pys_meta_ldu_mode - The filter turn ON/OFF Meta Limited Data Use option</h4>
             </div>
             <?php cardCollapseSettings(); ?>
         </div>
@@ -637,7 +637,32 @@ add_filter('pys_send_meta_id',function ($status) {
             </div>
         </div>
     </div>
-
+    <div class="card card-style3 hook-card">
+        <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+            <div class="disable-card align-items-center">
+                <h4 class="secondary_heading_type2">pys_reddit_ldu_mode - The filter turn ON/OFF Reddit Limited Data Use option</h4>
+            </div>
+			<?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <div class="flex-column-24gap">
+                <div class="double-line-height">
+                    <p>Param: bool $status</p>
+                </div>
+                <div class="example-block">
+                    <label>Example:</label>
+                    <pre class="copy_text">
+add_filter('pys_reddit_ldu_mode',function ($status) {
+    if(get_current_user_id() == 0) {
+        return true;
+    }
+    return $status;
+});<div class="copy-icon" data-toggle="pys-popover"
+        data-tippy-trigger="click" data-tippy-placement="bottom"
+        data-popover_id="copied-popover"></div></pre>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
 

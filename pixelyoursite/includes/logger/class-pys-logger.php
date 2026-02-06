@@ -18,12 +18,97 @@ class PYS_Logger
 
 	protected $log_path = null;
 
+    /**
+     * Option name for storing log file random suffix
+     */
+    const LOG_SUFFIX_OPTION = 'pys_free_log_file_suffix';
+
 	public function __construct( ) {
 		$this->log_path = trailingslashit( PYS_FREE_PATH ).'logs/';
 	}
 
     public function init() {
         $this->isEnabled = PYS()->getOption('pys_logs_enable');
+
+        // Migrate old log files to new randomized names (one-time operation)
+        $this->maybe_migrate_log_files();
+
+        // Always ensure protection files exist, regardless of logging being enabled
+        // This prevents PII exposure even if logs were created before and logging is now disabled
+        $this->create_protection_files();
+    }
+
+    /**
+     * Get or generate random suffix for log file names
+     * This suffix is stored in WordPress options and persists across requests
+     *
+     * @return string Random suffix (32 characters hex string)
+     */
+    public static function get_log_suffix() {
+        $suffix = get_option( self::LOG_SUFFIX_OPTION );
+
+        if ( empty( $suffix ) ) {
+            $suffix = self::generate_random_suffix();
+            update_option( self::LOG_SUFFIX_OPTION, $suffix, false );
+        }
+
+        return $suffix;
+    }
+
+    /**
+     * Generate a cryptographically secure random suffix
+     *
+     * @return string Random suffix (32 characters hex string)
+     */
+    protected static function generate_random_suffix() {
+        if ( function_exists( 'wp_generate_password' ) ) {
+            // Use WordPress function for better compatibility
+            return wp_hash( wp_generate_password( 32, true, true ) . time() . wp_rand() );
+        }
+
+        // Fallback to PHP random_bytes
+        return bin2hex( random_bytes( 16 ) );
+    }
+
+    /**
+     * Migrate old log files to new randomized names
+     * This runs once when the suffix doesn't exist yet
+     *
+     * @return void
+     */
+    protected function maybe_migrate_log_files() {
+        // Check if migration is needed (suffix option doesn't exist)
+        $suffix = get_option( self::LOG_SUFFIX_OPTION );
+
+        if ( ! empty( $suffix ) ) {
+            // Already migrated
+            return;
+        }
+
+        // Generate new suffix
+        $new_suffix = self::generate_random_suffix();
+        update_option( self::LOG_SUFFIX_OPTION, $new_suffix, false );
+
+        // Migrate existing log files
+        $this->migrate_log_file( 'pys_debug.log', 'pys_debug_' . $new_suffix . '.log' );
+    }
+
+    /**
+     * Rename a log file from old name to new name
+     *
+     * @param string $old_name Old file name
+     * @param string $new_name New file name
+     * @return bool True if renamed successfully or file didn't exist
+     */
+    protected function migrate_log_file( $old_name, $new_name ) {
+        $old_path = $this->log_path . $old_name;
+        $new_path = $this->log_path . $new_name;
+
+        if ( file_exists( $old_path ) && is_writable( $old_path ) ) {
+            return @rename( $old_path, $new_path );
+        }
+
+        return true;
     }
 
     /**
@@ -45,7 +130,7 @@ class PYS_Logger
         $this->log('error',$message,$args);
     }
 
-	protected function log($level,$message,$args = null) {
+    protected function log($level,$message,$args = null) {
         if(!$this->isEnabled) return;
         if($args) {
             $message .= " \nArgs: ".print_r($args,true);
@@ -65,7 +150,7 @@ class PYS_Logger
      *
      * @return bool False if value was not handled and true if value was handled.
      */
-	protected function handle( $timestamp, $level, $message, $context ) {
+    protected function handle( $timestamp, $level, $message, $context ) {
 
         $time_string = date( 'c', $timestamp );
         $entry = "{$time_string} {$level} {$message}";
@@ -89,12 +174,16 @@ class PYS_Logger
         if ( $file ) {
             if ( ! file_exists( $file ) ) {
                 if( !is_dir( $this->log_path ) ) {
-                    mkdir( $this->log_path, 0777, true );
+                    if (!mkdir($concurrentDirectory = $this->log_path, 0755, true) && !is_dir($concurrentDirectory)) {
+                        throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+                    }
                 }
                 $temphandle = @fopen( $file, 'w+' ); // @codingStandardsIgnoreLine.
                 if ( is_resource( $temphandle ) ) {
                     @fclose( $temphandle ); // @codingStandardsIgnoreLine.
-
+                    if ( ! defined( 'FS_CHMOD_FILE' ) ) {
+                        define( 'FS_CHMOD_FILE', 0644 );
+                    }
                     @chmod( $file, FS_CHMOD_FILE ); // @codingStandardsIgnoreLine.
                 }
             }
@@ -111,6 +200,43 @@ class PYS_Logger
     }
 
     /**
+     * Create protection files (.htaccess and index.php) in logs directory
+     * to prevent direct access to log files
+     *
+     * @return void
+     */
+    protected function create_protection_files() {
+        if ( ! is_dir( $this->log_path ) ) {
+            return;
+        }
+
+        // Create .htaccess file to deny access
+        $htaccess_file = $this->log_path . '.htaccess';
+        if ( ! file_exists( $htaccess_file ) ) {
+            $htaccess_content = "# Deny access to all files in this directory\n";
+            $htaccess_content .= "# Apache 2.4+\n";
+            $htaccess_content .= "<IfModule authz_core_module>\n";
+            $htaccess_content .= "    Require all denied\n";
+            $htaccess_content .= "</IfModule>\n\n";
+            $htaccess_content .= "# Apache 2.2\n";
+            $htaccess_content .= "<IfModule !authz_core_module>\n";
+            $htaccess_content .= "    Deny from all\n";
+            $htaccess_content .= "</IfModule>\n";
+
+            @file_put_contents( $htaccess_file, $htaccess_content );
+            @chmod( $htaccess_file, 0644 );
+        }
+
+        // Create index.php file to prevent directory listing
+        $index_file = $this->log_path . 'index.php';
+        if ( ! file_exists( $index_file ) ) {
+            $index_content = "<?php\n// Silence is golden.\n";
+            @file_put_contents( $index_file, $index_content );
+            @chmod( $index_file, 0644 );
+        }
+    }
+
+    /**
      * Get a log file path.
      *
      * @return string The log file path or false if path cannot be determined.
@@ -123,42 +249,43 @@ class PYS_Logger
         return trailingslashit( PYS_FREE_URL ) .'logs/'. static::get_log_file_name( );
     }
 
-    public function downloadLogFile() {
+	public function downloadLogFile() {
         if ( ! current_user_can( 'manage_pys' ) ) {
             return;
         }
-        $file = static::get_log_file_path();
-        if ($file) {
+		$file = static::get_log_file_path();
+		if ($file) {
 
-            header('Content-Description: File Transfer');
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename="'.basename($file).'"');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Length: ' . filesize($file));
+			header('Content-Description: File Transfer');
+			header('Content-Type: application/octet-stream');
+			header('Content-Disposition: attachment; filename="'.basename($file).'"');
+			header('Expires: 0');
+			header('Cache-Control: must-revalidate');
+			header('Pragma: public');
+			header('Content-Length: ' . filesize($file));
 
             if (file_exists($file)) {
                 readfile($file);
             } else {
                 error_log("File not found: " . $file);
             }
-            exit;
-        } else {
-            http_response_code(404);
-            echo "File not found.";
-        }
-    }
+			exit;
+		} else {
+			http_response_code(404);
+			echo "File not found.";
+		}
+	}
 
     /**
      * Get a log file name.
      *
-     * File names consist of the handle, followed by the date, followed by a hash, .log.
+     * File names consist of the handle, followed by a random suffix, .log.
+     * The random suffix prevents direct access to log files on Nginx servers.
      *
-     * @return string The log file name or false if cannot be determined.
+     * @return string The log file name.
      */
     public static function get_log_file_name( ) {
-        return 'pys_debug.log';
+        return 'pys_debug_' . self::get_log_suffix() . '.log';
     }
 
     /**

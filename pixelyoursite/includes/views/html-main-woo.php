@@ -28,19 +28,19 @@ use PixelYourSite\Facebook\Helpers;
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <div class="d-flex align-items-center flex-with-badge">
                             <?php renderDummySwitcher( false); ?>
-                            <h4 class="switcher-label secondary_heading">Facebook Advanced Purchase Tracking</h4>
+                            <h4 class="switcher-label secondary_heading"><?php _e( 'Facebook Purchase tracking via API', 'pys' ); ?></h4>
                         </div>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <div class="d-flex align-items-center flex-with-badge">
                             <?php renderDummySwitcher( false); ?>
-                            <h4 class="switcher-label secondary_heading">Google Analytics Advanced Purchase Tracking</h4>
+                            <h4 class="switcher-label secondary_heading"><?php _e( 'Google Analytics backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                         </div>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <div class="d-flex align-items-center flex-with-badge">
                             <?php renderDummySwitcher( false); ?>
-                            <h4 class="switcher-label secondary_heading">TikTok Advanced Purchase Tracking</h4>
+                            <h4 class="switcher-label secondary_heading"><?php _e( 'TikTok backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                         </div>
                     </div>
 
@@ -48,7 +48,7 @@ use PixelYourSite\Facebook\Helpers;
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <div class="d-flex align-items-center flex-with-badge">
                                 <?php renderDummySwitcher( false); ?>
-                                <h4 class="switcher-label secondary_heading">Pinterest Advanced Purchase Tracking</h4>
+                                <h4 class="switcher-label secondary_heading"><?php _e( 'Pinterest backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -881,6 +881,113 @@ use PixelYourSite\Facebook\Helpers;
                     </div>
                 <?php endif; ?>
 
+	            <?php if ( Reddit()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>
+                            </div>
+
+				            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+							            <?php Reddit()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your Product Catalog doesn't include the variants for
+                                        variable products.
+                                    </p>
+                                </div>
+
+
+                                <div class="d-flex align-items-center">
+						            <?php Reddit()->render_switcher_input( 'woo_variable_data_select_product' ); ?>
+                                    <h4 class="switcher-label secondary_heading">For product pages, track the variation
+                                        data when a variation is selected</h4>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+						            <?php Reddit()->render_select_input( 'woo_content_id', array(
+							            'product_id'  => 'Product ID',
+							            'product_sku' => 'Product SKU',
+						            ) ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+						            <?php Reddit()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+						            <?php Reddit()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+					            <?php if ( isWPMLActive() && Reddit()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+										            <?php Reddit()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+								            <?php if ( ! empty( $languages ) ) { ?>
+                                                <div>
+                                                    <h4 class="primary_heading mb-16"><strong>Default language IDs</strong>
+                                                        logic.
+                                                    </h4>
+                                                    <div class="d-flex align-items-center mb-4">
+											            <?php  Reddit()->render_select_input( 'woo_wpml_language', $languages ); ?>
+                                                    </div>
+                                                </div>
+								            <?php } ?>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the tag and we
+                                            will
+                                            use
+                                            the native product ID for each translated item.
+                                        </p>
+                                    </div>
+					            <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+	            <?php else: ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>&nbsp;
+                                <a class="link"
+                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin"
+                                   target="_blank">The paid add-on is required</a>
+                            </div>
+                        </div>
+                    </div>
+	            <?php endif; ?>
+
                 <?php if ( GTM()->enabled() ) : ?>
                     <div class="card card-style6">
                         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
@@ -1113,6 +1220,12 @@ use PixelYourSite\Facebook\Helpers;
                             </div>
                         <?php endif; ?>
 
+	                    <?php if ( Reddit()->enabled() ) : ?>
+                            <div class="d-flex align-items-center">
+			                    <?php Reddit()->render_switcher_input( 'woo_purchase_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the Purchase event on Reddit</h4>
+                            </div>
+	                    <?php endif; ?>
 
                         <?php if ( GTM()->enabled() ) : ?>
                             <div class="line"></div>
@@ -1340,6 +1453,14 @@ use PixelYourSite\Facebook\Helpers;
                             </div>
                         <?php endif; ?>
 
+	                    <?php if ( Reddit()->enabled() ) :
+		                    $configured = true; ?>
+                            <div class="d-flex align-items-center">
+			                    <?php Reddit()->render_switcher_input( 'woo_add_to_cart_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the AddToCart event on Reddit</h4>
+                            </div>
+	                    <?php endif; ?>
+
                         <?php if ( GTM()->enabled() ) : ?>
                             <div>
                                 <?php if ( $configured ) : ?>
@@ -1413,7 +1534,7 @@ use PixelYourSite\Facebook\Helpers;
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
                         </div>
 
-                        <?php if ( Pinterest()->enabled() || Bing()->enabled() ) : ?>
+                        <?php if ( Pinterest()->enabled() || Bing()->enabled() || Reddit()->enabled() ) : ?>
                             <div class="line"></div>
                         <?php endif; ?>
 
@@ -1434,6 +1555,13 @@ use PixelYourSite\Facebook\Helpers;
                             </div>
                         <?php endif; ?>
 
+	                    <?php if ( Reddit()->enabled() ) :
+		                    $configured = true; ?>
+                            <div class="d-flex align-items-center">
+			                    <?php Reddit()->render_switcher_input( 'woo_view_content_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the ViewContent event on Reddit</h4>
+                            </div>
+	                    <?php endif; ?>
 
                         <?php if ( GTM()->enabled() ) : ?>
                             <div>
@@ -1691,6 +1819,13 @@ use PixelYourSite\Facebook\Helpers;
                                 </div>
                             <?php endif; ?>
 
+	                        <?php if ( Reddit()->enabled() ) : ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
+
                             <?php if ( GTM()->enabled() ) : ?>
                                 <div class="line"></div>
 
@@ -1761,6 +1896,14 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable on Bing</h4>
                                 </div>
                             <?php endif; ?>
+
+	                        <?php if ( Reddit()->enabled() ) :
+		                        $configured = true; ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
 
                             <?php if ( GTM()->enabled() ) : ?>
                                 <?php if ( $configured ) : ?>
@@ -1840,6 +1983,14 @@ use PixelYourSite\Facebook\Helpers;
                                 </div>
                             <?php endif; ?>
 
+	                        <?php if ( Reddit()->enabled() ) :
+		                        $configured = true; ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
+
                             <?php if ( GTM()->enabled() ) : ?>
                                 <?php if ( $configured ) : ?>
                                     <div class="line"></div>
@@ -1916,6 +2067,14 @@ use PixelYourSite\Facebook\Helpers;
                                 </div>
                             <?php endif; ?>
 
+	                        <?php if ( Reddit()->enabled() ) :
+		                        $configured = true; ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
+
                             <?php if ( GTM()->enabled() ) :
                                 if ( $configured ) : ?>
                                     <div class="line"></div>
@@ -1984,6 +2143,14 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable on Bing</h4>
                                 </div>
                             <?php endif; ?>
+
+	                        <?php if ( Reddit()->enabled() ) :
+		                        $configured = true; ?>
+                                <div class="d-flex align-items-center">
+			                        <?php renderDummySwitcher(); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                </div>
+	                        <?php endif; ?>
 
                             <?php if ( GTM()->enabled() ) :
                                 if ( $configured ) : ?>

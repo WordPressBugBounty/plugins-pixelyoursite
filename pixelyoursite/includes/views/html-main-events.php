@@ -12,8 +12,8 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
 
 <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24 mb-24">
     <div class="d-flex justify-content-between align-items-center">
-        <span class="font-semibold primary-heading-color fz-18">With the pro you can fire events on clicks, form submit, video views, number of page views, email clicks, and more.</span>
-        <?php renderProBadge();?>
+        <span class="font-semibold primary-heading-color fz-18">With the pro version, you can track any actions without coding. Clicks, time on page, number of pages, form submited, video views and more.</span>
+        <?php renderEventSetupToolBadge();?>
     </div>
 </div>
 
@@ -49,9 +49,9 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
             'time'  => '22:28',
         ),
 				array(
-						'url'   => 'https://www.youtube.com/watch?v=UBwGNlm5ILE',
-						'title' => 'Track Form Progress with Field Events – Includes GA4 add_shipping_info for WooCommerce',
-						'time'  => '6:10',
+						'url'   => 'https://www.youtube.com/watch?v=UOzC8T0WGBw',
+						'title' => 'MUST WATCH: The best way to track any action',
+						'time'  => '9:41',
 				),
 				array(
 						'url'   => 'https://www.youtube.com/watch?v=wUsqwomsYMo',
@@ -309,6 +309,12 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                                         <img src="<?php echo PYS_FREE_URL; ?>/dist/images/pinterest-logo.svg"
                                              alt="pinterest logo"
                                              class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+	                                    <?php
+	                                    $disabled = Reddit()->enabled() && !empty( Reddit()->getPixelIDs() ) && $event->isRedditEnabled(); ?>
+                                        <img src="<?php echo PYS_FREE_URL; ?>/dist/images/reddit-logo.svg"
+                                             alt="reddit logo"
+                                             class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+
                                     </div>
                                 </td>
                             </tr>

@@ -19,6 +19,7 @@ class Consent {
 		'bing'       => true,
 		'pinterest'  => true,
 		'gtm'        => true,
+		'reddit'     => true,
 	);
 
 	public static function instance(): Consent {
@@ -70,6 +71,7 @@ class Consent {
 		$this->consentData[ 'ga' ] = $this->consentData[ 'gtm' ] = !apply_filters( 'pys_disable_analytics_by_gdpr', false );
 		$this->consentData[ 'pinterest' ] = !apply_filters( 'pys_disable_pinterest_by_gdpr', false );
 		$this->consentData[ 'bing' ] = !apply_filters( 'pys_disable_bing_by_gdpr', false );
+		$this->consentData[ 'reddit' ] = !apply_filters( 'pys_disable_reddit_by_gdpr', false );
 	}
 
 	private function checkConsentPlugin(): void {

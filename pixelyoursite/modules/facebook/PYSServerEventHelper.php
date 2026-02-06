@@ -349,6 +349,12 @@ class ServerEventHelper {
 				if ( !empty( $user_persistence_data[ 'em' ] ) ) $userData->setEmail( $user_persistence_data[ 'em' ] );
 				if ( !empty( $user_persistence_data[ 'tel' ] ) ) $userData->setPhone( $user_persistence_data[ 'tel' ] );
 
+                // Get external_id from EDD payment meta
+                $external_id = edd_get_payment_meta( $payment_id, 'external_id', true );
+                if ( !empty( $external_id ) ) {
+                    $userData->setExternalId( $external_id );
+                }
+
 				if ( $user_info[ 'id' ] && apply_filters( 'pys_send_meta_id', true ) ) {
 					$login_id = get_user_meta( $user_info[ 'id' ], '_socplug_social_id_Facebook', true );
 					if ( !empty( $login_id ) ) {

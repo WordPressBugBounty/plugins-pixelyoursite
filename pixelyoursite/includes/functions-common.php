@@ -99,6 +99,43 @@ function isBingVersionIncompatible() {
 }
 
 /**
+ * Check if Reddit plugin installed and activated.
+ * @param bool $checkCompatibility
+ * @return bool
+ */
+function isRedditActive( bool $checkCompatibility = true ): bool {
+
+	if ( !function_exists( 'is_plugin_active' ) ) {
+		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+	}
+
+	$active = is_plugin_active( 'pixelyoursite-reddit/pixelyoursite-reddit.php' );
+
+	if ( $checkCompatibility ) {
+		return $active && !isRedditVersionIncompatible()
+		       && function_exists( 'PixelYourSite\Reddit' )
+		       && Reddit() instanceof Plugin; // false for dummy
+	} else {
+		return $active;
+	}
+}
+
+/**
+ * Check if Reddit plugin version is compatible.
+ * @return bool
+ */
+function isRedditVersionIncompatible(): bool {
+
+	if ( !function_exists( 'get_plugin_data' ) ) {
+		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+	}
+
+	$data = get_plugin_data( WP_PLUGIN_DIR . '/pixelyoursite-reddit/pixelyoursite-reddit.php', false, false );
+
+	return !version_compare( $data[ 'Version' ], PYS_FREE_REDDIT_MIN_VERSION, '>=' );
+}
+
+/**
  * Check if WooCommerce plugin installed and activated.
  *
  * @return bool
@@ -479,27 +516,41 @@ function pys_round( $val, $precision = 2, $mode = PHP_ROUND_HALF_UP )  {
     return round( $val, $precision, $mode );
 }
 
-/**
- * @param string $taxonomy Taxonomy name
- *
- * @return array Array of object term names
- */
-function getObjectTerms( $taxonomy, $post_id ) {
+function getObjectTerms($taxonomy, $post_id) {
+    $terms = get_the_terms($post_id, $taxonomy);
+    if (is_wp_error($terms) || empty($terms)) {
+        return [];
+    }
 
-	$terms   = get_the_terms( $post_id, $taxonomy );
-	$results = array();
+    // Build a map of term_id => term object for quick parent lookups
+    $terms_by_id = [];
+    foreach ($terms as $term) {
+        $terms_by_id[$term->term_id] = $term;
+    }
 
-	if ( is_wp_error( $terms ) || empty ( $terms ) ) {
-		return array();
-	}
+    // Helper function to calculate the "depth" of a term in the hierarchy
+    // (how many parent levels it has)
+    $get_depth = function($term) use ($terms_by_id) {
+        $depth = 0;
+        while ($term->parent && isset($terms_by_id[$term->parent])) {
+            $term = $terms_by_id[$term->parent];
+            $depth++;
+        }
+        return $depth;
+    };
 
-	// decode special chars
-	foreach ( $terms as $term ) {
-		$results[] = html_entity_decode( $term->name );
-	}
+    // Sort terms by their depth so that parent categories come before child categories
+    usort($terms, function($a, $b) use ($get_depth) {
+        return $get_depth($a) <=> $get_depth($b);
+    });
 
-	return $results;
+    // Return an array of decoded term names
+    $results = [];
+    foreach ($terms as $term) {
+        $results[] = html_entity_decode($term->name);
+    }
 
+    return $results;
 }
 /**
  * @param string $taxonomy Taxonomy name

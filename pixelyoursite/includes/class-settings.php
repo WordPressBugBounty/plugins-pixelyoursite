@@ -110,10 +110,10 @@ abstract class Settings {
 	 * @param string $defaults Path to options defaults file
 	 */
     public function locateOptions( $fields, $defaults ) {
-        
+
         $this->loadJSON( $fields, false );
         $this->loadJSON( $defaults, true );
-        
+
         $this->defaults_json_path = $defaults;
         self::table_exists();
     }
@@ -139,7 +139,7 @@ abstract class Settings {
             'server_access_api_token',
             'use_server_api',
             'verify_meta_tag',
-            
+
             'gtm_id',
             'gtm_just_data_layer',
         ];
@@ -382,7 +382,7 @@ abstract class Settings {
         }
 
     }
-	
+
 	/**
 	 * Sanitize form field
 	 *
@@ -496,23 +496,23 @@ abstract class Settings {
 	 * @param int    $index
 	 */
 	public function render_pixel_id( $key, $placeholder = '', $index = 0 ) {
-        
+
         $attr_name = "pys[$this->slug][$key][]";
         $attr_id = 'pys_' . $this->slug . '_' . $key . '_' . $index;
-		
+
 		$values = (array) $this->getOption( $key );
 		$attr_value = isset( $values[ $index ] ) ? $values[ $index ] : null;
-  
+
 		?>
-        
+
         <input type="text" name="<?php echo esc_attr( $attr_name ); ?>"
                id="<?php echo esc_attr( $attr_id ); ?>"
                value="<?php echo esc_attr( $attr_value ); ?>"
                placeholder="<?php echo esc_attr( $placeholder ); ?>"
                class="input-standard">
-		
+
 		<?php
-		
+
 	}
 
     /**
@@ -564,7 +564,7 @@ abstract class Settings {
                class="input-standard">
         <?php
     }
-	
+
 	/**
 	 * Output text area input
 	 *
@@ -597,7 +597,7 @@ abstract class Settings {
 		<?php
 
 	}
-	
+
 	/**
 	 * Output checkbox input stylized as switcher
 	 *
@@ -691,7 +691,7 @@ abstract class Settings {
 		<?php
 
 	}
-	
+
 	/**
 	 * Output checkbox input
 	 *
@@ -773,9 +773,9 @@ abstract class Settings {
         </div>
 
 		<?php
-		
+
 	}
-	
+
 	/**
 	 * Output radio input
 	 *
@@ -809,9 +809,9 @@ abstract class Settings {
         </div>
 
 		<?php
-		
+
 	}
-	
+
 	/**
 	 * Output number input
 	 *
@@ -840,7 +840,7 @@ abstract class Settings {
         </div>
 
 		<?php
-		
+
 	}
 
 
@@ -950,7 +950,7 @@ abstract class Settings {
 
         <?php
     }
-	
+
 	/**
 	 * Output tags select input
 	 *
@@ -1004,7 +1004,7 @@ abstract class Settings {
 		return wp_kses_post( trim( stripslashes( $value ) ) );
 
 	}
-	
+
 	/**
 	 * Sanitize textarea field value
 	 *
@@ -1019,7 +1019,7 @@ abstract class Settings {
 		return trim( stripslashes( $value ) );
 
 	}
-	
+
 	/**
 	 * Sanitize number field value
 	 *
@@ -1030,7 +1030,7 @@ abstract class Settings {
 	public function sanitize_number_field( $value ) {
 		return (int) $value;
 	}
-	
+
 	/**
 	 * Sanitize checkbox field value
 	 *
@@ -1047,7 +1047,7 @@ abstract class Settings {
 		}
 
 	}
-	
+
 	/**
 	 * Sanitize radio field value
 	 *
@@ -1058,7 +1058,7 @@ abstract class Settings {
 	public function sanitize_radio_field( $value ) {
 		return ! is_null( $value ) ? trim( stripslashes( $value ) ) : null;
 	}
-	
+
 	/**
 	 * Sanitize select field value
 	 *
@@ -1069,13 +1069,13 @@ abstract class Settings {
 	 * @return array|string
 	 */
 	public function sanitize_select_field( $value ) {
-		
+
 		$value = is_null( $value ) ? '' : $value;
-		
+
 		return deepSanitizeTextField( stripslashes( $value ) );
-		
+
 	}
-	
+
 	/**
 	 * Sanitize tags select value
 	 *
@@ -1088,7 +1088,7 @@ abstract class Settings {
 	public function sanitize_multi_select_field( $value ) {
 		return is_array( $value ) ? array_map( 'PixelYourSite\deepSanitizeTextField', $value ) : array();
 	}
-	
+
 	/**
 	 * @param $value
 	 *
@@ -1097,7 +1097,7 @@ abstract class Settings {
 	public function sanitize_tag_select_field( $value ) {
 		return is_array( $value ) ? array_map( 'PixelYourSite\deepSanitizeTextField', $value ) : array();
     }
-	
+
 	/**
 	 * Sanitize array field value
 	 *
@@ -1106,22 +1106,22 @@ abstract class Settings {
 	 * @return array
 	 */
 	public function sanitize_array_field( $values ) {
-		
+
 		$values = is_array( $values ) ? $values : array();
 		$sanitized = array();
-		
+
 		foreach ( $values as $key => $value ) {
-			
+
 			$new_value = $this->sanitize_text_field( $value );
-			
+
 			if ( ! empty( $new_value ) && ! in_array( $new_value, $sanitized ) ) {
 				$sanitized[ $key ] = $new_value;
 			}
-			
+
 		}
-		
+
 		return $sanitized;
-		
+
 	}
 
 /**
@@ -1175,20 +1175,23 @@ abstract class Settings {
 	}
     public function render_checkbox_input_array( $key, $label, $index = 0, $disabled = false ) {
 
-        $attr_name  = "pys[$this->slug][$key][]";
-        $attr_values = (array)$this->getOption( $key );
-        $value = "index_".$index;
-        $valueIndex = array_search($value,$attr_values);
-
+        $attr_name = "pys[$this->slug][$key][]";
+        $attr_values = (array) $this->getOption( $key );
+        $value = "index_" . $index;
+        $valueIndex = array_search( $value, $attr_values );
+        $id = $key . "_" . rand( 1, 1000000 );
         ?>
-
-        <label class="custom-control custom-checkbox">
-            <input type="checkbox" name="<?php echo esc_attr( $attr_name ); ?>" value="<?=$value?>"
-                   class="custom-control-input" <?php disabled( $disabled, true ); ?>
-                <?=$valueIndex !== false ? "checked" : "" ?>>
-            <span class="custom-control-indicator"></span>
-            <span class="custom-control-description"><?php echo wp_kses_post( $label ); ?></span>
-        </label>
+        <div class="small-checkbox">
+            <input type="hidden" name="<?php echo esc_attr( $attr_name ); ?>" value="0">
+            <input type="checkbox" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $attr_name ); ?>"
+                   value="<?= $value ?>"
+                   class="small-control-input" <?php disabled( $disabled, true ); ?>
+                    <?php echo $valueIndex !== false ? "checked" : "" ?>>
+            <label class="small-control small-checkbox-label" for="<?php echo esc_attr( $id ); ?>">
+                <span class="small-control-indicator"><i class="icon-check"></i></span>
+                <span class="small-control-description"><?php echo wp_kses_post( $label ); ?></span>
+            </label>
+        </div>
 
         <?php
 
@@ -1293,6 +1296,10 @@ abstract class Settings {
 
         echo '&nbsp;<a href="' . esc_url( $url ) . '" target="_blank" class="badge badge-pill badge-pro">'.$label.'</a>';
     }
+
+
+
+
     public function convertTimeToSeconds($timeValue = 24, $type = 'hours')
     {
         switch ($type){
