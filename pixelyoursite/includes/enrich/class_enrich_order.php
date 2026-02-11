@@ -247,13 +247,13 @@ class EnrichOrder {
      * @return string
      */
     private function getDefaultLanding() {
-        $landingPage = $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'];
+        $landingPage = $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'] ?? '';
 
-        if ( !empty($landingPage) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        if ( empty($landingPage) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
             $landingPage = 'REST API';
         }
 
-        return sanitize_text_field($landingPage ?? '');
+        return sanitize_text_field($landingPage);
     }
 
     /**
@@ -262,12 +262,12 @@ class EnrichOrder {
      * @return string
      */
     private function getDefaultSource() {
-        $trafficSource = $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'];
-        if ( !empty($trafficSource) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        $trafficSource = $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'] ?? '';
+        if ( empty($trafficSource) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
             $trafficSource = 'REST API';
         }
 
-        return  sanitize_text_field($trafficSource ?? '');
+        return  sanitize_text_field($trafficSource);
     }
 
     /**
@@ -276,12 +276,12 @@ class EnrichOrder {
      * @return string
      */
     private function getDefaultLastLanding() {
-        $lastLanding = $_COOKIE['last_pys_landing_page'] ?? $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'];
-        if ( !empty($lastLanding) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        $lastLanding = $_COOKIE['last_pys_landing_page'] ?? $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'] ?? '';
+        if ( empty($lastLanding) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
             $lastLanding = 'REST API';
         }
 
-        return  sanitize_text_field($lastLanding ?? '');
+        return  sanitize_text_field($lastLanding);
     }
 
     /**
@@ -290,12 +290,12 @@ class EnrichOrder {
      * @return string
      */
     private function getDefaultLastSource() {
-        $lastSource = $_COOKIE['last_pysTrafficSource'] ?? $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'];
-        if ( !empty($lastSource) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        $lastSource = $_COOKIE['last_pysTrafficSource'] ?? $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'] ?? '';
+        if ( empty($lastSource) && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
             return 'REST API';
         }
 
-        return sanitize_text_field($lastSource ?? '');
+        return sanitize_text_field($lastSource);
     }
 
     /**

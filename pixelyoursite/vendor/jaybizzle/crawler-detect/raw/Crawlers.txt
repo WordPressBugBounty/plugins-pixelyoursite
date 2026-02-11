@@ -38,6 +38,7 @@
 ^pnpm\/
 ^RMA\/
 ^Ruby|Ruby\/[0-9]
+^symbolicator\/
 ^Swurl 
 ^TLS tester 
 ^twine\/
@@ -148,6 +149,7 @@ Bad-Neighborhood
 Badass
 baidu\.com
 Bandit
+Barracuda Sentinel \(EE\)
 basicstate
 BatchFTP
 Battleztar Bazinga
@@ -201,6 +203,7 @@ Burf Search
 Butterfly\/
 BuzzSumo
 CAAM\/[0-9]
+caam dot crwlr at gmail dot com
 CakePHP
 Calculon
 Canary%20Mail
@@ -232,6 +235,7 @@ CISPA Web Analyser
 Citoid
 CJNetworkQuality
 Clarsentia
+Claude-User
 clips\.ua\.ac\.be
 Cloud mapping
 CloudEndure
@@ -282,6 +286,7 @@ DataXu
 Daum(oa)?[ \/][0-9]
 dBpoweramp
 ddline
+DebugBear$
 deeris
 delve\.ai
 Demon
@@ -415,6 +420,7 @@ g00g1e\.net
 ganarvisitas
 gdnplus\.com
 GeedoProductSearch
+GeedoShopProductFinder
 geek-tools
 Genieo
 GentleSource
@@ -430,6 +436,7 @@ Geziyor
 Ghost Inspector
 GigablastOpenSource
 GIS-LABS
+GitLab\/
 github-camo
 GitHub-Hookshot
 github\.com
@@ -476,6 +483,7 @@ google-xrawler
 Google-Youtube-Links
 GoogleDocs
 GoogleHC\/
+GoogleMessages
 GoogleOther
 GoogleProber
 GoogleProducer
@@ -510,7 +518,6 @@ Hardenize
 Hatena
 Havij
 HaxerMen
-HeadlessChrome
 HEADMasterSEO
 HeartRails_Capture
 help@dataminr\.com
@@ -593,6 +600,7 @@ integromedb
 Intelliseek
 InterGET
 Internet Ninja
+InternetMeasurement
 InternetSeer
 internetVista monitor
 internetwache
@@ -649,6 +657,7 @@ Kml-Google
 knows\.is
 KOCMOHABT
 kouio
+krawler\.dk
 kube-probe
 kubectl
 kulturarw3
@@ -707,11 +716,13 @@ LYT\.SR
 L\.webis
 mabontland
 MacOutlook\/
+MagentaNews\/
 Mag-Net
 MagpieRSS
 Mail::STS
 MailChimp
 Mail\.Ru
+Mailpit\/
 Majestic12
 makecontact\/
 Mandrill
@@ -723,6 +734,7 @@ Mass Downloader
 masscan\/
 Mata Hari
 mattermost
+MatchorySearch\/
 Mediametric
 Mediapartners-Google
 mediawords
@@ -761,6 +773,7 @@ monitis
 Monitority\/
 Monit\/
 montastic
+MonSpark
 MonTools
 Moreover
 Morfeus Fucking Scanner
@@ -845,6 +858,7 @@ Octopus
 oegp
 Offline Explorer
 Offline Navigator
+odin\.com
 OgScrper
 okhttp
 omgili
@@ -1408,4 +1422,4 @@ Zombie\.js
 Zoom\.Mac
 ZoteroTranslationServer
 ZyBorg
-[a-z0-9\-_]*(bot|crawl|archiver|transcoder|spider|uptime|validator|fetcher|cron|checker|reader|extractor|monitoring|analyzer|scraper)
+[a-z0-9\-_]*(bot|crawl|headless|archiver|transcoder|spider|uptime|validator|fetcher|cron|checker|reader|extractor|monitoring|analyzer|scraper)

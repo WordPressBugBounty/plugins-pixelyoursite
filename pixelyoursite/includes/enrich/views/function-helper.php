@@ -20,6 +20,7 @@ function printUtm($utms) {
 
     foreach($utms as $utm) {
         $item = explode(":",$utm);
+        if (count($item) < 2) continue;
         $name = $item[0];
         $value = $item[1] == "undefined" ? "No ".$name." detected for this order" : $item[1];
         $utmList[$name] = $value;
@@ -29,13 +30,10 @@ function printUtm($utms) {
         if(key_exists($key,$utmList)) {
             ?>
             <tr>
-                <th><?=$key?>:</th>
-                <td><?=$utmList[$key]; ?></td>
+                <th><?=esc_html($key)?>:</th>
+                <td><?=esc_html($utmList[$key]); ?></td>
             </tr>
             <?php
         }
     }
 }
-
-
-

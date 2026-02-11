@@ -902,7 +902,7 @@ class CustomEvent {
                         if($name == $this->data['ga_ads_event_action']) {
                             foreach ($fields as $field) {
                                 $fieldName = is_array($field) && isset($field['name']) ? $field['name'] : $field;
-                                $this->data['ga_ads_params'][$field] = isset($args['ga_ads_params'][$fieldName]) ? $args['ga_ads_params'][$fieldName] : "";
+                                $this->data['ga_ads_params'][$fieldName] = isset($args['ga_ads_params'][$fieldName]) ? $args['ga_ads_params'][$fieldName] : "";
                             }
                             break;
                         }

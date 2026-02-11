@@ -51,15 +51,15 @@ if($data && is_array($data)) :
             <?php
             $landingPage = !empty($data['pys_landing']) ? $data['pys_landing'] : "No Landing Page";
             if (filter_var($landingPage, FILTER_VALIDATE_URL)) {
-                echo '<td><a href="' . $landingPage . '" target="_blank">' . $landingPage . '</a></td>';
+                echo '<td><a href="' . esc_url($landingPage) . '" target="_blank">' . esc_html($landingPage) . '</a></td>';
             } else {
-                echo '<td>' . $landingPage . '</td>';
+                echo '<td>' . esc_html($landingPage) . '</td>';
             }
             ?>
         </tr>
         <tr>
             <th>Traffic source:</th>
-            <td><?=!empty($data['pys_source']) ? $data['pys_source'] : "No Traffic source"?></td>
+            <td><?= esc_html(!empty($data['pys_source']) ? $data['pys_source'] : "No Traffic source") ?></td>
         </tr>
         <?php
         if(!empty($data['pys_utm'])) {
@@ -82,15 +82,15 @@ if($data && is_array($data)) :
             <?php
             $lastLanding = !empty($data['last_pys_landing']) ? $data['last_pys_landing'] : "No Landing Page";
             if (filter_var($lastLanding, FILTER_VALIDATE_URL)) {
-                echo '<td><a href="' . $lastLanding . '" target="_blank">' . $lastLanding . '</a></td>';
+                echo '<td><a href="' . esc_url($lastLanding) . '" target="_blank">' . esc_html($lastLanding) . '</a></td>';
             } else {
-                echo '<td>' . $lastLanding . '</td>';
+                echo '<td>' . esc_html($lastLanding) . '</td>';
             }
             ?>
         </tr>
         <tr>
             <th>Traffic source:</th>
-            <td><?=!empty($data['last_pys_source']) ? $data['last_pys_source'] : "No Traffic source"?></td>
+            <td><?= esc_html(!empty($data['last_pys_source']) ? $data['last_pys_source'] : "No Traffic source") ?></td>
         </tr>
         <?php
         if(!empty($data['last_pys_utm'])) {
@@ -112,15 +112,15 @@ if($data && is_array($data)) :
             </tr>
             <tr >
                 <th>Hour:</th>
-                <td><?=$userTime[0]; ?></td>
+                <td><?= esc_html($userTime[0]); ?></td>
             </tr>
             <tr >
                 <th>Day:</th>
-                <td><?=$userTime[1]; ?></td>
+                <td><?= esc_html($userTime[1]); ?></td>
             </tr>
             <tr >
                 <th>Month:</th>
-                <td><?=$userTime[2]; ?></td>
+                <td><?= esc_html($userTime[2]); ?></td>
             </tr>
         <?php endif; ?>
 
