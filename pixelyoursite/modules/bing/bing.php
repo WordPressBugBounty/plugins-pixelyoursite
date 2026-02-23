@@ -64,7 +64,7 @@ class Bing extends Settings implements Pixel {
 	public function renderCustomEventOptions( $event ) {}
 
     public function renderAddonNotice() {
-        echo '&nbsp;<a href="https://www.pixelyoursite.com/bing-tag" target="_blank" class="badge badge-pill badge-secondary link">The paid add-on is required</a>';
+        echo '&nbsp;<a href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on" target="_blank" class="badge badge-pill badge-secondary link">The paid add-on is required</a>';
     }
 
     public function renderPixelIdField() {
@@ -74,8 +74,8 @@ class Bing extends Settings implements Pixel {
             <div class="pixel-heading d-flex justify-content-start align-items-center">
                 <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/microsoft-small-square.svg">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="secondary_heading">Microsoft the UET Tag (Bing) with <a class="link" href="https://www.pixelyoursite.com/bing-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing" target="_blank">this pro add-on.</a></h3>
-                    <?php $this->renderProBadge('https://www.pixelyoursite.com/bing-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing', 'Purchase Addon');?>
+                    <h3 class="secondary_heading">Microsoft the UET Tag (Bing) with <a class="link" href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing" target="_blank">this pro add-on.</a></h3>
+                    <?php $this->renderProBadge('https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing', 'Purchase Addon');?>
                 </div>
             </div>
         </div>

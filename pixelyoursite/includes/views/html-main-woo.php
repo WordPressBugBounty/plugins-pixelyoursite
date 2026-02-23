@@ -768,7 +768,7 @@ use PixelYourSite\Facebook\Helpers;
                             <div class="d-flex align-items-center">
                                 <h4 class="secondary_heading_type2">Pinterest Tag ID settings</h4>&nbsp;
                                 <a class="link"
-                                   href="https://www.pixelyoursite.com/pinterest-tag?utm_source=pys-free-plugin&utm_medium=pinterest-badge&utm_campaign=requiere-free-add-on"
+                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/pinterest-tag-add-on?utm_source=pys-free-plugin&utm_medium=pinterest-badge&utm_campaign=requiere-free-add-on"
                                    target="_blank">The paid add-on is required</a>
                             </div>
                         </div>
@@ -874,7 +874,7 @@ use PixelYourSite\Facebook\Helpers;
                             <div class="d-flex align-items-center">
                                 <h4 class="secondary_heading_type2">Bing Tag ID settings</h4>&nbsp;
                                 <a class="link"
-                                   href="https://www.pixelyoursite.com/bing-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing"
+                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing"
                                    target="_blank">The paid add-on is required</a>
                             </div>
                         </div>
@@ -1293,7 +1293,7 @@ use PixelYourSite\Facebook\Helpers;
                         <?php
                         $message = 'This event will be fired on the order-received, the default WooCommerce "thank you
                         page". If you use PayPal, make sure that auto-return is ON. If you want to use "custom thank you
-                        pages", you must configure them with our <a href="https://www.pixelyoursite.com/super-pack"
+                        pages", you must configure them with our <a href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/the-super-pack"
                                                                     target="_blank" class="link">Super Pack</a>.';
                         renderWarningMessage( $message ); ?>
                     </div>

@@ -862,12 +862,6 @@ final class PYS extends Settings implements Plugin {
 
                 purgeCache();
 
-                // redirect to events tab
-                wp_safe_redirect( buildAdminUrl( 'pixelyoursite', 'events', 'edit', array(
-                    'id' => $event->getPostId()
-                ) ));
-                exit;
-
 			} elseif ( $action == 'enable' && $post_id && wp_verify_nonce( $nonce, 'pys_enable_event' ) ) {
 
 				$event = CustomEventFactory::getById( $post_id );

@@ -587,7 +587,7 @@
     <p>Transform this event into a Google Ads conversion:</p>
     <p>Create a conversion inside your Google Ads account, copy its label and paste it here.</p>
     <p>If you have more than one Google Tags installed, select the same one where the conversion was created.</p>
-    <p><a href="https://www.pixelyoursite.com/documentation/track-google-ads-conversion-on-woocommerce"
+    <p><a href="https://www.pixelyoursite.com/docs/google-ads-conversions-for-woocommerce"
           target="_blank">Click here for details</a></p>
 </div>
 
@@ -595,7 +595,7 @@
 	<p>Cross-domain measurement makes it possible for Analytics to see sessions on two related sites (such as an
 	ecommerce site and a separate shopping cart site) as a single session.</p>
 	<p>
-		<a href="https://www.pixelyoursite.com/documentation/google-analytics-cross-domain-tracking"
+		<a href="https://www.pixelyoursite.com/docs/google-analytics-cross-domain-tracking"
 		target="_blank" class="link">Click here for help</a>
 	</p>
 </div>

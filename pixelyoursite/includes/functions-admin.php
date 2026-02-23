@@ -932,7 +932,7 @@ function renderProBadge( $url = null,$label = "PRO Feature" ) {
 
 function renderEventSetupToolBadge( $label = 'Event Setup Tool' ) {
 
-    $url = 'https://www.pixelyoursite.com/event-setup-tool/?utm_source=pys-free-plugin&utm_medium=EST-badge&utm_campaign=EST-badge';
+    $url = 'https://www.pixelyoursite.com/strategy/pixelyoursite-est/?utm_source=pys-free-plugin&utm_medium=EST-badge&utm_campaign=EST-badge';
 
     echo '&nbsp;<a href="' . esc_url( $url ) . '" target="_blank" class="badge badge-pill badge-pro">'
         . esc_html( $label ) . ' <i class="fa fa-external-link" aria-hidden="true"></i></a>';
@@ -941,13 +941,13 @@ function renderEventSetupToolBadge( $label = 'Event Setup Tool' ) {
 
 function renderCogBadge( $label = "You need this plugin" ) {
 
-	$url = 'https://www.pixelyoursite.com/woocommerce-cost-of-goods';
+	$url = 'https://www.pixelyoursite.com/plugins/woocommerce-cost-of-goods';
 
 	echo '&nbsp;<a href="' . esc_url( $url ) . '" target="_blank" class="badge badge-pill badge-pro">'.$label.' <i class="fa fa-external-link" aria-hidden="true"></i></a>';
 }
 
 function renderSpBadge() {
-    echo '&nbsp;<a href="https://www.pixelyoursite.com/super-pack?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-super-pack" target="_blank" class="badge badge-pill badge-pro">PRO Feature</a>';
+    echo '&nbsp;<a href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/the-super-pack?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-super-pack" target="_blank" class="badge badge-pill badge-pro">PRO Feature</a>';
 }
 
 function renderHfBadge() {

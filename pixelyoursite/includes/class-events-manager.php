@@ -186,7 +186,7 @@ class EventsManager {
 
 		$options[ 'tracking_analytics' ] = array(
 			"TrafficSource"  => getTrafficSource(),
-			"TrafficLanding" => $_COOKIE[ 'pys_landing_page' ] ?? $_SESSION[ 'LandingPage' ] ?? 'undefined',
+			"TrafficLanding" => sanitize_url($_COOKIE[ 'pys_landing_page' ] ?? $_SESSION[ 'LandingPage' ] ?? 'undefined'),
 			"TrafficUtms"    => getUtms(),
 			"TrafficUtmsId"  => getUtmsId(),
 		);

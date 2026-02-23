@@ -18,18 +18,91 @@
      * Resolve parameter value based on mode (static or dynamic)
      *
      * @param {Object|string} param - Parameter object with { value, selector } or string value
+     * @param {string} key - Parameter key name
      * @returns {string|null} - Resolved value
      */
-    function resolveParamValue(param) {
-        // Handle old format (string)
-        if (typeof param === 'string') {
-            return param;
-        }
-        if (typeof param === 'object' && param !== null) {
-            return param.value || param;
+    function resolveParamValue(param, key = '') {
+        // 1️⃣ null / undefined - skip this parameter
+        if (param === null || param === undefined) {
+            return null;
         }
 
-        return null;
+        // 2️⃣ Handle primitive types (string, number, boolean)
+        if (typeof param !== 'object') {
+            return param;
+        }
+
+        // 3️⃣ Handle arrays - process each element recursively
+        if (Array.isArray(param)) {
+            return param.map(item => resolveParamValue(item, key));
+        }
+
+        // 4️⃣ Check if this is a configuration object (has value/selector/dynamic/input_type)
+        const isConfigObject =
+            ('value' in param || 'selector' in param || 'dynamic' in param || 'input_type' in param) &&
+            Object.keys(param).every(k =>
+                ['value', 'selector', 'dynamic', 'input_type', 'name'].includes(k)
+            );
+
+        if (isConfigObject) {
+            // STATIC MODE: selector is empty or dynamic is false
+            const isStatic =
+                (!param.dynamic || param.dynamic === false) ||
+                (!param.selector || param.selector.trim() === '');
+
+            if (isStatic) {
+                let value = param.value ?? null;
+
+                // Apply numeric conversion if needed
+                if (param.input_type === "float" || param.input_type === "int") {
+                    value = extractNumericValue(value, param.input_type === "int");
+                }
+
+                return value;
+            }
+
+            // DYNAMIC MODE: selector is present
+            try {
+                const el = document.querySelector(param.selector);
+                if (!el) {
+                    return null;
+                }
+
+                let value =
+                    el.value ||
+                    el.innerText ||
+                    el.textContent ||
+                    el.getAttribute("content") ||
+                    el.getAttribute("data-value") ||
+                    null;
+
+                // Apply numeric conversion if needed
+                if (param.input_type === "float" || param.input_type === "int") {
+                    value = extractNumericValue(value, param.input_type === "int");
+                }
+
+                return value;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 5️⃣ Plain object (like ecommerce data) - recursively process nested values
+        return Object.fromEntries(
+            Object.entries(param)
+                .map(([k, v]) => [k, resolveParamValue(v, k)])
+                .filter(([k, v]) => v !== null && v !== undefined)
+        );
+    }
+
+    function extractNumericValue(value, isInt = false) {
+        if (value === null || value === undefined) {
+            return null;
+        }
+        if (isInt) {
+            return parseInt(value);
+        }
+        return parseFloat(value);
     }
     var dummyPinterest = function () {
 
@@ -1826,9 +1899,12 @@
                 if (event.params && Object.keys(event.params).length > 0) {
                     Object.entries(event.params).forEach(([key, value]) => {
                         // Resolve parameter value (static or dynamic)
-                        const resolvedValue = resolveParamValue(value);
+                        const resolvedValue = resolveParamValue(value, key);
                         if (resolvedValue !== null) {
                             event.params[key] = resolvedValue;
+                        }
+                        else {
+                            delete event.params[key];
                         }
                     });
                 }

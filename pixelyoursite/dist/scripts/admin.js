@@ -12,6 +12,11 @@ function pysTagTemplateSelection( tag, container ) {
     return tag.text;
 }
 
+// Add variables to store the last selected event types
+let _lastFacebookEventType = null;
+let _lastPinterestEventType = null;
+let _lastRedditEventType = null;
+let _lastBingEventType = null;
 
 jQuery(document).ready(function($) {
     function maskPassword(block) {
@@ -239,9 +244,11 @@ jQuery(document).ready(function($) {
     }
 
     function togglePinterestCustomEventType() {
-        if ( $( "#pys_event_pinterest_event_type" ).val() === "partner_defined" ) {
+        if ( $( "#pys_event_pinterest_event_type" ).val() === "partner_defined" || $( "#pys_event_pinterest_event_type" ).val() === "custom" ) {
+            $( ".pinterest-custom-event-type" ).find('input[id*="_custom_event_type"]').attr('required', 'required');
             $( ".pinterest-custom-event-type" ).slideDown( 400 );
         } else {
+            $( ".pinterest-custom-event-type" ).find('input[id*="_custom_event_type"]').removeAttr('required');
             $( ".pinterest-custom-event-type" ).slideUp( 400 );
         }
     }
@@ -270,10 +277,24 @@ jQuery(document).ready(function($) {
     function updateFacebookEventParamsFrom() {
         let $select = $( '#pys_event_facebook_event_type' );
         if ( $select.length === 0 ) return;
+
+        let currentEventType = $select.val();
         let $panel = $( '#facebook_params_panel' );
         let $custom = $( '.facebook-custom-event-type' );
 
-        if ( $select.val() === 'CustomEvent' ) {
+        // If the event type hasn't changed AND the panel is not empty, just ensure the panel is visible and return
+        if ( currentEventType === _lastFacebookEventType && $panel.children('.param-field-wrapper').length > 0 ) {
+            if ( $( '#pys_event_facebook_params_enabled' ).is( ":checked" ) ) {
+                $panel.slideDown( 400 );
+            }
+            return;
+        }
+
+        // Update the last selected event type
+        _lastFacebookEventType = currentEventType;
+
+        if ( currentEventType === 'CustomEvent' ) {
+            $custom.find('input[id*="_custom_event_type"]').attr('required', 'required')
             $custom.slideDown( 400 );
             $panel.slideUp( 400, function () {
                 // Save custom params before clearing
@@ -291,6 +312,8 @@ jQuery(document).ready(function($) {
                 $panel.append( addButton );
             } );
         } else {
+            $custom.find('input[id*="_custom_event_type"]').removeAttr('required');
+            $('.custom-event-type-error').remove();
             let fields = $select.find( ":selected" ).data( 'fields' );
 
             if ( fields.length === 0 || !$( '#pys_event_facebook_params_enabled' ).is( ":checked" ) ) {
@@ -348,12 +371,27 @@ jQuery(document).ready(function($) {
     function updatePinterestEventParamsFrom() {
         let $select = $( '#pys_event_pinterest_event_type' );
         if ( $select.length === 0 ) return;
+
+        let currentEventType = $select.val();
         let $panel = $( '#pinterest_params_panel' );
         let $custom = $( '.pinterest-custom-event-type' );
 
-        if ( $select.val() === 'partner_defined' ) {
+        // If the event type hasn't changed AND the panel is not empty, just ensure the panel is visible and return
+        if ( currentEventType === _lastPinterestEventType && $panel.children('.param-field-wrapper').length > 0 ) {
+            if ( $( '#pys_event_pinterest_params_enabled' ).is( ":checked" ) ) {
+                $panel.slideDown( 400 );
+            }
+            return;
+        }
+
+        _lastPinterestEventType = currentEventType;
+
+        if ( currentEventType === 'partner_defined' || currentEventType === 'custom' ) {
+            $custom.find('input[id*="_custom_event_type"]').attr('required', 'required');
             $custom.slideDown( 400 );
         } else {
+            $custom.find('input[id*="_custom_event_type"]').removeAttr('required');
+            $('.custom-event-type-error').remove();
             $custom.slideUp( 400 );
         }
 
@@ -411,12 +449,27 @@ jQuery(document).ready(function($) {
     function updateBingEventParamsFrom() {
         let $select = $( '#pys_event_bing_event_type' );
         if ( $select.length === 0 ) return;
+
+        let currentEventType = $select.val();
         let $panel = $( '#bing_params_panel' );
         let $custom = $( '.bing-custom-event-type' );
 
-        if ( $select.val() === 'Custom' ) {
+        // If the event type hasn't changed AND the panel is not empty, just ensure the panel is visible and return
+        if ( currentEventType === _lastBingEventType && $panel.children('.param-field-wrapper').length > 0 ) {
+            if ( $( '#pys_event_bing_params_enabled' ).is( ":checked" ) ) {
+                $panel.slideDown( 400 );
+            }
+            return;
+        }
+
+        _lastBingEventType = currentEventType;
+
+        if ( currentEventType === 'Custom' ) {
+            $custom.find('input[id*="_custom_event_type"]').attr('required', 'required');
             $custom.slideDown( 400 );
         } else {
+            $custom.find('input[id*="_custom_event_type"]').removeAttr('required');
+            $('.custom-event-type-error').remove();
             $custom.slideUp( 400 );
         }
 
@@ -499,8 +552,11 @@ jQuery(document).ready(function($) {
 
     function toggleRedditCustomEventType() {
         if ( $( "#pys_event_reddit_event_type" ).val() === "Custom" ) {
+            $( ".reddit-custom-event-type" ).find('input[id*="_custom_event_type"]').attr('required', 'required');
             $( ".reddit-custom-event-type" ).slideDown( 400 );
         } else {
+            $( ".reddit-custom-event-type" ).find('input[id*="_custom_event_type"]').removeAttr('required');
+            $('.custom-event-type-error').remove();
             $( ".reddit-custom-event-type" ).slideUp( 400 );
         }
     }
@@ -537,12 +593,26 @@ jQuery(document).ready(function($) {
         if ( $select.length === 0 ) {
             return;
         }
+
+        let currentEventType = $select.val();
         let $panel = $( '#reddit_params_panel' );
         let $custom = $( '.reddit-custom-event-type' );
 
-        if ( $select.val() === 'Custom' ) {
+        // If the event type hasn't changed AND the panel is not empty, just ensure the panel is visible and return
+        if ( currentEventType === _lastRedditEventType && $panel.children('.param-field-wrapper').length > 0 ) {
+            if ( $( '#pys_event_reddit_params_enabled' ).is( ":checked" ) ) {
+                $panel.slideDown( 400 );
+            }
+            return;
+        }
+
+        _lastRedditEventType = currentEventType;
+
+        if ( currentEventType === 'Custom' ) {
+            $custom.find('input[id*="_custom_event_type"]').attr('required', 'required');
             $custom.slideDown( 400 );
         } else {
+            $custom.find('input[id*="_custom_event_type"]').removeAttr('required');
             $custom.slideUp( 400 );
         }
 
@@ -580,8 +650,11 @@ jQuery(document).ready(function($) {
 
     function toggleGoogleAdsCustomEventAction() {
         if ( $( "#pys_event_google_ads_event_action" ).val() === "_custom" ) {
+            $( "#pys_event_google_ads_custom_event_action" ).find('input[id*="_custom_event_action"]').attr('required', 'required');
             $( "#pys_event_google_ads_custom_event_action" ).css( "visibility", "visible" );
         } else {
+            $( "#pys_event_google_ads_custom_event_action" ).find('input[id*="_custom_event_action"]').removeAttr('required');
+            $('.custom-event-type-error').remove();
             $( "#pys_event_google_ads_custom_event_action" ).css( "visibility", "hidden" );
         }
     }
@@ -1066,6 +1139,17 @@ jQuery(document).ready(function($) {
         $( this ).closest( ".event_trigger, .facebook-custom-param, .pinterest-custom-param, .ga-ads-custom-param, .bing-custom-param, .reddit-custom-param" ).remove();
     } );
 
+    // Initialize _lastFacebookEventType after initial setup
+
+    if ( $( '#pys_event_facebook_event_type' ).length > 0 ) {
+        if ( $( '#pys_event_facebook_event_type' ).val() === 'CustomEvent' ) {
+            $( '.facebook-custom-event-type' ).find('input[id*="_custom_event_type"]').attr('required', 'required')
+            $( '.facebook-custom-event-type' ).css( 'display', 'block' )
+        } else {
+            $( '.facebook-custom-event-type' ).css( 'display', 'none' )
+        }
+        _lastFacebookEventType = $( '#pys_event_facebook_event_type' ).val();
+    }
     toggleFacebookPanel();
     toggleFacebookCustomEventType();
     toggleFacebookParamsPanel();
@@ -1097,6 +1181,16 @@ jQuery(document).ready(function($) {
         clonedParam.insertBefore( $( ".insert-marker", facebookParamsPanel ) );
     } );
 
+    // Initialize _lastPinterestEventType after initial setup
+    if ( $( '#pys_event_pinterest_event_type' ).length > 0 ) {
+        if ( $( '#pys_event_pinterest_event_type' ).val() === 'partner_defined' || $( '#pys_event_pinterest_event_type' ).val() === 'custom' ) {
+            $( '.pinterest-custom-event-type' ).find('input[id*="_custom_event_type"]').attr('required', 'required')
+            $( '.pinterest-custom-event-type' ).css( 'display', 'block' )
+        } else {
+            $( '.pinterest-custom-event-type' ).css( 'display', 'none' )
+        }
+        _lastPinterestEventType = $( '#pys_event_pinterest_event_type' ).val();
+    }
     togglePinterestPanel();
     togglePinterestCustomEventType();
     togglePinterestParamsPanel();
@@ -1155,6 +1249,17 @@ jQuery(document).ready(function($) {
         clonedParam.insertBefore( $( ".insert-marker", googleAdsParamsPanel ) );
     } );
 
+    // Initialize _lastBingEventType after initial setup
+    if ( $( '#pys_event_bing_event_type' ).length > 0 ) {
+        if ( $( '#pys_event_bing_event_type' ).val() === 'Custom' ) {
+            $( '.bing-custom-event-type' ).find('input[id*="_custom_event_type"]').attr('required', 'required')
+            $( '.bing-custom-event-type' ).css( 'display', 'block' )
+        } else {
+            $( '.bing-custom-event-type' ).find('input[id*="_custom_event_type"]').removeAttr('required')
+            $( '.bing-custom-event-type' ).css( 'display', 'none' )
+        }
+        _lastBingEventType = $( '#pys_event_bing_event_type' ).val();
+    }
     toggleBingPanel();
     $( "#pys_event_bing_enabled" ).on( 'click', function () {
         toggleBingPanel();
@@ -1179,6 +1284,10 @@ jQuery(document).ready(function($) {
         clonedParam.insertBefore( $( ".insert-marker", bingParamsPanel ) );
     } );
 
+    // Initialize _lastRedditEventType after initial setup
+    if ( $( '#pys_event_reddit_event_type' ).length > 0 ) {
+        _lastRedditEventType = $( '#pys_event_reddit_event_type' ).val();
+    }
     toggleRedditPanel();
     toggleRedditCustomEventType();
     $( "#pys_event_reddit_enabled" ).on( 'click', function () {
@@ -1431,8 +1540,10 @@ jQuery(document).ready(function($) {
         }
         if ( $( '.action_merged_g4' ).length > 0 ) {
             if ( $( '.action_merged_g4' ).val() === "_custom" || $( '.action_merged_g4' ).val() === "CustomEvent" ) {
+                $('.ga_ads_custom_event_action').find('input[id*="_custom_event_action"]').attr('required', 'required')
                 $( '#ga-ads-custom-action_g4' ).slideDown(400);
             } else {
+                $('.ga_ads_custom_event_action').find('input[id*="_custom_event_action"]').removeAttr('required');
                 $( '#ga-ads-custom-action_g4' ).slideUp(400)
             }
         }
@@ -1517,8 +1628,11 @@ jQuery(document).ready(function($) {
     function updateGTMActionSelector() {
         if ( $( '.action_gtm' ).length > 0 ) {
             if ( $( '.action_gtm' ).val() === "_custom" || $( '.action_gtm' ).val() === "CustomEvent" ) {
+                $( '#gtm-custom-action_g4' ).find('input[id*="_custom"]').attr('required', 'required');
                 $( '#gtm-custom-action_g4' ).slideDown( 400 );
             } else {
+                $( '#gtm-custom-action_g4' ).find('input[id*="_custom"]').removeAttr('required');
+                $('.custom-event-type-error').remove();
                 $( '#gtm-custom-action_g4' ).slideUp( 400 );
             }
         }
@@ -1775,7 +1889,7 @@ jQuery(document).ready(function($) {
 
     function renderField( data ) {
         if ( data.type === "input" ) {
-            return '<div class="mt-24">' +
+            return '<div class="mt-24 param-field-wrapper">' +
                 '<div class="mb-8">' +
                 '<label class="custom-event-label">' + data.label + '</label>' +
                 '</div>' +
@@ -1946,6 +2060,56 @@ jQuery(document).ready(function($) {
         $('#pys-form').submit();
     });
 
+    // Custom validation for custom event type fields
+    $('#pys-form').on('submit', function (e) {
+        // Find all custom event inputs with required attribute (event_type, event_action, custom fields)
+        let $requiredCustomEventInputs = $('input[id*="_custom_event_type"][required], input[id*="_custom_event_action"][required], input[id*="_custom"][required]');
+        let hasError = false;
+        let firstErrorInput = null;
+
+        // Remove any existing error messages
+        $('.custom-event-type-error').remove();
+
+        $requiredCustomEventInputs.each(function () {
+            let $input = $(this);
+            let value = $input.val().trim();
+
+            // Check if the input is visible and empty
+            if ($input.is(':visible') && value === '') {
+                hasError = true;
+
+                if (!firstErrorInput) {
+                    firstErrorInput = $input;
+                }
+
+                // Add error message after the input
+                let errorMessage = '<div class="critical_message mt-8 custom-event-type-error">Add a name for your event, or select a standard event instead.</div>';
+                $input.after(errorMessage);
+            }
+        });
+
+        if (hasError) {
+            e.preventDefault();
+
+            // Scroll to the first error
+            if (firstErrorInput) {
+                $('html, body').animate({
+                    scrollTop: firstErrorInput.offset().top - 100
+                }, 500);
+
+                // Focus on the first error input
+                firstErrorInput.focus();
+            }
+
+            return false;
+        }
+    });
+
+    // Remove error message when user starts typing
+    $(document).on('input', 'input[id*="_custom_event_type"], input[id*="_custom_event_action"], input[id*="_custom"]', function () {
+        $(this).next('.custom-event-type-error').remove();
+    });
+
     $('.logs-wrapper .icon-trash').on('click', function (){
         $(this).closest('.card').addClass('loading');
     });
@@ -1972,4 +2136,3 @@ jQuery(document).ready(function($) {
         passwordBlock.find(".maskedInput").attr("disabled", true);
     });
 } );
-

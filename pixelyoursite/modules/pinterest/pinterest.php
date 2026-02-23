@@ -70,7 +70,7 @@ class Pinterest extends Settings implements Pixel {
 	public function renderCustomEventOptions( $event ) {}
 
     public function renderAddonNotice() {
-        echo '&nbsp;<a href="https://www.pixelyoursite.com/pinterest-tag" target="_blank" class="badge badge-pill badge-secondary">The paid add-on is required</a>';
+        echo '&nbsp;<a href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/pinterest-tag-add-on" target="_blank" class="badge badge-pill badge-secondary">The paid add-on is required</a>';
     }
 
     public function renderPixelIdField() {
@@ -80,9 +80,9 @@ class Pinterest extends Settings implements Pixel {
             <div class="pixel-heading d-flex justify-content-start align-items-center">
                 <img class="tag-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/pinterest-square-small.svg">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="secondary_heading">Add the Pinterest tag with our <a class="link" href="https://www.pixelyoursite.com/pinterest-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
+                    <h3 class="secondary_heading">Add the Pinterest tag with our <a class="link" href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/pinterest-tag-add-on?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids"
                                                                                     target="_blank">Paid addon</a>.</h3>
-                    <?php renderProBadge('https://www.pixelyoursite.com/pinterest-tag?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids', 'Purchase Addon'); ?>
+                    <?php renderProBadge('https://www.pixelyoursite.com/plugins/pixelyoursite-professional/pinterest-tag-add-on?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-ids', 'Purchase Addon'); ?>
                 </div>
             </div>
         </div>

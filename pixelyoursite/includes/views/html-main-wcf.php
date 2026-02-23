@@ -112,7 +112,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <h4 class="primary_heading mb-8">Meta Pixel ID:</h4>
                                 <?php renderDummyTextInput('Add your pixel ID there'); ?>
                                 <div class="form-text mt-4">
-                                    <a href="https://www.pixelyoursite.com/pixelyoursite-free-version/add-your-facebook-pixel"
+                                    <a href="https://www.pixelyoursite.com/docs/meta-facebook-settings-setup"
                                        target="_blank" class="link link-small">How to get it?</a>
                                 </div>
                             </div>

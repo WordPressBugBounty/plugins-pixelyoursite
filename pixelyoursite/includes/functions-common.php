@@ -1057,8 +1057,8 @@ function getTrafficSource () {
         $direct = empty($referrer);
         $internal = $direct ? false : (substr($referrer, 0, strlen(site_url())) === site_url());
         $external = !$direct && !$internal;
-        $cookie = !isset($_COOKIE['pysTrafficSource']) ? null : $_COOKIE['pysTrafficSource'];
-        $session = !isset($_SESSION['TrafficSource']) ? null : $_SESSION['TrafficSource'];
+        $cookie = sanitize_text_field(!isset($_COOKIE['pysTrafficSource']) ? null : $_COOKIE['pysTrafficSource']);
+        $session = sanitize_text_field(!isset($_SESSION['TrafficSource']) ? null : $_SESSION['TrafficSource']);
         if (!$external) {
             $source = $cookie || $session ? $cookie ?? $session : 'direct';
         } else {
@@ -1097,11 +1097,11 @@ function getUtms ($seed_undefined = false) {
     $utmTerms = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
     foreach ($utmTerms as $utmTerm) {
         if(isset($_GET[$utmTerm])) {
-            $utm[$utmTerm] = filterEmails($_GET[$utmTerm]);
+            $utm[$utmTerm] = sanitize_text_field(filterEmails($_GET[$utmTerm]));
         } elseif (isset($_COOKIE["pys_".$utmTerm])) {
-            $utm[$utmTerm] =filterEmails( $_COOKIE["pys_".$utmTerm]);
+            $utm[$utmTerm] = sanitize_text_field(filterEmails( $_COOKIE["pys_".$utmTerm]));
         } elseif(isset($_SESSION['TrafficUtms']) && isset($_SESSION['TrafficUtms'][$utmTerm])){
-            $utm[$utmTerm] =filterEmails( $_SESSION['TrafficUtms'][$utmTerm]);
+            $utm[$utmTerm] = sanitize_text_field(filterEmails( $_SESSION['TrafficUtms'][$utmTerm]));
         } else {
             if($seed_undefined){
                 $utm[$utmTerm] = "undefined";
@@ -1118,11 +1118,11 @@ function getUtmsId ($seed_undefined = false) {
     $utmTerms = ['fbadid', 'gadid', 'padid', 'bingid'];
     foreach ($utmTerms as $utmTerm) {
         if(isset($_GET[$utmTerm])) {
-            $utm[$utmTerm] = filterEmails($_GET[$utmTerm]);
+            $utm[$utmTerm] = sanitize_text_field(filterEmails($_GET[$utmTerm]));
         } elseif (isset($_COOKIE["pys_".$utmTerm])) {
-            $utm[$utmTerm] =filterEmails( $_COOKIE["pys_".$utmTerm]);
+            $utm[$utmTerm] = sanitize_text_field(filterEmails( $_COOKIE["pys_".$utmTerm]));
         } elseif(isset($_SESSION['TrafficUtmsId']) &&  isset($_SESSION['TrafficUtmsId'][$utmTerm])){
-            $utm[$utmTerm] =filterEmails( $_SESSION['TrafficUtmsId'][$utmTerm]);
+            $utm[$utmTerm] = sanitize_text_field(filterEmails( $_SESSION['TrafficUtmsId'][$utmTerm]));
         } else {
             if($seed_undefined){
                 $utm[$utmTerm] = "undefined";

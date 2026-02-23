@@ -70,7 +70,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <h4 class="primary_heading mb-4">Meta Pixel ID:</h4>
                                 <?php Facebook()->render_pixel_id( 'pixel_id', 'Meta Pixel ID' ); ?>
                                 <div class="form-text mt-4">
-                                    <a href="https://www.pixelyoursite.com/pixelyoursite-free-version/add-your-facebook-pixel"
+                                    <a href="https://www.pixelyoursite.com/docs/meta-facebook-settings-setup"
                                        target="_blank" class="link link-small">How to get it?</a>
                                 </div>
                             </div>
@@ -87,7 +87,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     can help you capture more events. An access token is required to use the
                                     server-side
                                     API.
-                                    <a href='https://www.pixelyoursite.com/facebook-conversion-api-capi'
+                                    <a href='https://www.pixelyoursite.com/strategy/facebook-conversion-api'
                                        target='_blank' class="link">Learn
                                         how to generate the token and how to test Conversion API</a>
                                 </p>
@@ -213,7 +213,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 ?>
 
                                 <div class="form-text mt-4">
-                                    <a href="https://www.pixelyoursite.com/documentation/add-your-google-analytics-code"
+                                    <a href="https://www.pixelyoursite.com/docs/google-analytics-ga4"
                                        target="_blank" class="link link-small">How to get it?</a>
                                 </div>
                             </div>

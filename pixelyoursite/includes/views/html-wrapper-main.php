@@ -390,7 +390,7 @@ include_once 'components/recommended-video.php';
                             </p>
 
                             <div>
-                                <a href="https://www.pixelyoursite.com/super-pack?utm_source=pro&utm_medium=plugin&utm_campaign=right-column-pro"
+                                <a href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/the-super-pack?utm_source=pro&utm_medium=plugin&utm_campaign=right-column-pro"
                                    target="_blank"
                                    class="link link-extra-small">Click for details</a>
                             </div>
