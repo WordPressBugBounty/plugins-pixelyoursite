@@ -442,9 +442,14 @@ final class PYS extends Settings implements Plugin {
      * Hook
      * @param String $user_login
      * @param \WP_User $user
+     * @throws \JsonException
      */
     function userLogin($user_login, $user) {
-        update_user_meta($user->ID,'pys_just_login',true);
+        // Delete all existing rows first (clears accumulated duplicates for any role,
+        // including excluded roles whose cleanup never fires via the event pipeline).
+        // Then insert a single unique row to prevent race-condition duplicates.
+        delete_user_meta( $user->ID, 'pys_just_login' );
+        add_user_meta( $user->ID, 'pys_just_login', true, true );
 
 		if ( !apply_filters( 'pys_disable_advanced_form_data_cookie', false ) && !apply_filters( 'pys_disable_advance_data_cookie', false ) ) {
 			$user_persistence_data = get_persistence_user_data( $user->user_email, $user->first_name, $user->last_name, '' );
@@ -454,7 +459,7 @@ final class PYS extends Settings implements Plugin {
 				'email'      => $user_persistence_data[ 'em' ],
 				'phone'      => $user_persistence_data[ 'tel' ]
 			);
-			setcookie( "pys_advanced_form_data", json_encode( $userData ), 2147483647, '/' );
+			setcookie( "pys_advanced_form_data", json_encode($userData, JSON_THROW_ON_ERROR), 2147483647, '/', PYS()->general_domain );
 		}
     }
 
@@ -1136,11 +1141,12 @@ final class PYS extends Settings implements Plugin {
 		return false;
 	}
 
-	/**
-	 * @param $order_id
-	 * @param $posted_data
-	 * @param \WC_Order $order
-	 */
+    /**
+     * @param $order_id
+     * @param $posted_data
+     * @param \WC_Order $order
+     * @throws \JsonException
+     */
 	public function woo_checkout_process( $order_id, $posted_data, $order ) {
 		if ( !apply_filters( 'pys_disable_advanced_form_data_cookie', false ) && !apply_filters( 'pys_disable_advance_data_cookie', false ) ) {
 			$first_name = $order->get_billing_first_name();
@@ -1157,7 +1163,7 @@ final class PYS extends Settings implements Plugin {
 				'phone'      => $user_persistence_data[ 'tel' ]
 			);
 
-			setcookie( "pys_advanced_form_data", json_encode( $userData ), 2147483647, '/' );
+			setcookie( "pys_advanced_form_data", json_encode($userData, JSON_THROW_ON_ERROR), 2147483647, '/', PYS()->general_domain );
 		}
 	}
 

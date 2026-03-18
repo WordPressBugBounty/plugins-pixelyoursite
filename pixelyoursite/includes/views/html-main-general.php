@@ -43,29 +43,18 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <div class="d-flex align-items-center">
                                 <?php Facebook()->render_checkbox_input( "use_server_api", 'Enable Conversion API (add the token below)' ); ?>
                             </div>
-
-                            <div>
-                                <?php Facebook()->render_checkbox_input( 'advanced_matching_enabled', 'Enable Advanced Matching' ); ?>
-                            </div>
-
                             <div class="facebook-description">
                                 <p class="text-gray pb-8">
-                                    Learn about Conversion API and Advanced Matching privacy and consent:
-                                    <a href="https://www.youtube.com/watch?v=PsKdCkKNeLU" target="_blank"
-                                       class="link">watch video</a>
-                                </p>
-                                <p class="text-gray pb-8">
-                                    Install multiple Meta Pixels with CAPI support:
+                                    <?php _e('Install multiple Meta Pixels with CAPI support:', 'pys');?>
                                     <a href="https://www.youtube.com/watch?v=HM98mGZshvc" target="_blank"
                                        class="link">watch video</a>
                                 </p>
                                 <p class="text-gray">
-                                    What is Events Matching and EMQ and how you can improve it:
+                                    <?php _e('What is Events Matching and EMQ and how you can improve it:', 'pys');?>
                                     <a href=" https://www.youtube.com/watch?v=3soI_Fl0JQw" target="_blank"
                                        class="link">watch video</a>
                                 </p>
                             </div>
-
                             <div>
                                 <h4 class="primary_heading mb-4">Meta Pixel ID:</h4>
                                 <?php Facebook()->render_pixel_id( 'pixel_id', 'Meta Pixel ID' ); ?>

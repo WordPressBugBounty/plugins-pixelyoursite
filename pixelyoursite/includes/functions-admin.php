@@ -335,19 +335,15 @@ function adminRenderNotices() {
     if(GA()->enabled() && $noticeRenderNotSupportUA){
         adminRenderNotSupportUA($noticeRenderNotSupportUA);
     }
-    $pinterest_pixel_id = Pinterest()->getOption( 'pixel_id' );
-    $pinterest_license_status = Pinterest()->getOption( 'license_status' );
-
-    if ( isPinterestActive() && Pinterest()->enabled()
-         && ! empty( $pinterest_license_status ) // license active or was active before
-         && empty( $pinterest_pixel_id ) ) {
-        $no_pinterest_pixels = true;
-    } else {
-        $no_pinterest_pixels = false;
-    }
-
+    $no_pinterest_pixels = false;
     if ( isPinterestActive() ) {
-
+        $pinterest_pixel_id = Pinterest()->getOption( 'pixel_id' );
+        $pinterest_license_status = Pinterest()->getOption( 'license_status' );
+        if ( Pinterest()->enabled()
+                && ! empty( $pinterest_license_status ) // license active or was active before
+                && empty( $pinterest_pixel_id )){
+            $no_pinterest_pixels = true;
+        }
         if ( $no_facebook_pixels && $no_ga_pixels && $no_pinterest_pixels ) {
             adminRenderNoPixelsNotice();
         } else {

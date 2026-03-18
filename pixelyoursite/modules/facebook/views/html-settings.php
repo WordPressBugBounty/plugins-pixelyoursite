@@ -15,6 +15,20 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
         <div class="card-body">
             <div class="gap-24">
+                 <div>
+                    <div class="d-flex align-items-center mb-4">
+                        <?php Facebook()->render_switcher_input( 'advanced_matching_enabled' ); ?>
+                        <h4 class="switcher-label secondary_heading">Enable Advanced Matching</h4>
+                    </div>
+                </div>
+
+                <div class="facebook-description">
+                    <p class="text-gray pb-8">
+                        <?php _e('Learn about Conversion API and Advanced Matching privacy and consent:', 'pys');?>
+                        <a href="https://www.youtube.com/watch?v=PsKdCkKNeLU" target="_blank"
+                           class="link">watch video</a>
+                    </p>
+                </div>
                 <div>
                     <div class="d-flex align-items-center mb-4">
                         <?php Facebook()->render_switcher_input( 'remove_metadata' ); ?>

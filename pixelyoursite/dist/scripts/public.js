@@ -363,9 +363,6 @@
             }
             if(Cookies.get(name) && Cookies.get(name) !== "undefined") {
                 return Cookies.get(name);
-            }
-            else if(options.hasOwnProperty("tracking_analytics") && options.tracking_analytics.TrafficSource){
-                return options.tracking_analytics.TrafficSource;
             } else{
                 return "";
             }

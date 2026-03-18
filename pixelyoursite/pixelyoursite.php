@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.2.0.3' );
+define( 'PYS_FREE_VERSION', '11.2.0.4' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
 define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );

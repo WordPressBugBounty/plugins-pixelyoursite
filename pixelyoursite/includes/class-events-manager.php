@@ -42,6 +42,28 @@ class EventsManager {
     }
     function add_data_attribute_to_script( $tag, $handle, $src ) {
         $array_scripts = array('js-cookie-pys', 'jquery-bind-first', 'js-tld', 'pys');
+
+        // Add defer attribute to all plugin scripts for better performance
+        $defer_scripts = array(
+                'jquery-bind-first',
+                'js-cookie-pys',
+                'js-sha256',
+                'js-tld',
+                'pys',
+                'vimeo',
+                'pys-pinterest',
+                'pys-bing',
+                'pys_sp_public_js',
+                'pys-reddit'
+        );
+
+        if ( in_array( $handle, $defer_scripts, true ) ) {
+            // Add defer attribute if not already present
+            if ( strpos( $tag, 'defer' ) === false && strpos( $tag, 'async' ) === false ) {
+                $tag = str_replace( ' src=', ' defer src=', $tag );
+            }
+        }
+
         if ( 'js-cookie-pys' === $handle && isCookiebotPluginActivated()) {
             $tag = str_replace( 'src=', 'data-cookieconsent="true" src=', $tag );
         }
@@ -49,23 +71,26 @@ class EventsManager {
     }
 	public function enqueueScripts() {
 
-        wp_register_script( 'jquery-bind-first', PYS_FREE_URL . '/dist/scripts/jquery.bind-first-0.2.3.min.js', array( 'jquery' ), '0.2.3', false);
+        // Register core scripts (all in footer for better performance)
+        wp_register_script( 'jquery-bind-first', PYS_FREE_URL . '/dist/scripts/jquery.bind-first-0.2.3.min.js', array( 'jquery' ), '0.2.3', true);
 
-        wp_register_script( 'js-cookie-pys', PYS_FREE_URL . '/dist/scripts/js.cookie-2.1.3.min.js', array(), '2.1.3' );
-        wp_register_script( 'js-tld', PYS_FREE_URL . '/dist/scripts/tld.min.js', array( 'jquery' ), '2.3.1' );
+        wp_register_script( 'js-cookie-pys', PYS_FREE_URL . '/dist/scripts/js.cookie-2.1.3.min.js', array(), '2.1.3', true );
+        wp_register_script( 'js-tld', PYS_FREE_URL . '/dist/scripts/tld.min.js', array( 'jquery' ), '2.3.1', true );
 
+        // Enqueue core scripts
         wp_enqueue_script( 'jquery-bind-first' );
         wp_enqueue_script( 'js-cookie-pys' );
         wp_enqueue_script( 'js-tld' );
 
+        // Load main plugin script (compressed or uncompressed)
         if ( PYS()->getOption( 'compress_front_js' )){
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.min.js',
-                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION );
+                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
         }
         else
         {
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.js',
-                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION );
+                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
         }
 
 
@@ -185,7 +210,6 @@ class EventsManager {
 		);
 
 		$options[ 'tracking_analytics' ] = array(
-			"TrafficSource"  => getTrafficSource(),
 			"TrafficLanding" => sanitize_url($_COOKIE[ 'pys_landing_page' ] ?? $_SESSION[ 'LandingPage' ] ?? 'undefined'),
 			"TrafficUtms"    => getUtms(),
 			"TrafficUtmsId"  => getUtmsId(),

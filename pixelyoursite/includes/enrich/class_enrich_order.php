@@ -249,7 +249,7 @@ class EnrichOrder {
     private function getDefaultLanding() {
         $landingPage = $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'] ?? '';
 
-        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        if ((empty($landingPage) || strpos($landingPage, 'undefined') === 0 || strpos($landingPage, 'http://undefined') === 0) && (defined( 'REST_REQUEST' ) && REST_REQUEST) ) {
             $landingPage = 'REST API';
         }
 
@@ -263,7 +263,7 @@ class EnrichOrder {
      */
     private function getDefaultSource() {
         $trafficSource = $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'] ?? '';
-        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        if ((empty($trafficSource) || strpos($trafficSource, 'undefined') === 0) && (defined( 'REST_REQUEST' ) && REST_REQUEST) ) {
             $trafficSource = 'REST API';
         }
 
@@ -277,7 +277,7 @@ class EnrichOrder {
      */
     private function getDefaultLastLanding() {
         $lastLanding = $_COOKIE['last_pys_landing_page'] ?? $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'] ?? '';
-        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        if ((empty($lastLanding) || strpos($lastLanding, 'undefined') === 0 || strpos($lastLanding, 'http://undefined') === 0) && (defined( 'REST_REQUEST' ) && REST_REQUEST) ) {
             $lastLanding = 'REST API';
         }
 
@@ -291,7 +291,7 @@ class EnrichOrder {
      */
     private function getDefaultLastSource() {
         $lastSource = $_COOKIE['last_pysTrafficSource'] ?? $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'] ?? '';
-        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        if ((empty($lastSource) || strpos($lastSource, 'undefined') === 0) && (defined( 'REST_REQUEST' ) && REST_REQUEST) ) {
             return 'REST API';
         }
 
