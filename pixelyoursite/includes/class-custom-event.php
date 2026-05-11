@@ -630,9 +630,9 @@ class CustomEvent {
         $this->data[ 'bing_event_type' ] = isset( $args[ 'bing_event_type' ] ) && in_array( $args[ 'bing_event_type' ], $bing_event_types ) ? sanitize_text_field( $args[ 'bing_event_type' ] ) : 'PageVisit';
 
         // custom event type
-        $this->data[ 'bing_custom_event_type' ] = $this->bing_event_type == 'custom' && !empty( $args[ 'bing_custom_event_type' ] ) ? sanitizeKey( $args[ 'bing_custom_event_type' ] ) : null;
+		$this->data[ 'bing_custom_event_type' ] = ($this->bing_event_type === 'custom' || $this->bing_event_type === 'Custom') && !empty( $args[ 'bing_custom_event_type' ] ) ? sanitizeKey( $args[ 'bing_custom_event_type' ] ) : null;
 
-        // params enabled
+		// params enabled
         $this->data[ 'bing_params_enabled' ] = isset( $args[ 'bing_params_enabled' ] ) && $args[ 'bing_params_enabled' ] ? true : false;
 
         // bing_params - structured params like Facebook/TikTok

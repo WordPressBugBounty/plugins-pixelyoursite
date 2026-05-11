@@ -97,10 +97,14 @@ class AjaxHookEventManager {
         if( isset( $_REQUEST['action'] ) && $_REQUEST['action'] === 'yith_wacp_add_item_cart') {
             $is_ajax_request = true;
         }
-        $standardParams = getStandardParams();
+
+        $standardParams = getStandardParams( $product_id );
 
         PYS()->getLog()->debug('trackWooAddToCartEvent is_hook_request '.$is_ajax_request);
         $dataList = [];
+        // Generate ONE shared eventID for the entire add-to-cart action so that
+        // all pixels receive the same ID for server-side deduplication.
+        $sharedEventId = EventIdGenerator::guidv4();
         foreach ( PYS()->getRegisteredPixels() as $pixel ) {
 
 			if ( !Consent()->checkConsent( $pixel->getSlug() ) ) {
@@ -122,6 +126,7 @@ class AjaxHookEventManager {
 
             $event = new SingleEvent('woo_add_to_cart_on_button_click',EventTypes::$STATIC,'woo');
             $event->args = ['productId' => $_product_id,'quantity' => $quantity];
+            $event->addPayload(['eventID' => $sharedEventId]);
             $events = $pixel->generateEvents( $event );
 
             if ( empty($events) ) {
@@ -223,13 +228,42 @@ class AjaxHookEventManager {
             var cartHash = "<?=WC()->cart->get_cart_hash()?>";
 
             if(pys_getCookie(name) != cartHash) { // prevent re send event if user update page
+                <?php
+                // Extract the shared eventID and unique e_id keys from PHP event data (set once
+                // in trackWooAddToCartEvent before the pixel loop, so all pixels carry the same UUID).
+                $sharedEventId = '';
+                $uniqueEIds    = [];
+                foreach ($pixelsEventData as $slug => $eventData) {
+                    if (empty($sharedEventId) && !empty($eventData['eventID'])) {
+                        $sharedEventId = $eventData['eventID'];
+                    }
+                    $eId = !empty($eventData['custom_event_post_id'])
+                            ? $eventData['custom_event_post_id']
+                            : ($eventData['e_id'] ?? '');
+                    if (!empty($eId) && !in_array($eId, $uniqueEIds, true)) {
+                        $uniqueEIds[] = $eId;
+                    }
+                }
+                ?>
+                // Use the PHP-generated shared eventID; fall back to a JS token if absent.
+                var pys_action_event_id = '<?= esc_js($sharedEventId) ?>' || pys_generate_token();
+
+                <?php if (!empty($uniqueEIds)) : ?>
+                // Sync the uniqueId cache once per event type so generateUniqueId()
+                // returns the same fresh ID even when ajaxForServerStaticEvent=true.
+                if (window.pys && window.pys.setEventUniqueId) {
+                    <?php foreach ($uniqueEIds as $eId) : ?>
+                    window.pys.setEventUniqueId('<?= esc_js($eId) ?>', pys_action_event_id);
+                    <?php endforeach; ?>
+                }
+                <?php endif; ?>
+
                 <?php foreach ($pixelsEventData as $slug => $eventData) : ?>
-
-                var pixel = getPixelBySlag('<?=$slug?>');
-                var event = <?=json_encode($eventData)?>;
-                pixel.fireEvent(event.name, event);
-
-                <?php  endforeach; ?>
+                    var pixel = getPixelBySlag('<?= $slug ?>');
+                    var event = <?= json_encode($eventData) ?>;
+                    event.eventID = pys_action_event_id;
+                    pixel.fireEvent(event.name, event);
+                <?php endforeach; ?>
                 pys_setCookie(name,cartHash,90)
             }
         </script>

@@ -67,6 +67,17 @@ jQuery(document).ready(function($) {
         }
     }
 
+    function toggleCogSourceOption() {
+        var val = $( 'input[name="pys[core][woo_cog_source]"]:checked' ).val();
+        if ( val === "wc_cog" ) {
+            $( ".pys-cog-wc-options" ).slideDown( 400 );
+            $( ".pys-cog-pixel-warning" ).slideUp( 400 );
+        } else {
+            $( ".pys-cog-wc-options" ).slideUp( 400 );
+            $( ".pys-cog-pixel-warning" ).slideDown( 400 );
+        }
+    }
+
     function toggleEDDEventValueOption() {
         if ( $( 'input[name="pys[core][edd_event_value]"]:checked' ).val() === "price" ) {
             $( ".edd-event-value-option" ).hide();
@@ -1076,6 +1087,11 @@ jQuery(document).ready(function($) {
     toggleEDDEventValueOption();
     $( 'input[name="pys[core][edd_event_value]"]' ).on( 'change', function () {
         toggleEDDEventValueOption();
+    } );
+
+    toggleCogSourceOption();
+    $( 'input[name="pys[core][woo_cog_source]"]' ).on( 'change', function () {
+        toggleCogSourceOption();
     } );
 
     //toggle all events

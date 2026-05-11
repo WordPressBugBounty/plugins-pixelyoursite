@@ -11,22 +11,74 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function renderLicenseControls( $plugin, $license_status ) {
 
-    $slug = $plugin->getSlug();
-    $input_name = "pys[{$slug}][license_action]";
+	$slug = $plugin->getSlug();
+	$input_name = "pys[{$slug}][license_action]";
 
 	?>
+    <div class="license-info mb-24">
+        <h4 class="font-medium"><?php esc_html_e( 'Your license key', 'pys' ); ?>:</h4>
+		<?php if ( $license_status == 'Activated' || $license_status == 'Expired' || $license_status == 'valid' ) : ?>
+            <p class="text-green fw-500"><?php esc_html_e( 'Activated', 'pys' ); ?></p>
+		<?php else : ?>
+            <p class="text-red fw-500"><?php esc_html_e( 'Deactivated', 'pys' ); ?></p>
+		<?php endif; ?>
 
-    <div class="d-flex align-items-center">
-        <?php $plugin->render_password_input( 'license_key', 'Enter your license key', false, false, false ); ?>
-        <?php if( $license_status == 'valid' ||  $license_status == 'expired') : ?>
-            <button class="btn btn-block btn-sm btn-success" name="<?php echo esc_attr( $input_name ); ?>"
-                    value="reactivate">Reactivate License</button>
-        <?php else: ?>
-            <button class="btn btn-block btn-sm btn-primary" name="<?php echo esc_attr( $input_name ); ?>"
-                    value="activate">Activate License</button>
-        <?php endif; ?>
+        <h4 class="font-medium"><?php esc_html_e( 'Plugin version', 'pys' ); ?>:</h4>
+
+        <div>
+            <span class="fw-500"><?php echo esc_html( $plugin->getPluginVersion() ); ?></span>
+        </div>
+
+        <h4 class="font-medium"><?php esc_html_e( 'License name', 'pys' ); ?>:</h4>
+
+        <div>
+            <span class="fw-500"><?php echo esc_html( PYS_FREE_LICENSE_NAME ); ?></span>
+        </div>
     </div>
 
+    <div>
+        <h4 class="font-semibold mb-4">
+			<?php esc_html_e( 'Your license key', 'pys' ); ?>:
+        </h4>
+        <div>
+            <div class="d-flex align-items-center">
+				<?php $plugin->render_password_input( 'license_key', 'Enter your license key', false, false, false ); ?>
+				<?php if ( $license_status == 'valid' || $license_status == 'expired' ) : ?>
+                    <button class="btn btn-block btn-sm btn-success" name="<?php echo esc_attr( $input_name ); ?>"
+                            value="reactivate">Reactivate License
+                    </button>
+				<?php else: ?>
+                    <button class="btn btn-block btn-sm btn-primary" name="<?php echo esc_attr( $input_name ); ?>"
+                            value="activate">Activate License
+                    </button>
+				<?php endif; ?>
+            </div>
+			<?php if ( $license_status != 'valid' && $license_status != 'expired' ) : ?>
+                <p class="license-description mt-4 lh-162">
+					<?php esc_html_e(
+						'You have your license key in the order confirmation email, and you can get it from ',
+						'pys'
+					);
+					?>
+                    <a href="<?php echo esc_url( 'https://www.pixelyoursite.com/my-account' ); ?>"
+                       rel="nofollow"
+                       class="link link-small"
+                       target="_blank">
+						<?php esc_html_e( 'your account', 'pys' );
+						?></a>
+					<?php esc_html_e(
+						' on our website. We also sent you an email containing your login data.',
+						'pys'
+					);
+					?>
+                </p>
+			<?php endif; ?>
+        </div>
+    </div>
+
+    <div class="mt-24">
+		<?php render_info_message( sprintf( __( 'If your don\'t have key, you can take it from %s', 'pys' ), '<a href="https://www.pixelyoursite.com/my-account" rel="nofollow" target="_blank">' . __( 'here', 'pys' ) . '</a>' ) ); ?>
+    </div>
 	<?php
 
     $license_key = $plugin->getOption( 'license_key' );

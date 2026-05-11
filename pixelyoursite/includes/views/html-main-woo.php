@@ -11,6 +11,17 @@ use PixelYourSite\Facebook\Helpers;
 ?>
 
 <div class="cards-wrapper cards-wrapper-style1 gap-24">
+    <div class="card card-style6 card-static">
+        <div class="card-body">
+            <div class="gap-24">
+                <div>
+                    <p>
+                        <b><?php _e('Recommended', 'pys'); ?>:</b> <?php _e('Exclude the Order Received page from cache (default endpoint: order-received). Caching this page can reuse an old event_id and break Purchase event deduplication.', 'pys'); ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Advanced Purchase Tracking-->
     <div class="card card-style5">
         <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
@@ -212,6 +223,72 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
     </div>
+
+    <!-- Cost of Goods (global source selector) -->
+    <div id="pys-cog-section" class="card card-style5">
+        <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <h4 class="secondary_heading_type2"><?php esc_html_e( 'Cost of Goods', 'pys' ); ?></h4>
+            </div>
+            <?php cardCollapseSettings(); ?>
+        </div>
+
+        <div class="card-body">
+            <div class="gap-24">
+
+                <div>
+                    <div class="mb-12">
+                        <label class="primary_heading"><?php esc_html_e( 'Cost of Goods source:', 'pys' ); ?></label>
+                    </div>
+                    <div class="radio-inputs-wrap">
+                        <?php PYS()->render_radio_input( 'woo_cog_source', 'pixel_cog', 'PixelYourSite Cost of Goods plugin' ); ?>
+                        <?php PYS()->render_radio_input( 'woo_cog_source', 'wc_cog', 'WooCommerce Cost of Goods (native)' ); ?>
+                    </div>
+                </div>
+
+                <?php if ( ! isPixelCogActive() ) : ?>
+                    <p class="pys-cog-pixel-warning text-gray" style="color: #d63638; display: none;">
+                        <?php esc_html_e( 'The PixelYourSite Cost of Goods plugin is not active. Please install and activate it, or switch to WooCommerce native Cost of Goods.', 'pys' ); ?>
+                    </p>
+                <?php endif; ?>
+
+                <div class="pys-cog-wc-options" style="display: none;">
+                    <?php if ( ! isWcCogAvailable() ) : ?>
+                        <p class="text-gray" style="color: #d63638;">
+                            <?php esc_html_e( 'WooCommerce Cost of Goods requires WooCommerce 10.3 or later. Please update WooCommerce.', 'pys' ); ?>
+                        </p>
+                    <?php elseif ( ! isWcCogFeatureEnabled() ) : ?>
+                        <p class="text-gray" style="color: #d63638;">
+                            <?php
+                            printf(
+                                    wp_kses(
+                                            __( 'WooCommerce Cost of Goods is not enabled. Enable it in <a href="%s">WooCommerce &rarr; Settings &rarr; Advanced &rarr; Features</a>.', 'pys' ),
+                                            [ 'a' => [ 'href' => [] ] ]
+                                    ),
+                                    esc_url( admin_url( 'admin.php?page=wc-settings&tab=advanced&section=features' ) )
+                            );
+                            ?>
+                        </p>
+                    <?php else : ?>
+                        <div>
+                            <?php PYS()->render_checkbox_input( 'woo_cog_wc_include_tax',
+                                    esc_html__( 'Include tax in profit calculation', 'pys' ) ); ?>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <?php PYS()->render_checkbox_input( 'woo_cog_wc_include_shipping',
+                                    esc_html__( 'Include shipping in profit calculation', 'pys' ) ); ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <p class="text-gray">
+                    <?php esc_html_e( 'Select the source for Cost of Goods data. This setting applies to all WooCommerce events that support profit as the event value, and to the ConversionProfit event.', 'pys' ); ?>
+                </p>
+
+            </div>
+        </div>
+    </div>
+
     <div class="card card-style6 card-static">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between gap-24">
@@ -221,10 +298,16 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
     </div>
-
     <!-- video -->
     <?php
     $videos = array(
+
+         array(
+            'url'   => 'https://www.youtube.com/watch?v=Oce_yJSpLXk',
+            'title' => 'How to Track WooCommerce Profit in Meta, Google Ads, and GA4',
+            'time'  => '8:45',
+        ),
+        
         array(
             'url'   => 'https://www.youtube.com/watch?v=oZoAu8a0PNg',
             'title' => 'WooCommerce AddToCart Event FIX',
@@ -235,11 +318,7 @@ use PixelYourSite\Facebook\Helpers;
             'title' => 'Google Automated Discounts. Step-by-Step Google Merchant Setup Guide',
             'time'  => '14:26',
         ),
-        array(
-            'url'   => 'https://www.youtube.com/watch?v=FjGJYAdZEKc',
-            'title' => 'Analyse your WooCommerce data with ChatGPT',
-            'time'  => '12:06',
-        ),
+       
         array(
             'url'   => 'https://www.youtube.com/watch?v=-bN5D_HJyuA',
             'title' => 'Enhanced Conversions for Google Ads with PixelYourSite',
@@ -1299,7 +1378,83 @@ use PixelYourSite\Facebook\Helpers;
                     </div>
                 </div>
             </div>
+            <!-- Track Subscriptions -->
+            <div class="card card-style6">
+                <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+                    <div class="disable-card d-flex align-items-center">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="secondary_heading_type2 switcher-label">Track Subscriptions</h4>
+                    </div>
+                    <div class="d-flex align-items-center flex-collapse-block">
+                        <?php renderProBadge(); ?>
+                        <?php cardCollapseSettings(); ?>
+                    </div>
+                </div>
 
+                <div class="card-body">
+                    <div class="pro-feature-container">
+                        <div class="gap-24">
+                            <p class="text-gray">
+                                <?php _e('This option will enable the following events:', 'pys');?> <span class="parameters-list">StartTrial</span> (when a free trial is initiated), <span class="parameters-list">Subscribe</span> (when a new subscription is created), <span class="parameters-list">SubscriptionRenewal</span> (when a subscription is renewed), <span class="parameters-list">SubscriptionExpired</span> (when a subscription expires), <span class="parameters-list">SubscriptionCanceled</span> (when a subscription is canceled).
+                            </p>
+
+                            <?php if ( !isWooCommerceSubscriptionsActive() ) : ?>
+                                <p class="text-danger">
+                                    <?php _e( 'WooCommerce Subscriptions plugin is required for this feature to work.', 'pys' ); ?>
+                                </p>
+                            <?php else : ?>
+                                <p class="text-gray">This feature works only when there is an API connection configured for the tag.</p>
+                            <?php endif; ?>
+                            <?php
+                            renderWooSubscriptionsPlatformSwitcher( Facebook() );
+                            renderWooSubscriptionsPlatformSwitcher( GA() );
+
+                            if ( Pinterest()->enabled() ) {
+                                renderWooSubscriptionsPlatformSwitcher( Pinterest() );
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ProfitConversion (POAS) -->
+            <div class="card card-style6">
+                <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+                    <div class="disable-card d-flex align-items-center">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="secondary_heading_type2 switcher-label"><?php esc_html_e( 'Track Profit', 'pys' ); ?></h4>
+                    </div>
+                    <<div class="d-flex align-items-center flex-collapse-block">
+                        <?php renderProBadge(); ?>
+                        <?php cardCollapseSettings(); ?>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="pro-feature-container">
+                        <div class="gap-24">
+                            <p class="text-gray">
+                                <?php esc_html_e( 'A ProfitConversion event will be sent via API every time a WooCommerce Purchase event fires. The event value equals the order profit.', 'pys' ); ?>
+                            </p>
+                            <p class="text-gray">
+                                <?php esc_html_e( 'The event respects the "Fire the event only once for each order" option. It will only fire if ALL products in the order have a defined Cost of Goods. If any product is missing a cost value, the event is skipped.', 'pys' ); ?>
+                            </p>
+                            <p class="text-gray">
+                                <?php
+                                printf(
+                                        wp_kses(
+                                                __( 'The Cost of Goods source is configured in the <a href="#pys-cog-section">Cost of Goods</a> section above.', 'pys' ),
+                                                [ 'a' => [ 'href' => [] ] ]
+                                        ),
+                                        '#pys-cog-section'
+                                );
+                                ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- InitiateCheckout -->
             <div class="card card-style6">
                 <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
@@ -2230,38 +2385,7 @@ use PixelYourSite\Facebook\Helpers;
                     </div>
                 </div>
             </div>
-            <!-- Track CompleteRegistration -->
-            <?php if ( Facebook()->enabled() ) : ?>
-                <div class="card card-style6 woo-extra-complete-registration">
-                    <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'woo_complete_registration_enabled' ); ?>
-                            <h4 class="secondary_heading_type2 switcher-label">Track CompleteRegistration for the Meta
-                                Pixel</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
 
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <div class="d-flex align-items-center">
-                                <?php Facebook()->render_checkbox_input( 'woo_complete_registration_fire_every_time', "Fire this event every time a transaction takes place" ); ?>
-                            </div>
-
-                            <div class="woo-extra-complete-registration-block">
-                                <?php Facebook()->renderValueOptionsBlock( 'woo_complete_registration', false, false, false, 'Event value on Facebook' ); ?>
-                            </div>
-
-                            <div class="d-flex align-items-center">
-                                <?php Facebook()->render_switcher_input( 'woo_complete_registration_send_from_server' ); ?>
-                                <h4 class="switcher-label secondary_heading">Send this from your server only. It won't
-                                    be
-                                    visible on your browser</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
             <?php if ( GA()->enabled() ) : ?>
                 <!-- Track Checkout Behavior on Google Analytics -->
                 <div class="card card-style6">

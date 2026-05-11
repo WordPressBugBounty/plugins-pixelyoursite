@@ -95,7 +95,7 @@ include "html-popovers.php";
                         <h4 class="switcher-label secondary_heading"><?php _e('Disable PHP sessions', 'pys');?></h4>
                     </div>
                     <p class="text-gray mt-4">
-                        <?php _e('If you are having problems with sessions or cache when the plugin is enabled due to the creation of the PHPSESSID cookie, disable this option. This may reduce the effectiveness of some of our session-based parameters, such as landing page, traffic source, or UTM.', 'pys');?>
+                        <?php _e('If you are having problems with sessions or cache when the plugin is enabled due to the creation of the PHPSESSID cookie, enable this option. This may reduce the effectiveness of some of our session-based parameters, such as landing page, traffic source, or UTM.', 'pys');?>
                     </p>
                 </div>
             </div>

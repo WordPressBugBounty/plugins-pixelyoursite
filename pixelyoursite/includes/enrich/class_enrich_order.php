@@ -16,11 +16,15 @@ class EnrichOrder {
         //woo
 
         if(PYS()->getOption("woo_enabled_save_data_to_orders")) {
-            // Regular orders
-            add_action( 'woocommerce_new_order', array( $this, 'woo_save_checkout_fields_safe' ), 10, 1 );
+            // Regular checkout orders (classic shortcode checkout)
+            add_action( 'woocommerce_new_order', array( $this, 'woo_save_checkout_fields_new_order' ), 10, 2 );
+            add_action( 'woocommerce_checkout_order_processed', array( $this, 'woo_save_checkout_fields_processed' ), 10, 3 );
 
-            // Paid subscription renewals
-            add_action( 'woocommerce_subscription_renewal_payment_complete', array( $this, 'woo_save_checkout_fields_safe' ), 10, 1 );
+            // Block-based checkout (Store API)
+            add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'woo_save_checkout_fields_block' ), 10, 1 );
+
+            // Subscription renewal orders (WooCommerce Subscriptions)
+            add_filter( 'wcs_renewal_order_created', array( $this, 'woo_save_renewal_order_fields' ), 10, 2 );
 
             add_action( 'add_meta_boxes', array($this,'woo_add_order_meta_boxes') );
             if(PYS()->getOption("woo_add_enrich_to_admin_email")) {
@@ -61,8 +65,8 @@ class EnrichOrder {
         } elseif (method_exists($post, 'get_id')) {
             $orderId = $post->get_id();
         } else {
-            // Обработка ситуации, когда $post не является ни объектом \WP_Post, ни объектом с методом get_id().
-            $orderId = null; // Или другое значение по умолчанию.
+            // Handle the situation when $post is neither a \WP_Post object nor an object with get_id() method.
+            $orderId = null; // Or another default value.
         }
         echo "<div style='margin:20px 10px'>
                 <p>With the paid plugin, you can see more data on the WooCommerce Reports page. <a href='https://www.pixelyoursite.com/woocommerce-first-party-reports?utm_source=free-plugin&utm_medium=order-page&utm_campaign=reports-order-page&utm_content=woocommerce-reports-client-page&utm_term=order-page-reports' target='_blank'>Click here for details</a></p>
@@ -71,38 +75,76 @@ class EnrichOrder {
                 </div>";
         include 'views/html-order-meta-box.php';
     }
+    /**
+     * Wrapper for the woocommerce_new_order hook
+     */
+    public function woo_save_checkout_fields_new_order( $order_id, $order = null ) {
+        $this->save_pys_data_to_order( $order_id, $order );
+    }
+    /**
+     * Wrapper for the woocommerce_checkout_order_processed hook
+     */
+    public function woo_save_checkout_fields_processed( $order_id, $posted_data = array(), $order = null ) {
+        $this->save_pys_data_to_order( $order_id, $order );
+    }
+    /**
+     * Save enrich data for classic checkout orders
+     *
+     * @param int $order_id Order ID
+     * @param array $posted_data Posted checkout data
+     * @param \WC_Order $order Order object
+     */
+    public function save_pys_data_to_order( $order_id, $order = null ) {
+        if ( ! $order instanceof \WC_Order ) {
+            $order = wc_get_order( $order_id );
+        }
 
-    public function woo_save_checkout_fields_safe( $order_id ) {
-
-        $order = wc_get_order( $order_id );
-        if (!$order instanceof \WC_Order) {
-            error_log( "woo_save_checkout_fields_safe: no valid order found for ID: {$order_id}" );
+        if ( ! $order instanceof \WC_Order ) {
+            return;
+        }
+        // PROTECTION AGAINST DOUBLE EXECUTION:
+        // Check if our data already exists. If it does - interrupt execution.
+        if ( ! empty( $order->get_meta( 'pys_enrich_data' ) ) ) {
             return;
         }
 
-        // We determine whether it is a renewal or not
-        $renewal_order = false;
-        $created_via   = method_exists( $order, 'get_created_via' ) ? $order->get_created_via() : '';
+        $pysData = $this->getPysData( false );
+        $order->update_meta_data( 'pys_enrich_data', $pysData );
+        $order->save();
+    }
 
-        if ( function_exists( 'wcs_order_contains_subscription' ) && wcs_order_contains_subscription( $order, 'renewal' ) ) {
-            $renewal_order = true;
-        } elseif ( $created_via === 'subscription_renewal' || $created_via === 'subscription' ) {
-            $renewal_order = true;
+    /**
+     * Save enrich data for block-based checkout orders (Store API)
+     *
+     * @param \WC_Order $order Order object
+     */
+    public function woo_save_checkout_fields_block( $order ) {
+        if ( ! $order instanceof \WC_Order ) {
+            return;
         }
 
-		$pysData = $this->getPysData( $renewal_order );
+        $pysData = $this->getPysData( false );
+        $order->update_meta_data( 'pys_enrich_data', $pysData );
+        $order->save();
+    }
 
-		if ( isWooCommerceVersionGte( '3.0.0' ) ) {
-			// WooCommerce >= 3.0
-			if ( $order ) {
-				$order->update_meta_data( "pys_enrich_data", $pysData );
-				$order->save();
-			}
+    /**
+     * Save enrich data for subscription renewal orders
+     *
+     * @param \WC_Order $renewal_order Renewal order object
+     * @param \WC_Subscription $subscription Subscription object
+     * @return \WC_Order
+     */
+    public function woo_save_renewal_order_fields( $renewal_order, $subscription ) {
+        if ( ! $renewal_order instanceof \WC_Order ) {
+            return $renewal_order;
+        }
 
-		} else {
-			// WooCommerce < 3.0
-			update_post_meta( $order_id, 'pys_enrich_data', $pysData );
-		}
+        $pysData = $this->getPysData( true );
+        $renewal_order->update_meta_data( 'pys_enrich_data', $pysData );
+        $renewal_order->save();
+
+        return $renewal_order;
     }
 
     /**

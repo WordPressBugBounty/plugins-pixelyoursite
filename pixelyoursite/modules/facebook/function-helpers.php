@@ -613,24 +613,3 @@ function getFDPPurchaseEventParams() {
 
     return $params;
 }
-
-function getCompleteRegistrationOrderParams() {
-    $params = array();
-    $order_key = sanitize_key( $_REQUEST['key']);
-    $cache_key = 'order_id_' . $order_key;
-    $order_id = get_transient( $cache_key );
-    if ( empty($order_id) ) {
-        $order_id = (int) wc_get_order_id_by_order_key( $order_key );
-        set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
-    }
-    $order    = wc_get_order( $order_id );
-    if(!$order) return false;
-
-    $value_option   = PixelYourSite\Facebook()->getOption( 'woo_complete_registration_custom_value' );
-    $global_value   = PixelYourSite\Facebook()->getOption( 'woo_complete_registration_global_value', 0 );
-    $percents_value = PixelYourSite\Facebook()->getOption( 'woo_complete_registration_percent_value', 100 );
-
-    $params['value'] = PixelYourSite\getWooEventValueOrder( $value_option, $order, $global_value, $percents_value );
-    $params['currency'] = get_woocommerce_currency();
-    return $params;
-}

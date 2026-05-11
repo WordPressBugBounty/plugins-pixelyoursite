@@ -55,15 +55,6 @@
   "test_api_event_code": "",
   "test_api_event_code_expiration_at": "",
 
-  "complete_registration_event_enabled" : true,
-  "woo_complete_registration_fire_every_time": false,
-  "woo_complete_registration_use_custom_value": true,
-  "woo_complete_registration_custom_value": "price",
-  "woo_complete_registration_percent_value": "",
-  "woo_complete_registration_global_value": "",
-  "woo_complete_registration_custom_value_old": "",
-  "woo_complete_registration_send_from_server": true,
-
   "verify_meta_tag": "",
 
   "automatic_event_form_enabled": true,

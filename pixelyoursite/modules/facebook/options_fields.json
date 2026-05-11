@@ -54,15 +54,6 @@
   "test_api_event_code": "array",
   "test_api_event_code_expiration_at": "array",
 
-  "complete_registration_event_enabled" : "checkbox",
-  "woo_complete_registration_percent_value": "text",
-  "woo_complete_registration_global_value": "text",
-  "woo_complete_registration_fire_every_time": "checkbox",
-  "woo_complete_registration_use_custom_value": "checkbox",
-  "woo_complete_registration_custom_value": "radio",
-  "woo_complete_registration_custom_value_old": "radio",
-  "woo_complete_registration_send_from_server": "checkbox",
-
   "verify_meta_tag": "array_textarea",
 
   "automatic_event_form_enabled":  "checkbox",

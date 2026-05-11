@@ -52,11 +52,59 @@ class Facebook_REST_API {
     }
 
     /**
-     * Check permission for REST API access
+     * Check access permissions
+     *
+     * This is a public tracking endpoint: it must be reachable by anonymous
+     * visitors and from aggressively cached HTML, so wp_verify_nonce() and
+     * capability checks are intentionally NOT used here (REST nonces are
+     * session-bound and roll every 12h, which breaks cached pages).
+     *
+     * Defense in Depth applied at this layer:
+     *   1) Same-origin enforcement via Origin / Referer headers blocks the
+     *      most common cross-site abuse vector.
+     *   2) Payload data is sanitized in sanitize_data() / get_event_args().
+     *   3) The `pys_rest_event_permission` filter lets site owners harden
+     *      this further (rate limits, bot rules) or relax it on environments
+     *      where Origin/Referer is stripped by proxies.
+     *
+     * @param \WP_REST_Request $request The request object.
+     * @return bool
      */
     public function check_permission( $request ) {
-        // Allow all requests for event tracking endpoints
-        return true;
+        $origin    = $request->get_header( 'origin' );
+        $referer   = $request->get_header( 'referer' );
+        $site      = wp_parse_url( home_url() );
+        $site_host = isset( $site['host'] ) ? strtolower( $site['host'] ) : '';
+
+        $is_same_origin = false;
+
+        if ( ! empty( $origin ) ) {
+            $origin_parts = wp_parse_url( $origin );
+            $is_same_origin = ! empty( $site_host )
+                && isset( $origin_parts['host'] )
+                && strtolower( $origin_parts['host'] ) === $site_host;
+        } elseif ( ! empty( $referer ) ) {
+            $referer_parts = wp_parse_url( $referer );
+            $is_same_origin = ! empty( $site_host )
+                && isset( $referer_parts['host'] )
+                && strtolower( $referer_parts['host'] ) === $site_host;
+        }
+
+        /**
+         * Filters whether a REST tracking request is allowed.
+         *
+         * Default: true if the request is same-origin (matching Origin or
+         * Referer host), false otherwise. Return true to fully open the
+         * endpoint, or implement custom rate limiting / bot filtering.
+         *
+         * @param bool             $allowed Whether the request is allowed.
+         * @param \WP_REST_Request $request The current request object.
+         */
+        return (bool) apply_filters(
+            'pys_rest_event_permission',
+            $is_same_origin,
+            $request
+        );
     }
 
     /**
@@ -105,14 +153,25 @@ class Facebook_REST_API {
 
 
     /**
-     * Sanitize data parameter
+     * Sanitize event data
+     *
+     * Recursively sanitizes every scalar value inside the decoded payload
+     * with `sanitize_text_field()` to prevent injection via nested keys/values.
+     *
+     * @param mixed $data Data to sanitize.
+     * @return array
      */
     public function sanitize_data( $data ) {
         if ( is_string( $data ) ) {
             $decoded = json_decode( $data, true );
-            return is_array( $decoded ) ? $decoded : array();
+            if ( is_array( $decoded ) ) {
+                return map_deep( $decoded, 'sanitize_text_field' );
+            }
         }
-        return is_array( $data ) ? $data : array();
+        if ( is_array( $data ) ) {
+            return map_deep( $data, 'sanitize_text_field' );
+        }
+        return [];
     }
 
     /**

@@ -12,7 +12,7 @@
   "cookie_duration": 7,
   "last_visit_duration": 60,
   "debug_enabled": false,
-  "session_disable": true,
+  "session_disable": false,
   "do_not_track_user_roles": [],
   "admin_permissions": [
     "administrator"
@@ -75,6 +75,11 @@
   "gdpr_real_cookie_banner_integration_enabled": false,
   "consent_magic_integration_enabled": true,
 
+  "woo_poas_enabled": false,
+  "woo_cog_source": "pixel_cog",
+  "woo_cog_wc_include_tax": false,
+  "woo_cog_wc_include_shipping": false,
+
   "woo_purchase_value_cog": "",
   "woo_content_value_cog": "",
   "woo_add_to_cart_value_cog": "",
@@ -88,8 +93,6 @@
   "edd_view_content_enabled": true,
   "edd_view_category_enabled": true,
 
-
-  "woo_complete_registration_enabled": false,
   "woo_purchase_enabled": true,
   "woo_initiate_checkout_enabled": true,
   "woo_remove_from_cart_enabled": false,

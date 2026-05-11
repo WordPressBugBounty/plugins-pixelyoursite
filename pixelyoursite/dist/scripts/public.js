@@ -3185,6 +3185,13 @@
     window.pys.Utils = Utils;
     window.pys.getPixelBySlag = getPixelBySlag;
 
+    // Allow external scripts (e.g. generatePixelCode fragments) to refresh
+    // the uniqueId cache for a given event key, so that each new add_to_cart
+    // action gets a fresh shared ID across all pixels.
+    window.pys.setEventUniqueId = function(idKey, newId) {
+        uniqueId[idKey] = newId;
+    };
+
     // Export getPixelBySlag globally for backward compatibility
     window.getPixelBySlag = getPixelBySlag;
 
@@ -3438,6 +3445,10 @@
                             var tmpEventID = pys_generate_token();
                             $.each(options.dynamicEvents.woo_add_to_cart_on_button_click, function (i, tag) {
                                 tag.eventID = tmpEventID;
+                                // Also refresh the uniqueId cache so server-API path
+                                // (ajaxForServerStaticEvent) gets the same fresh ID.
+                                var idKey = tag.hasOwnProperty('custom_event_post_id') ? tag.custom_event_post_id : tag.e_id;
+                                uniqueId[idKey] = tmpEventID;
                             });
                         }
                         if (typeof product_id !== 'undefined') {
@@ -3505,6 +3516,10 @@
                         var tmpEventID = pys_generate_token();
                         $.each(options.dynamicEvents.woo_add_to_cart_on_button_click, function (i, tag) {
                             tag.eventID = tmpEventID;
+                            // Also refresh the uniqueId cache so server-API path
+                            // (ajaxForServerStaticEvent) gets the same fresh ID.
+                            var idKey = tag.hasOwnProperty('custom_event_post_id') ? tag.custom_event_post_id : tag.e_id;
+                            uniqueId[idKey] = tmpEventID;
                         });
                     }
 
@@ -3686,7 +3701,18 @@
                 var $form = $(this);
 
                 // exclude WP forms
-                if ($form.hasClass('comment-form') || $form.hasClass('search-form') || $form.attr('id') === 'adminbarsearch') {
+                const formClass = $form.attr('class') || '';
+                const formRole = ($form.attr('role') || '').toLowerCase();
+                const formId = $form.attr('id');
+
+                if (
+                    $form.hasClass('comment-form') ||
+                    $form.hasClass('search-form') ||
+                    $form.hasClass('woocommerce-ordering') ||
+                    formClass.toLowerCase().includes('search') || formClass.toLowerCase().includes('add-to-cart') ||
+                    formRole === 'search' ||
+                    formId === 'adminbarsearch'
+                ) {
                     return;
                 }
 

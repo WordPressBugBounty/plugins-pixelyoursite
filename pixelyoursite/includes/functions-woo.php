@@ -128,27 +128,8 @@ function getWooEventValue( $valueOption, $global, $percent, $product_id,$qty ) {
 
     if(!$product) return 0;
 
-    if($valueOption == 'cog' && isPixelCogActive()) {
-
-        $args = array( 'qty'   => $qty, 'price' => $product->get_price());
-        if(get_option( '_pixel_cog_tax_calculating')  == 'no') {
-            $amount = wc_get_price_excluding_tax($product, $args);
-        } else {
-            $amount = wc_get_price_including_tax($product,$args);
-        }
-
-        $cog = getAvailableProductCog($product);
-
-        if ($cog['val']) {
-            if ($cog['type'] == 'fix') {
-                $value = round((float)$amount - (float)$cog['val'], 2);
-            } else {
-                $value = round((float)$amount - ((float)$amount * (float)$cog['val'] / 100), 2);
-            }
-        } else {
-            $value = (float)$amount;
-        }
-        return formatPriceTrimZeros($value);
+    if ( $valueOption == 'cog' && pys_cog_source_is_available() ) {
+        return pys_cog_get_product_profit( $product, $qty, $product->get_price() );
     }
 
     $amount = getWooProductPriceToDisplay( $product_id, $qty );
@@ -185,9 +166,9 @@ function getWooEventValueOrder( $valueOption, $order, $global, $percent = 100 ) 
             break;
 
         case 'cog':
-            $cog_value = getAvailableProductCogOrder($order);
+            $cog_value = pys_cog_get_order_profit($order);
             ($cog_value !== '') ? $value = (float) round($cog_value, 2) : $value = (float) $amount;
-            if ( !isPixelCogActive() ) $value = (float) $amount;
+            if ( !pys_cog_source_is_available() ) $value = (float) $amount;
             break;
 
         case 'percent':
@@ -220,15 +201,15 @@ function get_fees($order){
 }
 function getWooEventValueCart( $valueOption, $global, $percent = 100 ) {
 
-    if($valueOption == 'cog' && isPixelCogActive()) {
+    if ( $valueOption == 'cog' && pys_cog_source_is_available() ) {
+        // getAvailableProductCogCart() now handles both 'pixel_cog' and 'wc_cog' sources
         $cog_value = getAvailableProductCogCart();
-        if($cog_value !== '')
-            return (float) round($cog_value, 2) ;
-
-        if ( get_option( '_pixel_cog_tax_calculating')  == 'no' ) {
+        if ( $cog_value !== '' && is_numeric( $cog_value ) ) {
+            return (float) round( $cog_value, 2 );
+        }
+        if ( get_option( '_pixel_cog_tax_calculating' ) == 'no' ) {
             return WC()->cart->cart_contents_total;
         }
-
         return WC()->cart->cart_contents_total + WC()->cart->tax_total;
     }
 

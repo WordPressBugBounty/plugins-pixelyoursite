@@ -20,6 +20,8 @@ class Facebook extends Settings implements Pixel {
 	private static $_instance;
 	
 	private $configured;
+
+    private $moduleName = 'Facebook';
 	public static function instance() {
 		
 		if ( is_null( self::$_instance ) ) {
@@ -46,6 +48,11 @@ class Facebook extends Settings implements Pixel {
 	    } );
         add_filter('pys_facebook_settings_sanitize_verify_meta_tag_field', array($this, 'sanitize_verify_meta_tag_field'));
         add_action( 'wp_head', array( $this, 'output_meta_tag' ) );
+    }
+
+    public function getModuleName()
+    {
+        return $this->moduleName;
     }
 
     public function enabled() {
@@ -86,7 +93,6 @@ class Facebook extends Settings implements Pixel {
 			'removeMetadata'             => $this->getOption( 'remove_metadata' ),
 			'wooVariableAsSimple'        => $this->getOption( 'woo_variable_as_simple' ),
 			'serverApiEnabled'           => $this->isServerApiEnabled() && count( $this->getApiToken() ) > 0,
-			'wooCRSendFromServer'        => $this->getOption( "woo_complete_registration_send_from_server" ) && $this->getOption( "woo_complete_registration_fire_every_time" ),
 			'send_external_id'           => $this->getOption( 'send_external_id' ),
 			'enabled_medical'            => $this->getOption( 'enabled_medical' ),
 			'do_not_track_medical_param' => $this->getOption( 'do_not_track_medical_param' ),
@@ -166,12 +172,8 @@ class Facebook extends Settings implements Pixel {
 
             //Automatic events
             case 'automatic_event_signup' : {
-                if(isWooCommerceActive() &&  Facebook()->getOption("woo_complete_registration_fire_every_time")) {
-                    $isActive = false;
-                } else {
-                    $event->addPayload(["name" => "CompleteRegistration"]);
-                    $isActive = $this->getOption($event->getId().'_enabled');
-                }
+                $event->addPayload(["name" => "CompleteRegistration"]);
+                $isActive = $this->getOption($event->getId().'_enabled');
             } break;
             case 'automatic_event_login' :{
                 $event->addPayload(["name" => "Login"]);
@@ -359,17 +361,6 @@ class Facebook extends Settings implements Pixel {
                 if ($eventData) {
                     $isActive = true;
                     $this->addDataToEvent($eventData, $event);
-                }
-            }break;
-            case 'woo_complete_registration': {
-                if( $this->getOption("woo_complete_registration_fire_every_time") ||
-                    get_user_meta( get_current_user_id(), 'pys_complete_registration', true )
-                ) {
-                    $eventData = $this->getWooCompleteRegistrationEventParams();
-                    if($eventData) {
-                        $isActive = true;
-                        $this->addDataToEvent($eventData,$event);
-                    }
                 }
             }break;
 
@@ -1166,27 +1157,6 @@ class Facebook extends Settings implements Pixel {
         return $this->getOption("use_server_api");
     }
 
-
-
-    private function getWooCompleteRegistrationEventParams($args=null) {
-
-        if ( ! $this->getOption( 'complete_registration_event_enabled' ) ) {
-            return false;
-        }
-        $params = array();
-        if($this->getOption("woo_complete_registration_fire_every_time") &&
-            $this->getOption("woo_complete_registration_use_custom_value") &&
-            isset( $_REQUEST['key'] ) && $_REQUEST['key'] != "" ) {
-            $params = Helpers\getCompleteRegistrationOrderParams();
-        }
-        $name = isset($args) && $args == "hCR" ? "hCR" : 'CompleteRegistration';
-
-        return $params = array(
-            'name'  => $name,
-            'data'  => $params,
-        );
-
-    }
     function output_meta_tag() {
         $metaTags = (array) Facebook()->getOption( 'verify_meta_tag' );
         foreach ($metaTags as $tag) {

@@ -8,7 +8,68 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
+/**
+ * Check if EDD Recurring plugin is active.
+ * Uses static caching to prevent repeated checks.
+ *
+ * @return bool
+ */
+function isEddRecurringActive() {
+    static $cache = null;
 
+    if ( $cache !== null ) {
+        return $cache;
+    }
+
+    if ( ! function_exists( 'is_plugin_active' ) ) {
+        include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+    }
+
+    $cache = is_plugin_active( 'edd-recurring/edd-recurring.php' );
+    return $cache;
+}
+
+/**
+ * Check if EDD Software Licensing plugin is active.
+ * Uses static caching to prevent repeated checks.
+ *
+ * @return bool
+ */
+function isEddSoftwareLicensingActive() {
+    static $cache = null;
+
+    if ( $cache !== null ) {
+        return $cache;
+    }
+
+    if ( ! function_exists( 'is_plugin_active' ) ) {
+        include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+    }
+
+    $cache = is_plugin_active( 'edd-software-licensing/edd-software-licenses.php' );
+    return $cache;
+}
+
+/**
+ * Check if WooCommerce Subscriptions plugin is active.
+ * Uses static caching to prevent repeated checks.
+ *
+ * @return bool
+ */
+function isWooCommerceSubscriptionsActive() {
+    static $cache = null;
+
+    if ( $cache !== null ) {
+        return $cache;
+    }
+
+    if ( ! function_exists( 'is_plugin_active' ) ) {
+        include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+    }
+
+    $cache = is_plugin_active( 'woocommerce-subscriptions/woocommerce-subscriptions.php' );
+    return $cache;
+}
 function isWcfActive() {
     return function_exists('wcf');
 }
@@ -136,6 +197,536 @@ function isRedditVersionIncompatible(): bool {
 }
 
 /**
+ * Check if Pixel Cost of goods plugin installed and activated.
+ * Uses static caching to prevent repeated checks.
+ *
+ * @return bool
+ */
+function isPixelCogActive() {
+    static $cache = null;
+    if ( $cache !== null ) {
+        return $cache;
+    }
+    if ( ! function_exists( 'is_plugin_active' ) ) {
+        include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+    }
+    $cache = is_plugin_active( 'pixel-cost-of-goods/pixel-cost-of-goods.php' );
+    return $cache;
+}
+
+/**
+ * Check if WooCommerce native Cost of Goods (COGS) is available.
+ * Requires WooCommerce 10.3 or later.
+ * Uses static caching to prevent repeated reflection calls.
+ *
+ * @return bool
+ */
+function isWcCogAvailable() {
+    static $cache = null;
+    if ( $cache !== null ) {
+        return $cache;
+    }
+    $cache = method_exists( 'WC_Order', 'get_cogs_total_value' );
+    return $cache;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Global COG (Cost of Goods) helpers
+// All COG logic for events and ConversionProfit goes through these functions.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Check if the WooCommerce native COGS feature flag is enabled by the user.
+ * Requires WooCommerce 8.3+ (FeaturesUtil) and COGS enabled in
+ * WooCommerce → Settings → Advanced → Features.
+ *
+ * @return bool
+ */
+function isWcCogFeatureEnabled() {
+    static $cache = null;
+    if ( $cache !== null ) {
+        return $cache;
+    }
+    if ( ! class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+        $cache = false;
+        return $cache;
+    }
+    $cache = \Automattic\WooCommerce\Utilities\FeaturesUtil::feature_is_enabled( 'cost_of_goods_sold' );
+    return $cache;
+}
+
+/**
+ * Return the active COG source selected in the global setting.
+ *
+ * @return string 'pixel_cog' | 'wc_cog'
+ */
+function pys_cog_get_source() {
+    return PYS()->getOption( 'woo_cog_source' ) ?: 'pixel_cog';
+}
+
+/**
+ * Check whether the currently selected COG source is fully available and ready.
+ * - 'wc_cog'    → WooCommerce 10.3+ AND feature flag enabled in WC Settings.
+ * - 'pixel_cog' → PixelYourSite Cost of Goods plugin active.
+ *
+ * @return bool
+ */
+function pys_cog_source_is_available() {
+    $source = pys_cog_get_source();
+    if ( $source === 'wc_cog' ) {
+        return isWcCogAvailable() && isWcCogFeatureEnabled();
+    }
+    return isPixelCogActive();
+}
+
+/**
+ * Calculate profit (price − COG) for a single product line.
+ * Works for both 'wc_cog' and 'pixel_cog' sources.
+ *
+ * For 'wc_cog': amount = tax-adjusted price × qty, cog = $product->get_cogs_value() × qty.
+ * For 'pixel_cog': delegates to pys_woo_get_cog_product_value() (PYS COG cascade).
+ *
+ * Returns '' (empty string) when no COG data is found, so callers can fall back to price.
+ *
+ * @param \WC_Product $product
+ * @param int         $quantity
+ * @param float|string $price   Unit price (before tax adjustments).
+ * @return float|string Profit value, or '' if unavailable.
+ */
+function pys_cog_get_product_profit( $product, $quantity, $price ) {
+    if ( ! pys_cog_source_is_available() ) {
+        return '';
+    }
+
+    if ( pys_cog_get_source() === 'wc_cog' ) {
+        $cogs_value = $product->get_cogs_value();
+        if ( $cogs_value === null ) {
+            return '';
+        }
+        $price_args = [ 'qty' => $quantity, 'price' => $price ];
+        // For wc_cog: tax inclusion is controlled by our own option, not the PYS COG plugin setting
+        if ( PYS()->getOption( 'woo_cog_wc_include_tax' ) ) {
+            $amount = wc_get_price_including_tax( $product, $price_args );
+        } else {
+            $amount = wc_get_price_excluding_tax( $product, $price_args );
+        }
+        $profit = (float) $amount - ( (float) $cogs_value * (int) $quantity );
+        return formatPriceTrimZeros( $profit );
+    }
+
+    // pixel_cog: delegate to existing PYS COG cascade function
+    return pys_woo_get_cog_product_value( $product, $quantity, $price );
+}
+
+/**
+ * Calculate total profit for a WooCommerce order.
+ * Works for both 'wc_cog' and 'pixel_cog' sources.
+ *
+ * For 'wc_cog':
+ *   profit = subtotal − cogs_total [+ tax] [+ shipping]
+ *   tax/shipping inclusion controlled by woo_cog_wc_include_tax / woo_cog_wc_include_shipping.
+ *
+ * For 'pixel_cog':
+ *   Uses pre-calculated '_pixel_cost_of_goods_order_profit' order meta (stored by COG plugin).
+ *   Falls back to per-product cascade calculation if meta is absent.
+ *
+ * Returns 0.0 when profit cannot be determined.
+ *
+ * @param \WC_Order $order
+ * @return float
+ */
+function pys_cog_get_order_profit( $order ) {
+    if ( ! pys_cog_source_is_available() ) {
+        return 0.0;
+    }
+
+    if ( pys_cog_get_source() === 'wc_cog' ) {
+        $cogs_total = (float) $order->get_cogs_total_value();
+        $subtotal   = (float) $order->get_subtotal();
+        $profit     = $subtotal - $cogs_total;
+        if ( PYS()->getOption( 'woo_cog_wc_include_tax' ) ) {
+            $profit += (float) $order->get_total_tax();
+        }
+        if ( PYS()->getOption( 'woo_cog_wc_include_shipping' ) ) {
+            $profit += (float) $order->get_shipping_total();
+        }
+        return max( 0.0, round( $profit, 2 ) );
+    }
+
+    // pixel_cog: prefer pre-calculated meta stored by the COG plugin on order save
+    $profit = $order->get_meta( '_pixel_cost_of_goods_order_profit', true );
+    if ( $profit !== '' && $profit !== false && is_numeric( $profit ) ) {
+        return round( (float) $profit, 2 );
+    }
+
+    $calculated = getAvailableProductCogOrder( $order );
+    return is_numeric( $calculated ) ? round( (float) $calculated, 2 ) : 0.0;
+}
+
+/**
+ * Resolve Cost of Goods for a single product with 4-level cascade fallback:
+ *   1. Product meta  →  2. Parent variation meta  →  3. Category meta  →  4. Global option
+ *
+ * @param \WC_Product $product
+ * @return array{type: string, val: string}
+ */
+function getAvailableProductCog( $product ) {
+    $product_id   = $product->get_id();
+    $cost_type    = get_post_meta( $product_id, '_pixel_cost_of_goods_cost_type', true );
+    $product_cost = get_post_meta( $product_id, '_pixel_cost_of_goods_cost_val', true );
+
+    // Level 2: parent variation
+    if ( ! $product_cost && $product->is_type( 'variation' ) ) {
+        $parent_id    = $product->get_parent_id();
+        $cost_type    = get_post_meta( $parent_id, '_pixel_cost_of_goods_cost_type', true );
+        $product_cost = get_post_meta( $parent_id, '_pixel_cost_of_goods_cost_val', true );
+    }
+
+    if ( $product_cost ) {
+        return [ 'type' => $cost_type, 'val' => $product_cost ];
+    }
+
+    // Level 3: category — single query via get_product_cog_by_cat()
+    $cat_cog = get_product_cog_by_cat( $product_id );
+    if ( $cat_cog['val'] ) {
+        return [ 'type' => $cat_cog['type'], 'val' => $cat_cog['val'] ];
+    }
+
+    // Level 4: global option
+    return [
+        'type' => get_option( '_pixel_cost_of_goods_cost_type' ),
+        'val'  => get_option( '_pixel_cost_of_goods_cost_val' ),
+    ];
+}
+
+
+function getAvailableProductCogOrder( $order ) {
+    // ── WooCommerce native COGS path ──────────────────────────────────────────
+    if ( pys_cog_get_source() === 'wc_cog' && isWcCogAvailable() && isWcCogFeatureEnabled() ) {
+        // For wc_cog: tax inclusion controlled by our own option, not the PYS COG plugin setting
+        $wc_include_tax = PYS()->getOption( 'woo_cog_wc_include_tax' );
+        $order_total    = 0.0;
+        $cost           = 0.0;
+        foreach ( $order->get_items() as $item_id => $item ) {
+            $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] ? $item['variation_id'] : $item['product_id'] );
+            $product = wc_get_product($product_id);
+            if(!$product) continue;
+
+            $args = array( 'qty'   => 1, 'price' => $product->get_price());
+            $price = 0;
+            $qlt = $item['quantity'] ?? 1;
+
+            if($wc_include_tax) {
+                $price = wc_get_price_excluding_tax($product, $args);
+            } else {
+                $price = wc_get_price_including_tax($product,$args);
+            }
+            $order_total += (float) $price;
+
+            $cogs_value = $product->get_cogs_value();
+            if ( $cogs_value === null ) continue;
+            $cost += (float) $cogs_value * (int) $qlt;
+        }
+        return $order_total - $cost;
+    }
+
+    // ── PYS COG plugin path ───────────────────────────────────────────────────
+    // For pixel_cog: tax inclusion controlled by the PYS COG plugin's own setting
+    $isWithoutTax = get_option( '_pixel_cog_tax_calculating' ) == 'no';
+    $order_total  = 0.0;
+    $cost         = 0.0;
+    $custom_total = 0.0;
+    $cat_isset    = 0;
+    $notice       = '';
+    // Read global fallback values once before the loop
+    $global_cost  = get_option( '_pixel_cost_of_goods_cost_val' );
+    $global_type  = get_option( '_pixel_cost_of_goods_cost_type' );
+
+    foreach ( $order->get_items() as $item_id => $item ) {
+        $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] ? $item['variation_id'] : $item['product_id'] );
+        $product = wc_get_product($product_id);
+        if(!$product) continue;
+
+        $args = array( 'qty'   => 1, 'price' => $product->get_price());
+
+        if($isWithoutTax) {
+            $price = wc_get_price_excluding_tax($product, $args);
+        } else {
+            $price = wc_get_price_including_tax($product,$args);
+        }
+
+        $order_total += (float) $price;
+
+        $product_id    = $product->get_id();
+
+        $cost_type    = get_post_meta( $product_id, '_pixel_cost_of_goods_cost_type', true );
+        $product_cost = get_post_meta( $product_id, '_pixel_cost_of_goods_cost_val', true );
+
+        if ( ! $product_cost && $product->is_type( 'variation' ) ) {
+            $cost_type    = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_type', true );
+            $product_cost = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
+        }
+
+        // Use a distinct variable name to avoid shadowing the outer $args parameter
+        $price_args = [ 'qty' => 1, 'price' => $product->get_price() ];
+        $qlt = $item['quantity'];
+        $price      = $isWithoutTax
+            ? wc_get_price_excluding_tax( $product, $price_args )
+            : wc_get_price_including_tax( $product, $price_args );
+
+        if ( $product_cost ) {
+            $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
+            $custom_total += $price * $qlt;
+        } else {
+            // Single query for both val + type via the combined category helper
+            $cat_cog      = get_product_cog_by_cat( $product_id );
+            $product_cost = $cat_cog['val'];
+            $cost_type    = $cat_cog['type'];
+            if ( $product_cost ) {
+                $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
+                $custom_total += $price * $qlt;
+                $notice        = 'Category Cost of Goods was used for some products.';
+                $cat_isset     = 1;
+            } elseif ( $global_cost ) {
+                $cost         += ( $global_type == 'percent' ) ? (float) $price * ( (float) $global_cost / 100 ) * $qlt : (float) $global_cost * $qlt;
+                $custom_total += $price * $qlt;
+                $notice        = $cat_isset ? 'Global and Category Cost of Goods was used for some products.' : 'Global Cost of Goods was used for some products.';
+            } else {
+                $notice = "Some products don't have Cost of Goods.";
+            }
+        }
+    }
+
+    return $order_total - $cost;
+}
+function getProductCogOrder( $args ) {
+    if ( ! isPixelCogActive() ) {
+        return [ 'cost' => 0, 'profit' => 0 ];
+    }
+
+    $order_total  = 0.0;
+    $cost         = 0.0;
+    $custom_total = 0.0;
+    $isWithoutTax = get_option( '_pixel_cog_tax_calculating' ) == 'no';
+    // Read global fallback values once before the loop
+    $global_cost  = get_option( '_pixel_cost_of_goods_cost_val' );
+    $global_type  = get_option( '_pixel_cost_of_goods_cost_type' );
+
+    foreach ( $args['products'] as $productData ) {
+        $order_total += (float) $productData['total'];
+        if ( ! $isWithoutTax ) {
+            $order_total += (float) $productData['total_tax'];
+        }
+
+        $product_id    = $productData['product_id'];
+        $productObject = wc_get_product( $product_id );
+        if ( ! $productObject ) continue;
+
+        $cost_type    = get_post_meta( $productObject->get_id(), '_pixel_cost_of_goods_cost_type', true );
+        $product_cost = get_post_meta( $productObject->get_id(), '_pixel_cost_of_goods_cost_val', true );
+
+        if ( ! $product_cost && $productObject->is_type( 'variation' ) ) {
+            $cost_type    = get_post_meta( $productObject->get_parent_id(), '_pixel_cost_of_goods_cost_type', true );
+            $product_cost = get_post_meta( $productObject->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
+        }
+
+        // Use a distinct variable name to avoid shadowing the outer $args parameter
+        $price_args = [ 'qty' => 1, 'price' => $productObject->get_price() ];
+        $qlt        = $productData['quantity'];
+        $price      = $isWithoutTax
+            ? wc_get_price_excluding_tax( $productObject, $price_args )
+            : wc_get_price_including_tax( $productObject, $price_args );
+
+        if ( $product_cost ) {
+            $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
+            $custom_total += $price * $qlt;
+        } else {
+            // Single query for both val + type via the combined category helper
+            $cat_cog      = get_product_cog_by_cat( $product_id );
+            $product_cost = $cat_cog['val'];
+            $cost_type    = $cat_cog['type'];
+            if ( $product_cost ) {
+                $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
+                $custom_total += $price * $qlt;
+            } elseif ( $global_cost ) {
+                $cost         += ( $global_type == 'percent' ) ? (float) $price * ( (float) $global_cost / 100 ) * $qlt : (float) $global_cost * $qlt;
+                $custom_total += $price * $qlt;
+            }
+        }
+    }
+
+    return [ 'cost' => $cost, 'profit' => $custom_total - $cost ];
+}
+
+function getAvailableProductCogCart() {
+    $shipping        = WC()->cart->get_shipping_total();
+    $cart_total_base = WC()->cart->get_total( 'edit' ) - $shipping;
+
+    // ── WooCommerce native COGS path ──────────────────────────────────────────
+    if ( pys_cog_get_source() === 'wc_cog' && isWcCogAvailable() && isWcCogFeatureEnabled() ) {
+        // For wc_cog: tax inclusion controlled by our own option, not the PYS COG plugin setting
+        $wc_include_tax = PYS()->getOption( 'woo_cog_wc_include_tax' );
+        $cart_total     = $cart_total_base;
+        if ( $wc_include_tax ) {
+            $cart_total -= WC()->cart->get_shipping_tax(); // keep product tax, remove shipping tax
+        } else {
+            $cart_total -= WC()->cart->get_total_tax();    // remove all tax
+        }
+        $cost = 0.0;
+        foreach ( WC()->cart->cart_contents as $item ) {
+            $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] )
+                ? $item['variation_id']
+                : $item['product_id'];
+            $product = wc_get_product( $product_id );
+            if ( ! $product ) continue;
+            $cogs_value = $product->get_cogs_value();
+            if ( $cogs_value === null ) continue;
+            $cost += (float) $cogs_value * (int) $item['quantity'];
+        }
+        return $cart_total - $cost;
+    }
+
+    // ── PYS COG plugin path ───────────────────────────────────────────────────
+    // For pixel_cog: tax inclusion controlled by the PYS COG plugin's own setting
+    $isWithoutTax = get_option( '_pixel_cog_tax_calculating' ) == 'no';
+    $cart_total   = $cart_total_base;
+    if ( $isWithoutTax ) {
+        $cart_total -= WC()->cart->get_total_tax();
+    } else {
+        $cart_total -= WC()->cart->get_shipping_tax();
+    }
+
+    // Read global fallback values once before the loop
+    $global_cost  = get_option( '_pixel_cost_of_goods_cost_val' );
+    $global_type  = get_option( '_pixel_cost_of_goods_cost_type' );
+
+    $cost         = 0.0;
+    $custom_total = 0.0;
+    $cat_isset    = 0;
+    $notice       = '';
+
+    foreach ( WC()->cart->cart_contents as $cart_item_key => $item ) {
+        $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] )
+            ? $item['variation_id']
+            : $item['product_id'];
+
+        $product = wc_get_product( $product_id );
+        if ( ! $product ) continue;
+
+        $cost_type    = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_type', true );
+        $product_cost = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_val', true );
+
+        if ( ! $product_cost && $product->is_type( 'variation' ) ) {
+            $cost_type    = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_type', true );
+            $product_cost = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
+        }
+
+        $price_args = [ 'qty' => 1, 'price' => $product->get_price() ];
+        $price      = $isWithoutTax
+            ? wc_get_price_excluding_tax( $product, $price_args )
+            : wc_get_price_including_tax( $product, $price_args );
+        $qlt        = $item['quantity'];
+
+        if ( $product_cost ) {
+            $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
+            $custom_total += $price * $qlt;
+        } else {
+            // Single query for both val + type via the combined category helper
+            $cat_cog      = get_product_cog_by_cat( $product_id );
+            $product_cost = $cat_cog['val'];
+            $cost_type    = $cat_cog['type'];
+            if ( $product_cost ) {
+                $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
+                $custom_total += $price * $qlt;
+                $notice        = 'Category Cost of Goods was used for some products.';
+                $cat_isset     = 1;
+            } elseif ( $global_cost ) {
+                $cost         += ( $global_type == 'percent' ) ? (float) $price * ( (float) $global_cost / 100 ) * $qlt : (float) $global_cost * $qlt;
+                $custom_total += $price * $qlt;
+                $notice        = $cat_isset ? 'Global and Category Cost of Goods was used for some products.' : 'Global Cost of Goods was used for some products.';
+            } else {
+                $notice = "Some products don't have Cost of Goods.";
+            }
+        }
+    }
+
+    return $cart_total - $cost;
+}
+
+/**
+ * get_product_cog_by_cat.
+ *
+ * Fetches COG value AND type for a product from its WooCommerce categories in a single
+ * wp_get_post_terms() call. Results are cached per product_id for the duration of the request.
+ * Selects the category with the numerically highest cost value (same behaviour as the
+ * original asort/end approach, but only for categories that have a numeric value set).
+ *
+ * @param int $product_id
+ * @return array{val: string, type: string}
+ */
+function get_product_cog_by_cat( $product_id ) {
+    static $cache = [];
+    if ( isset( $cache[ $product_id ] ) ) {
+        return $cache[ $product_id ];
+    }
+
+    $empty     = [ 'val' => '', 'type' => '' ];
+    $term_list = wp_get_post_terms( $product_id, 'product_cat', [ 'fields' => 'ids' ] );
+
+    if ( empty( $term_list ) || is_wp_error( $term_list ) ) {
+        $cache[ $product_id ] = $empty;
+        return $empty;
+    }
+
+    $candidates = [];
+    foreach ( $term_list as $term_id ) {
+        $val = get_term_meta( $term_id, '_pixel_cost_of_goods_cost_val', true );
+        if ( $val !== '' && is_numeric( $val ) ) {
+            $candidates[ $term_id ] = [
+                'val'  => $val,
+                'type' => get_term_meta( $term_id, '_pixel_cost_of_goods_cost_type', true ),
+            ];
+        }
+    }
+
+    if ( empty( $candidates ) ) {
+        $cache[ $product_id ] = $empty;
+        return $empty;
+    }
+
+    // Use the category with the highest numeric cost value
+    uasort( $candidates, function ( $a, $b ) {
+        return (float) $a['val'] <=> (float) $b['val'];
+    } );
+
+    $max                  = end( $candidates );
+    $cache[ $product_id ] = $max;
+    return $max;
+}
+
+/**
+ * get_product_type_by_cat.
+ *
+ * @deprecated Use get_product_cog_by_cat() which returns both val and type in one query.
+ * @version 1.0.0
+ * @since   1.0.0
+ */
+function get_product_type_by_cat( $product_id ) {
+    return get_product_cog_by_cat( $product_id )['type'];
+}
+
+/**
+ * get_product_cost_by_cat.
+ *
+ * @deprecated Use get_product_cog_by_cat() which returns both val and type in one query.
+ * @version 1.0.0
+ * @since   1.0.0
+ */
+function get_product_cost_by_cat( $product_id ) {
+    return get_product_cog_by_cat( $product_id )['val'];
+}
+
+/**
  * Check if WooCommerce plugin installed and activated.
  *
  * @return bool
@@ -178,21 +769,6 @@ function isBoostActive() {
 	}
 
 	return is_plugin_active( 'boost/boost.php' );
-
-}
-
-/**
- * Check if Pixel Cost of goods plugin installed and activated.
- *
- * @return bool
- */
-function isPixelCogActive() {
-
-	if ( ! function_exists( 'is_plugin_active' ) ) {
-		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-	}
-
-	return is_plugin_active( 'pixel-cost-of-goods/pixel-cost-of-goods.php' );
 
 }
 
@@ -260,231 +836,6 @@ function getAvailableUserRoles() {
 
 	return $user_roles;
 
-}
-
-function getAvailableProductCog($product) {
-
-    $cost_type = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_type', true );
-    $product_cost = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_val', true );
-
-    if(!$product_cost && $product->is_type("variation")) {
-        $cost_type = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_type', true );
-        $product_cost = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
-    }
-
-
-    if ($product_cost) {
-        $cog = array(
-            'type' => $cost_type,
-            'val' => $product_cost
-        );
-    } else {
-        $cog_term_val = get_product_cost_by_cat( $product->get_id() );
-        if ($cog_term_val) {
-            $cog = array(
-                'type' => get_product_type_by_cat( $product->get_id() ),
-                'val' => $cog_term_val
-            );
-        } else {
-            $cog = array(
-                'type' => get_option( '_pixel_cost_of_goods_cost_type'),
-                'val' => get_option( '_pixel_cost_of_goods_cost_val')
-            );
-        }
-    }
-
-    return $cog;
-
-}
-
-function getAvailableProductCogOrder($order) {
-    $cost = 0;
-    $custom_total = 0;
-    $cat_isset = 0;
-    $isWithoutTax = get_option( '_pixel_cog_tax_calculating')  == 'no';
-
-    $shipping = $order->get_shipping_total("edit");
-    $order_total = $order->get_total('edit') - $shipping;
-
-    if($isWithoutTax) {
-        $order_total -=  $order->get_total_tax('edit');
-    } else {
-        $order_total -= $order->get_shipping_tax("edit");
-    }
-
-    foreach ( $order->get_items() as $item_id => $item ) {
-        $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] ? $item['variation_id'] : $item['product_id'] );
-        $product = wc_get_product($product_id);
-        if(!$product) continue;
-
-        $cost_type = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_type', true );
-        $product_cost = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_val', true );
-
-        if(!$product_cost && $product->is_type("variation")) {
-            $cost_type = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_type', true );
-            $product_cost = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
-        }
-
-
-        $args = array( 'qty'   => 1, 'price' => $product->get_price());
-        $qlt = $item['quantity'];
-
-        if($isWithoutTax) {
-            $price = wc_get_price_excluding_tax($product, $args);
-        } else {
-            $price = wc_get_price_including_tax($product,$args);
-        }
-
-        if ($product_cost) {
-            $cost = ($cost_type == 'percent') ? $cost + ($price * ($product_cost / 100) * $qlt) : $cost + ($product_cost * $qlt);
-            $custom_total = $custom_total + ($price * $qlt);
-        } else {
-            $product_cost = get_product_cost_by_cat( $product_id );
-            $cost_type = get_product_type_by_cat( $product_id );
-            if ($product_cost) {
-                $cost = ($cost_type == 'percent') ? $cost + ($price * ($product_cost / 100) * $qlt) : $cost + ($product_cost * $qlt);
-                $custom_total = $custom_total + ($price * $qlt);
-                $notice = "Category Cost of Goods was used for some products.";
-                $cat_isset = 1;
-            } else {
-                $product_cost = get_option( '_pixel_cost_of_goods_cost_val');
-                $cost_type = get_option( '_pixel_cost_of_goods_cost_type' );
-                if ($product_cost) {
-                    $cost = ($cost_type == 'percent') ? (float) $cost + ((float) $price * ((float) $product_cost / 100) * $qlt) : (float) $cost + ((float) $product_cost * $qlt);
-                    $custom_total = $custom_total + ($price * $qlt);
-                    if ($cat_isset == 1) {
-                        $notice = "Global and Category Cost of Goods was used for some products.";
-                    } else {
-                        $notice = "Global Cost of Goods was used for some products.";
-                    }
-                } else {
-                    $notice = "Some products don't have Cost of Goods.";
-                }
-            }
-        }
-    }
-
-    return $order_total - $cost;
-
-}
-
-function getAvailableProductCogCart() {
-    $cart_total = 0.0;
-    $cost = 0;
-    $notice = '';
-    $custom_total = 0;
-    $cat_isset = 0;
-    $isWithoutTax = get_option( '_pixel_cog_tax_calculating')  == 'no';
-
-    $shipping = WC()->cart->get_shipping_total();
-    $cart_total = WC()->cart->get_total('edit') - $shipping;
-
-    if($isWithoutTax) {
-        $cart_total -=  WC()->cart->get_total_tax();
-    } else {
-        $cart_total -= WC()->cart->get_shipping_tax();
-    }
-
-    foreach ( WC()->cart->cart_contents as $cart_item_key => $item ) {
-        $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] ? $item['variation_id'] : $item['product_id'] );
-
-        $product = wc_get_product($product_id);
-
-        if(!$product) continue;
-
-        $cost_type = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_type', true );
-        $product_cost = get_post_meta( $product->get_id(), '_pixel_cost_of_goods_cost_val', true );
-
-        if(!$product_cost && $product->is_type("variation")) {
-            $cost_type = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_type', true );
-            $product_cost = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
-        }
-
-        $args = array( 'qty'   => 1, 'price' => $product->get_price());
-        if($isWithoutTax) {
-            $price = wc_get_price_excluding_tax($product, $args);
-        } else {
-            $price = wc_get_price_including_tax($product,$args);
-        }
-        $qlt = $item['quantity'];
-
-
-        if ($product_cost) {
-            $cost = ($cost_type == 'percent') ? $cost + ($price * ($product_cost / 100) * $qlt) : $cost + ($product_cost * $qlt);
-            $custom_total = $custom_total + ($price * $qlt);
-        } else {
-            $product_cost = get_product_cost_by_cat( $product_id );
-            $cost_type = get_product_type_by_cat( $product_id );
-            if ($product_cost) {
-                $cost = ($cost_type == 'percent') ? $cost + ($price * ($product_cost / 100) * $qlt) : $cost + ($product_cost * $qlt);
-                $custom_total = $custom_total + ($price * $qlt);
-                $notice = "Category Cost of Goods was used for some products.";
-                $cat_isset = 1;
-            } else {
-                $product_cost = get_option( '_pixel_cost_of_goods_cost_val');
-                $cost_type = get_option( '_pixel_cost_of_goods_cost_type' );
-                if ($product_cost) {
-                    $cost = ($cost_type == 'percent') ? $cost + ((float) $price * ((float) $product_cost / 100) * $qlt) : (float) $cost + ((float) $product_cost * $qlt);
-                    $custom_total = $custom_total + ($price * $qlt);
-                    if ($cat_isset == 1) {
-                        $notice = "Global and Category Cost of Goods was used for some products.";
-                    } else {
-                        $notice = "Global Cost of Goods was used for some products.";
-                    }
-                } else {
-                    $notice = "Some products don't have Cost of Goods.";
-                }
-            }
-        }
-    }
-
-    return $cart_total - $cost;
-
-}
-
-/**
- * get_product_type_by_cat.
- *
- * @version 1.0.0
- * @since   1.0.0
- */
-function get_product_type_by_cat( $product_id ) {
-	$term_list = wp_get_post_terms($product_id,'product_cat',array('fields'=>'ids'));
-	$cost = array();
-	foreach ($term_list as $term_id) {
-		$cost[$term_id] = array(
-			get_term_meta( $term_id, '_pixel_cost_of_goods_cost_val', true ),
-			get_term_meta( $term_id, '_pixel_cost_of_goods_cost_type', true )
-		);
-	}
-	if ( empty( $cost ) ) {
-		return '';
-	} else {
-		asort( $cost );
-		$max = end( $cost );
-		return $max[1];
-	}
-}
-
-/**
- * get_product_cost_by_cat.
- *
- * @version 1.0.0
- * @since   1.0.0
- */
-function get_product_cost_by_cat( $product_id ) {
-	$term_list = wp_get_post_terms($product_id,'product_cat',array('fields'=>'ids'));
-	$cost = array();
-	foreach ($term_list as $term_id) {
-		$cost[$term_id] = get_term_meta( $term_id, '_pixel_cost_of_goods_cost_val', true );
-	}
-	if ( empty( $cost ) ) {
-		return '';
-	} else {
-		asort( $cost );
-		$max = end( $cost );
-		return $max;
-	}
 }
 
 function isDisabledForCurrentRole() {
@@ -626,7 +977,10 @@ function sanitizeParams( $params ) {
 		} elseif (is_numeric($value)) {
             $sanitized[ $key ] = $value;
         } else {
-			$sanitized[ $key ] = stripslashes(html_entity_decode( $value ));
+            // Do NOT html_entity_decode() here: reversing HTML encoding would
+            // re-introduce XSS-capable characters (<, >, ", ') that may have
+            // been previously encoded by upstream sanitizers/templating.
+            $sanitized[ $key ] = sanitize_text_field( stripslashes( $value ) );
 		}
 
 	}
@@ -951,7 +1305,7 @@ function getPysCurrencySymbols() {
     );
 }
 
-function getStandardParams() {
+function getStandardParams( $post_id = null ) {
     global $post;
     $cpt = get_post_type();
     $params = array(
@@ -969,7 +1323,16 @@ function getStandardParams() {
         $params['event_url'] = getCurrentPageUrl(true);
     }
 
-    if(is_singular( 'post' )) {
+    // If a specific post_id is provided (e.g., during AJAX requests where
+    // WordPress conditional tags are unavailable), resolve page context directly.
+    if ( ! empty( $post_id ) && (int) $post_id > 0 ) {
+        $queried_post = get_post( (int) $post_id );
+        if ( $queried_post instanceof \WP_Post ) {
+            $params['page_title'] = $queried_post->post_title;
+            $params['post_type']  = $queried_post->post_type;
+            $params['post_id']    = $queried_post->ID;
+        }
+    } elseif(is_singular( 'post' )) {
         $params['page_title'] = $post->post_title;
         $params['post_id']   = $post->ID;
 

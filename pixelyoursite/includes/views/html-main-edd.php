@@ -9,7 +9,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 
 <div class="cards-wrapper cards-wrapper-style1 gap-24">
-
+    <div class="card card-style6 card-static">
+        <div class="card-body">
+            <div class="gap-24">
+                <div>
+                    <p>
+                        <b><?php _e('Recommended', 'pys'); ?></b>: <?php _e('Exclude the Confirmation page from cache. In EDD, this is the page customers see after checkout is completed. Caching it can reuse an old event_id and break Purchase event deduplication.', 'pys');?>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Advanced Purchase Tracking-->
     <div class="card card-style5">
         <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
@@ -651,6 +661,87 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     thank you pages", you must configure them with our <a href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/the-super-pack"
                                                                     target="_blank" class="link">Super Pack</a>.';
                         renderWarningMessage( $message ); ?>
+                    </div>
+                </div>
+            </div>
+            <!-- Track Subscriptions -->
+            <div class="card card-style6">
+                <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+                    <div class="disable-card d-flex align-items-center">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="secondary_heading_type2 switcher-label">Track Subscriptions</h4>
+                    </div>
+                    <div class="d-flex align-items-center flex-collapse-block">
+                        <?php renderProBadge(); ?>
+                        <?php cardCollapseSettings(); ?>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="pro-feature-container">
+                        <div class="gap-24">
+                            <p class="text-gray">
+                                <?php _e('This option will enable the following events:', 'pys');?> <span class="parameters-list">StartTrial</span> (when a free trial is initiated), <span class="parameters-list">Subscribe</span> (when a new subscription is created), <span class="parameters-list">SubscriptionRenewal</span> (when a subscription is renewed), <span class="parameters-list">SubscriptionExpired</span> (when a subscription expires), <span class="parameters-list">SubscriptionCanceled</span> (when a subscription is canceled).
+                            </p>
+
+                            <?php if ( !isEddRecurringActive() ) : ?>
+                                <p class="text-danger">
+                                    <?php _e( 'EDD Recurring plugin is required for this feature to work.', 'pys' ); ?>
+                                </p>
+                            <?php else : ?>
+                                <p class="text-gray">This feature works only when there is an API connection configured for the tag.</p>
+                            <?php endif; ?>
+                            <?php
+                            renderEddSubscriptionsPlatformSwitcher( Facebook() );
+                            renderEddSubscriptionsPlatformSwitcher( GA() );
+
+                            if ( Pinterest()->enabled() ) {
+                                renderEddSubscriptionsPlatformSwitcher( Pinterest() );
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Track License -->
+            <div class="card card-style6">
+                <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+                    <div class="disable-card d-flex align-items-center">
+                        <?php renderDummySwitcher(); ?>
+                        <h4 class="card-heading secondary_heading">Track License</h4>
+                    </div>
+                    <div class="d-flex align-items-center flex-collapse-block">
+                        <?php renderProBadge(); ?>
+                        <?php cardCollapseSettings(); ?>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="pro-feature-container">
+                        <div class="gap-24">
+                            <p class="text-gray">
+                                <?php _e('This option will enable the following events:', 'pys');?> <span class="parameters-list">LicenseCreated, License_upgrade, License_expired</span>.
+                            </p>
+                            <?php if ( !isEddSoftwareLicensingActive() ) : ?>
+                                <div class="d-flex align-items-center">
+                                    <p class="text-danger">
+                                        <?php _e( 'EDD Software Licensing plugin is required for this feature to work.', 'pys' ); ?>
+                                    </p>
+                                </div>
+                            <?php else: ?>
+                                <div class="d-flex align-items-center">
+                                    <p class="text-gray">This feature works only when there is an API connection configured for the tag.</p>
+                                </div>
+                            <?php
+                            endif;
+                            renderEddLicensesPlatformSwitcher( Facebook() );
+                            renderEddLicensesPlatformSwitcher( GA() );
+
+                            if ( Pinterest()->enabled() ) {
+                                renderEddLicensesPlatformSwitcher( Pinterest() );
+                            }
+                            ?>
+                        </div>
                     </div>
                 </div>
             </div>

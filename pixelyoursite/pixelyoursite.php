@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.2.0.4' );
+define( 'PYS_FREE_VERSION', '11.2.0.5' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
 define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );
@@ -13,6 +13,7 @@ define( 'PYS_FREE_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
 define( 'PYS_FREE_PLUGIN_FILE', __FILE__ );
 define( 'PYS_FREE_PLUGIN_BASENAME', plugin_basename( PYS_FREE_PLUGIN_FILE ) );
 define( 'PYS_FREE_GTM_CONTAINERS_PATH', untrailingslashit( plugin_dir_url( __FILE__ ) ) .'/containers_gtm/' );
+define( 'PYS_FREE_LICENSE_NAME', 'PixelYourSite' );
 
 define( 'PYS_FREE_PLUGIN_ICON', PYS_FREE_URL . '/dist/images/pys-logo.svg');
 define( 'PYS_FREE_VIEW_PATH', PYS_FREE_PATH . '/includes/views' );

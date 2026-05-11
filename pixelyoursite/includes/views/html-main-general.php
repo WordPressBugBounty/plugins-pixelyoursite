@@ -650,33 +650,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
                     <div class="card-body">
                         <div class="gap-24">
-                            <?php if ( Facebook()->enabled() ) : ?>
-                                <?php if ( isWooCommerceActive() && Facebook()->getOption( "woo_complete_registration_fire_every_time" ) ) : ?>
-                                    <div class="d-flex align-items-center">
-                                        <?php Facebook()->render_switcher_input( 'automatic_event_signup_enabled_disable', false, true );
-                                        ?>
-
-                                        <h4 class="switcher-label secondary_heading">Enable on Facebook</h4>
-                                    </div>
-
-                                    <div class="d-flex align-items-center">
-                                        <p>
-                                            Facebook CompleteReservation is fired every time a WooCommerce takes
-                                            place.<br/>
-                                            You can change this from the WooCommerce events
-                                            <a href="<?= buildAdminUrl( 'pixelyoursite', 'woo' ) ?>" target="_blank"
-                                               class="link">
-                                                settings
-                                            </a>
-                                        </p>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="d-flex align-items-center">
-                                        <?php Facebook()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Enable on Facebook</h4>
-                                    </div>
-                                <?php endif; ?>
-                            <?php endif; ?>
+                        <?php if ( Facebook()->enabled() ) : ?>
+                            <div class="d-flex align-items-center">
+                                <?php Facebook()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable on Facebook</h4>
+                            </div>
+                        <?php endif; ?>
 
                         <?php if ( GA()->enabled() ) : ?>
                             <div class="d-flex align-items-center">

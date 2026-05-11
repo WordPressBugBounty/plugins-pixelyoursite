@@ -16,6 +16,9 @@ class GA extends Settings implements Pixel {
 	private static $_instance;
 	
 	private $configured;
+
+    private $moduleName = 'Google Analytics';
+
 	
 	public static function instance() {
 		
@@ -26,7 +29,7 @@ class GA extends Settings implements Pixel {
 		return self::$_instance;
 		
 	}
-	
+
     public function __construct() {
 		
         parent::__construct( 'ga' );
@@ -43,6 +46,9 @@ class GA extends Settings implements Pixel {
     }
 
 
+    public function getModuleName() {
+        return $this->moduleName;
+    }
 	
 	public function enabled() {
 		return $this->getOption( 'enabled' );
@@ -383,13 +389,14 @@ class GA extends Settings implements Pixel {
 
                     // Adding products
                     if (!empty($event['params']['items'])) {
-                        foreach ($event['params']['items'] as $key => $item) {
-
-                            $args["pr" . ($key + 1) . "id"] = isset($item['item_id']) ? urlencode($item['item_id']) : '';
-                            $args["pr" . ($key + 1) . "nm"] = isset($item['item_name']) ? urlencode($item['item_name']) : '';
-                            $args["pr" . ($key + 1) . "pr"] = isset($item['price']) ? (float)$item['price'] : 0;
-                            $args["pr" . ($key + 1) . "qt"] = isset($item['quantity']) ? (int)$item['quantity'] : 1;
-                            $args["pr" . ($key + 1) . "ca"] = isset($item['item_category']) ? urlencode($item['item_category']) : '';
+                        $pr_index = 1;
+                        foreach ($event['params']['items'] as $item) {
+                            $args["pr" . $pr_index . "id"] = isset($item['item_id']) ? urlencode($item['item_id']) : '';
+                            $args["pr" . $pr_index . "nm"] = isset($item['item_name']) ? urlencode($item['item_name']) : '';
+                            $args["pr" . $pr_index . "pr"] = isset($item['price']) ? (float)$item['price'] : 0;
+                            $args["pr" . $pr_index . "qt"] = isset($item['quantity']) ? (int)$item['quantity'] : 1;
+                            $args["pr" . $pr_index . "ca"] = isset($item['item_category']) ? urlencode($item['item_category']) : '';
+                            $pr_index++;
                         }
                     }
                     $src = add_query_arg( $args, 'https://www.google-analytics.com/collect' ) ;

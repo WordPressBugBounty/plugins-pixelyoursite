@@ -78,8 +78,7 @@ class EventsWoo extends EventsFactory {
                 $size++;
             }
         }
-        if(PYS()->getOption( 'woo_complete_registration_enabled' ))
-            $size++;
+
         return $size;
     }
 
@@ -245,12 +244,6 @@ class EventsWoo extends EventsFactory {
                     update_post_meta( $order_id, '_pys_purchase_event_fired', true );
                 }
                 $events[] = new SingleEvent($event,EventTypes::$STATIC,'woo');
-
-                // add child event complete_registration
-                if(PYS()->getOption( 'woo_complete_registration_enabled' ) && Facebook()->getOption("woo_complete_registration_fire_every_time") && !Facebook()->getOption("woo_complete_registration_send_from_server")) {
-                    $events[] = new SingleEvent('woo_complete_registration',EventTypes::$STATIC,'woo');
-                }
-
 
                 return $events;
             }

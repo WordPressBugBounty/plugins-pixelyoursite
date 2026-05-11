@@ -425,18 +425,6 @@ class EventsManager {
 
         $eventData = $event->getData();
         $eventData = $this::filterEventParams($eventData,$slug,['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
-        // send only for FB Server events
-        if(Facebook()->enabled() && $pixel->getSlug() == "facebook" &&
-            ($event->getId() == "woo_complete_registration") &&
-            Facebook()->isServerApiEnabled() &&
-            Facebook()->getOption("woo_complete_registration_send_from_server") &&
-            !$this->isGdprPluginEnabled() )
-        {
-            if($eventData['delay'] == 0 && !PYS()->getOption( "server_static_event_use_ajax" )) {
-                $this->facebookServerEvents[] = $event;
-            }
-            return;
-        }
 
         //save static event data
         $this->staticEvents[ $pixel->getSlug() ][ $event->getId() ][] = $eventData;
@@ -546,7 +534,8 @@ class EventsManager {
 		$params = array();
         $event = new SingleEvent('woo_add_to_cart_on_button_click',EventTypes::$STATIC,'woo');
         $event->args = ['productId' => $product_id,'quantity' => 1];
-
+        $eventID = EventIdGenerator::guidv4();
+        $event->addPayload(['eventID'=>$eventID]);
 		foreach ( PYS()->getRegisteredPixels() as $pixel ) {
 			/** @var Pixel|Settings $pixel */
 
