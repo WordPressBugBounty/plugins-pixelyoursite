@@ -419,6 +419,8 @@ function renderTriggerTypeInput( $trigger, $key ) {
         'video_view'        => 'Embedded Video View - PRO',
         'email_link'        => 'Email Link - PRO',
         'form_field'        => 'Filling out a form field - PRO',
+        'copy_element'      => 'Copy element (text copy) - PRO',
+        'video_speed'       => 'Video speed increase - PRO',
     );
     $eventsFormFactory = apply_filters("pys_form_event_factory",[]);
     foreach ($eventsFormFactory as $activeFormPlugin) :

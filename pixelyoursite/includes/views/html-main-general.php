@@ -953,6 +953,64 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <div class="card-header card-header-style2 has_switch">
                         <div class="disable-card d-flex align-items-center">
                             <?php renderDummySwitcher(); ?>
+                            <h4 class="card-heading secondary_heading">Track Rage Clicks</h4>
+                        </div>
+                        <div class="d-flex align-items-center flex-collapse-block">
+                            <?php renderProBadge(); ?>
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="pro-feature-container">
+                            <div class="gap-24">
+                                <?php
+                                DummyEventForEachPixel();
+                                ?>
+                                <div class="d-flex align-items-center">
+                                    <label class="primary_heading mr-16">Fire after</label>
+                                    <?php renderDummyNumberInput( 3); ?>
+                                    <label class="ml-16">quick clicks on the same element (within 2 seconds)</label>
+                                </div>
+                                <p>Fires when a visitor clicks the same element rapidly — a sign of frustration or a broken UI element.</p>
+                                <p class="primary-heading-color">
+                                    <span class="primary-text-color primary_heading">Event name:</span>
+                                    RageClick
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 has_switch">
+                        <div class="disable-card d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
+                            <h4 class="card-heading secondary_heading">Track Video Speed (global)</h4>
+                        </div>
+                        <div class="d-flex align-items-center flex-collapse-block">
+                            <?php renderProBadge(); ?>
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="pro-feature-container">
+                            <div class="gap-24">
+                                <?php
+                                DummyEventForEachPixel();
+                                ?>
+
+                                <p>Fires when a visitor increases the playback speed of any HTML5, YouTube, or Vimeo video on the site.</p>
+                                <p class="primary-heading-color">
+                                    <span class="primary-text-color primary_heading">Event name:</span>
+                                    VideoSpeed
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 has_switch">
+                        <div class="disable-card d-flex align-items-center">
+                            <?php renderDummySwitcher(); ?>
                             <h4 class="card-heading secondary_heading">Track AdSense</h4>
                         </div>
                         <div class="d-flex align-items-center flex-collapse-block">

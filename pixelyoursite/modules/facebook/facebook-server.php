@@ -94,7 +94,10 @@ class FacebookServer {
 
         foreach ($events as $event) {
             $serverEvent = ServerEventHelper::mapEventToServerEvent($event);
-            $ids = $event->payload['pixelIds'];
+            $ids = $event->payload['pixelIds'] ?? null;
+            if ( empty( $ids ) ) {
+                continue; // Skip events with no destination pixels
+            }
 
             $this->sendEvent($ids,$serverEvent);
         }
@@ -271,7 +274,9 @@ class FacebookServer {
             $this->access_token = Facebook()->getApiToken();
             $this->testCode = Facebook()->getApiTestCode();
         }
-
+        if ( (! is_array( $pixel_Ids ) && ! is_object( $pixel_Ids )) || empty( $pixel_Ids ) ) {
+            return;
+        }
         foreach($pixel_Ids  as $pixel_Id) {
 
             if(empty($this->access_token[$pixel_Id])) continue;

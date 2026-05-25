@@ -981,6 +981,9 @@ final class PYS extends Settings implements Plugin {
         	// update plugins and pixels options
 	        foreach ( $objects as $obj ) {
 	        	/** @var Plugin|Pixel|Settings $obj */
+                if($obj->getSlug() === 'head_footer' && (!current_user_can('manage_pys') || !current_user_can('unfiltered_html'))){
+                    continue;
+                }
 		        $obj->updateOptions();
 	        }
             GATags()->updateOptions();

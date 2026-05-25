@@ -36,7 +36,12 @@ class SingleEvent extends PYSEvent{
      * @param array $data
      */
     function addParams($data) {
-
+        if (is_string($data)) {
+            $decoded = json_decode($data, true);
+            if (is_array($decoded)) {
+                $data = $decoded;
+            }
+        }
         if(is_array($data)) {
             if (isset($this->params['triggerType']['type']) && $this->params['triggerType']['type'] === 'ecommerce') {
                 foreach ( $data as $key => $value ) {

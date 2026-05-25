@@ -3,8 +3,8 @@ Contributors: PixelYourSite
 Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, Google Consent Mode V2
 Requires at least: 3.0.1
 Requires PHP: 5.4
-Tested up to: 6.9
-Stable tag: 11.2.0.5
+Tested up to: 7.0
+Stable tag: 11.2.0.6
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -387,6 +387,17 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+
+= PixelYourSite 11.2.0.6 =
+
+May 25, 2026
+
+* Small code changes ensuring compatibility with WordPress 7.0.
+
+* UI changes that reflect new features in the pro version. 
+
+
 
 = PixelYourSite 11.2.0.5 =
 

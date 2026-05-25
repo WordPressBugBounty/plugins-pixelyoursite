@@ -363,10 +363,90 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                                         type="button">Add another selector
                                 </button>
                             </div>
+                            <div class="d-flex align-items-center mt-16">
+                                <label class="primary_heading mr-16">Number of clicks required</label>
+                                <?php renderDummyNumberInput( 2 ); ?>
+                            </div>
+
+                            <div class="d-flex align-items-center mt-16">
+                                <label class="primary_heading mr-16">Time limit between clicks (ms, 0&nbsp;=&nbsp;no limit)</label>
+                                <?php renderDummyNumberInput( '3000' ); ?>
+                            </div>
                         </div>
                     <?php endif; ?>
 
                     <div class="insert-marker-trigger css_click_marker"></div>
+
+                    <?php if ( $trigger_type == "copy_element" ) : ?>
+                        <div class="event_triggers_panel copy_element_panel mb-16" data-trigger_type="copy_element"
+                             style="display: none;">
+
+                            <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                                <div class="event_trigger_wrapper">
+                                    <div>
+                                        <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="insert-marker"></div>
+                            <div>
+                                <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                                        type="button">Add another selector
+                                </button>
+                            </div>
+                            <p class="form-text text-small mt-8">Fires when a visitor copies text from an element matching the selector.</p>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="insert-marker-trigger copy_element_marker"></div>
+
+                    <?php if ( $trigger_type == "video_speed" ) : ?>
+                        <div class="event_triggers_panel embedded_video_speed video_speed_panel" data-trigger_type="video_speed"
+                             style="display: none;">
+
+                            <div class="event_trigger pro-feature-container" data-trigger_id="0">
+                                <div class="event_trigger_wrapper">
+                                    <div class="w-100">
+                                        <p class="form-text text-small mb-4">Enter video pages URL</p>
+                                        <div class="d-flex align-items-center w-100">
+                                            <div class="flex-1">
+                                                <?php renderDummySelectInput('Video pages URL', true ); ?>
+                                            </div>
+                                            <div class="ml-24">
+                                                <button class="btn btn-primary btn-primary-type2 pys-scan-video"
+                                                        type="button"
+                                                        value="Scan videos">Scan videos
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pys_video_speed_triggers pro-feature-container" data-trigger_id="0"
+                                 style="<?php echo empty( $speed_data ) ? 'display: none;' : ''; ?>">
+                                <div class="event_trigger mb-16 mt-16" data-trigger_id="0">
+                                    <div class="event_trigger_wrapper">
+                                        <div class="w-100">
+                                            <p class="form-text text-small mb-4">Select videos</p>
+                                            <?php renderDummySelectInput( 'Select videos' ); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event_trigger pro-feature-container mb-16" data-trigger_id="0">
+                                    <div class="d-flex align-items-center">
+                                        <label class="primary_heading mr-16">Speed change type</label>
+                                        <?php renderDummySelectInput( 'Increase speed' ); ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="video_speed_error mt-16" style="display: none">
+                                <div class="event_error critical_message"></div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="insert-marker-trigger video_speed_marker"></div>
 
                     <?php if ( $trigger_type == "css_mouseover" ) : ?>
                         <div class="event_triggers_panel css_mouseover_panel mb-16"
@@ -772,6 +852,7 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                         </div>
                     <?php endif; ?>
                 </div>
+
                 <div class="insert-marker-add-trigger"></div>
 
                 <?php // Add new event trigger
@@ -925,6 +1006,77 @@ $serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" :
                     <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled" type="button">Add another
                         selector
                     </button>
+                </div>
+                <div class="d-flex align-items-center mt-16">
+                    <label class="primary_heading mr-16">Number of clicks required</label>
+                    <?php renderDummyNumberInput( 2 ); ?>
+                </div>
+
+                <div class="d-flex align-items-center mt-16">
+                    <label class="primary_heading mr-16">Time limit between clicks (ms, 0&nbsp;=&nbsp;no limit)</label>
+                    <?php renderDummyNumberInput( '3000' ); ?>
+                </div>
+            </div>
+
+            <div class="event_triggers_panel copy_element_panel mb-16" data-trigger_type="copy_element"
+                 style="display: none;">
+
+                <div class="event_trigger mb-16" data-trigger_id="-1" style="display: none;">
+                    <div class="event_trigger_wrapper">
+                        <div>
+                            <?php renderDummyTextInput( 'Enter CSS selector' ); ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insert-marker"></div>
+                <div>
+                    <button class="btn btn-primary btn-primary-type2 add-event-trigger btn-disabled"
+                            type="button">Add another selector
+                    </button>
+                </div>
+                <p class="form-text text-small mt-8">Fires when a visitor copies text from an element matching the selector.</p>
+            </div>
+
+            <div class="event_triggers_panel embedded_video_speed video_speed_panel" data-trigger_type="video_speed"
+                 style="display: none;">
+
+                <div class="event_trigger pro-feature-container" data-trigger_id="0">
+                    <div class="event_trigger_wrapper">
+                        <div class="w-100">
+                            <p class="form-text text-small mb-4">Enter video pages URL</p>
+                            <div class="d-flex align-items-center w-100">
+                                <div class="flex-1">
+                                    <?php renderDummySelectInput('Video pages URL', true ); ?>
+                                </div>
+                                <div class="ml-24">
+                                    <button class="btn btn-primary btn-primary-type2 pys-scan-video"
+                                            type="button"
+                                            value="Scan videos">Scan videos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pys_video_speed_triggers pro-feature-container" data-trigger_id="-1" >
+                    <div class="event_trigger mb-16 mt-16" data-trigger_id="0">
+                        <div class="event_trigger_wrapper">
+                            <div class="w-100">
+                                <p class="form-text text-small mb-4">Select videos</p>
+                                <?php renderDummySelectInput( 'Select videos' ); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event_trigger pro-feature-container mb-16" data-trigger_id="-1">
+                        <div class="d-flex align-items-center">
+                            <label class="primary_heading mr-16">Speed change type</label>
+                            <?php renderDummySelectInput( 'Increase speed' ); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="video_speed_error mt-16" style="display: none">
+                    <div class="event_error critical_message"></div>
                 </div>
             </div>
 
