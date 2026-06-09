@@ -200,7 +200,7 @@ function adminGetFixedNotices() {
                     'title' => 'Track ANYTHING without coding!',
                     'message' => 'This is how the Event Setup Tool works.',
                     'button_text' => 'Learn More',
-                    'button_url' => 'https://www.pixelyoursite.com/strategy/pixelyoursite-est',
+                    'button_url' => 'https://www.pixelyoursite.com/docs/event-setup-tool-guide',
                 ],
 
 

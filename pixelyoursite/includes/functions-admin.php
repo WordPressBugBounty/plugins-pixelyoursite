@@ -928,7 +928,7 @@ function renderProBadge( $url = null,$label = "PRO Feature" ) {
 
 function renderEventSetupToolBadge( $label = 'Event Setup Tool' ) {
 
-    $url = 'https://www.pixelyoursite.com/strategy/pixelyoursite-est/?utm_source=pys-free-plugin&utm_medium=EST-badge&utm_campaign=EST-badge';
+    $url = 'https://www.pixelyoursite.com/docs/event-setup-tool-guide/?utm_source=pys-free-plugin&utm_medium=EST-badge&utm_campaign=EST-badge';
 
     echo '&nbsp;<a href="' . esc_url( $url ) . '" target="_blank" class="badge badge-pill badge-pro">'
         . esc_html( $label ) . ' <i class="fa fa-external-link" aria-hidden="true"></i></a>';

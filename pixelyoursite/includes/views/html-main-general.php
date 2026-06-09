@@ -76,7 +76,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     can help you capture more events. An access token is required to use the
                                     server-side
                                     API.
-                                    <a href='https://www.pixelyoursite.com/strategy/facebook-conversion-api'
+                                    <a href='https://www.pixelyoursite.com/docs/meta-facebook-settings-setup'
                                        target='_blank' class="link">Learn
                                         how to generate the token and how to test Conversion API</a>
                                 </p>
@@ -104,7 +104,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </div>
                     </div>
                     <div class="line"></div>
-                    <?php addMetaTagFields( Facebook(), "https://www.pixelyoursite.com/verify-domain-facebook" ); ?>
+                    <?php addMetaTagFields( Facebook(), "https://www.pixelyoursite.com/docs/meta-facebook-settings-setup" ); ?>
                     <div class="line"></div>
                 </div>
            </div>
@@ -564,745 +564,816 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         <div class="card-body global-events-body">
             <div class="global-events-list">
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-							<?php PYS()->render_switcher_input( 'automatic_event_form_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track Forms</h4>
-                        </div>
-						<?php cardCollapseSettings(); ?>
-                    </div>
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel( 'automatic_event_form', true, true, true, true, true, true, true );
-                            ?>
+                <div class="automatic-events-jumpnav mb-24">
+                    <span class="text-gray mr-8"><?php _e( 'Jump to:', 'pys' ); ?></span>
+                    <a href="#auto-engagement"><?php _e( 'Engagement', 'pys' ); ?></a> ·
+                    <a href="#auto-clicks"><?php _e( 'Clicks', 'pys' ); ?></a> ·
+                    <a href="#auto-leads"><?php _e( 'Lead actions', 'pys' ); ?></a> ·
+                    <a href="#auto-accounts"><?php _e( 'Accounts', 'pys' ); ?></a> ·
+                    <a href="#auto-health"><?php _e( 'Site health', 'pys' ); ?></a>
+                </div>
 
-                            <p>The Form event will fire when a form is successfully submitted for the following
-                                plugins: Contact Form 7, Forminator, WP Forms, WS Forms, Formidable Pro, Ninja Forms,
-                                and Fluent Forms. For forms added by different means, we will fire the event when the
-                                submit button is clicked. Watch <a href="https://www.youtube.com/watch?v=c4Hrb8WK5bw"
-                                                                   target="_blank" class="link">this video</a> to learn
-                                more.
-                            </p>
-
-                            <p>Fires when the website visitor clicks form submit buttons.</p>
-
-                            <?php
-                            $eventsFormFactory = apply_filters( "pys_form_event_factory", [] );
-                            if ( !empty( $eventsFormFactory ) ) : ?>
-                                <div>
+                <div class="automatic-events-group" id="auto-engagement">
+                    <h3 class="secondary_heading_type2 mb-8" style="margin-top: 32px;">
+                        <?php _e( 'Engagement signals', 'pys' ); ?>
+                    </h3>
+                    <p class="text-gray mb-16">
+                        <?php _e( 'Passive behaviour on a page — how interested the visitor is.', 'pys' ); ?>
+                    </p>
+                    <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24">
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_scroll_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track page scroll</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="gap-24">
                                     <?php
-                                    foreach ( $eventsFormFactory as $activeFormPlugin ) : ?>
-                                        <p class="primary-heading-color detecting-form-description">
-                                            <span class="primary-text-color primary_heading"><?php echo $activeFormPlugin->getName(); ?> detected</span>
-                                            - we will fire the Form event for each successfully submitted form.
-                                        </p>
+                                    enableEventForEachPixel('automatic_event_scroll', true, true, true, true, true, false, true);
+                                    ?>
+                                    <div class="d-flex align-items-center">
+                                        <label class="primary_heading mr-16">Trigger for scroll value</label>
+                                        <?php PYS()->render_number_input_percent( 'automatic_event_scroll_value', '', false, 100 ); ?>
+                                    </div>
 
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif;
-
-                            if ( $eventsFormFactory ) :
-                                ?>
-                                <div>
-                                    <?php PYS()->render_checkbox_input( 'enable_success_send_form', 'Fire the event only for the supported plugins, when the form is successfully submitted.' ); ?>
-                                </div>
-                                <p>Configure Lead or other events using our <a
-                                            href="<?php echo buildAdminUrl( 'pixelyoursite', 'events' ); ?>"
-                                            class="link">events
-                                        triggers</a>. Learn how from <a
-                                            href="https://www.youtube.com/watch?v=c4Hrb8WK5bw"
-                                            target="_blank" class="link">this video</a></p>
-                            <?php endif; ?>
-
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Event name:</span>
-                                Form
-                            </p>
-
-	                        <?php if ( isRedditActive() ) : ?>
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                    FormSubmit (custom event)
-                                </p>
-	                        <?php endif; ?>
-
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Specific parameters:</span>
-                                <span class="purple-label">text</span>
-                                <span class="purple-label">from_class</span>
-                                <span class="purple-label">form_id</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track user signup</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="gap-24">
-                        <?php if ( Facebook()->enabled() ) : ?>
-                            <div class="d-flex align-items-center">
-                                <?php Facebook()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
-                                <h4 class="switcher-label secondary_heading">Enable on Facebook</h4>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ( GA()->enabled() ) : ?>
-                            <div class="d-flex align-items-center">
-                                <?php GA()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
-                                <h4 class="switcher-label secondary_heading">Enable on Google Analytics</h4>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ( Bing()->enabled() ) : ?>
-                            <div class="d-flex align-items-center">
-                                <?php Bing()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
-                                <h4 class="switcher-label secondary_heading">Enable on Bing</h4>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ( Pinterest()->enabled() ) : ?>
-                            <div class="d-flex align-items-center">
-                                <?php Pinterest()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
-                                <h4 class="switcher-label secondary_heading">Enable on Pinterest</h4>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ( Reddit()->enabled() ) : ?>
-                            <div class="d-flex align-items-center">
-                                <?php Reddit()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
-                                <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ( GTM()->enabled() ) : ?>
-                            <div class="line"></div>
-                                <div class="d-flex align-items-center">
-                                    <?php GTM()->render_switcher_input('automatic_event_signup_enabled'); ?>
-                                    <h4 class="switcher-label secondary_heading">Enable on GTM dataLayer</h4>
-                                </div>
-                            <div class="line"></div>
-                        <?php endif; ?>
-
-
-                            <p>Fires when the website visitor signup for a WordPress account.</p>
-
-                            <div>
-                                <p class="primary-text-color primary_heading mb-8">Event name:</p>
-                                <p class="primary-heading-color mb-8">On Google Analytics the event is called sign_up
-                                    (standard
-                                    event).</p>
-                                <p class="primary-heading-color mb-8">On Facebook the event is called
-                                    CompleteRegistration
-                                    (standard event).</p>
-                                <p class="primary-heading-color mb-8">On Pinterest the event is called Signup (standard
-                                    event).</p>
-                                <p class="primary-heading-color mb-8">On Bing the event is called sign_up (custom
-                                    event).</p>
-	                            <?php if ( isRedditActive() ) : ?>
-                                    <p class="primary-heading-color mt-8">On Reddit the event is called SignUp (standard
-                                        event).</p>
-	                            <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_login_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track user login</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel('automatic_event_login', true, true, true, true, true, false, true);
-                            ?>
-                            <p>Fires when the website visitor logins a WordPress account.</p>
-
-                            <div>
-                                <p class="primary-text-color primary_heading mb-8">Event name:</p>
-                                <p class="primary-heading-color mb-8">On Google Analytics the event is called login
-                                    (standard event).</p>
-                                <p class="primary-heading-color mb-8">On Google Ads the event is called login (custom
-                                    event).</p>
-                                <p class="primary-heading-color mb-8">On Facebook, Pinterest, Bing<?php if ( isRedditActive() ) : ?>, Reddit<?php endif; ?> the event is
-                                    called
-                                    Login (custom event).</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_download_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track Downloads</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel('automatic_event_download', true, true, true, true, true, true, true);
-                            ?>
-                            <div>
-                                <div class="primary_heading">Extension of files to track as downloads:</div>
-                                <?php PYS()->render_tags_select_input( 'automatic_event_download_extensions' ); ?>
-
-                                <p class="form-text text-small mt-8">Fires when the website visitor open files with the
-                                    designated format.</p>
-                            </div>
-
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Event name:</span>
-                                Download
-                            </p>
-
-	                        <?php if ( isRedditActive() ) : ?>
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                    Download (custom event)
-                                </p>
-	                        <?php endif; ?>
-
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Specific parameters:</span>
-                                <span class="purple-label">download_type</span>
-                                <span class="purple-label">download_name</span>
-                                <span class="purple-label">download_url</span>
-                            </p>
-
-                            <p class="form-text text-small">*Google Analytics 4 automatically tracks this action with an
-                                event called "file_download". If you want, you can disable this event for Google
-                                Analytics</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_comment_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track comments</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel('automatic_event_comment', true, true, true, true, true, false, true);
-                            ?>
-                            <p>Fires when the website visitor ads a comment.</p>
-
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Event name:</span>
-                                Comment
-                            </p>
-
-	                        <?php if ( isRedditActive() ) : ?>
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                    Comment (custom event)
-                                </p>
-	                        <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_scroll_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track page scroll</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel('automatic_event_scroll', true, true, true, true, true, false, true);
-                            ?>
-                            <div class="d-flex align-items-center">
-                                <label class="primary_heading mr-16">Trigger for scroll value</label>
-                                <?php PYS()->render_number_input_percent( 'automatic_event_scroll_value', '', false, 100 ); ?>
-                            </div>
-
-                            <p>Fires when the website visitor scrolls the page.</p>
-
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Event name:</span>
-                                PageScroll
-                            </p>
-
-	                        <?php if ( isRedditActive() ) : ?>
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                    PageScroll (custom event)
-                                </p>
-	                        <?php endif; ?>
-
-                            <p class="form-text text-small">*Google Analytics 4 automatically tracks 90% page scroll
-                                with an event called "scroll". If you want, you can disable this event for Google
-                                Analytics</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_time_on_page_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track time on page</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel('automatic_event_time_on_page', true, true, true, true, true, false, true);
-                            ?>
-                            <div class="d-flex align-items-center">
-                                <label class="primary_heading mr-16">Trigger for time</label>
-                                <?php PYS()->render_number_input( 'automatic_event_time_on_page_value', '', false, 100 ); ?>
-                                <label class="ml-20">seconds</label>
-                            </div>
-
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Event name:</span>
-                                TimeOnPage
-                            </p>
-
-	                        <?php if ( isRedditActive() ) : ?>
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                    TimeOnPage (custom event)
-                                </p>
-	                        <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_404_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track 404 pages</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel('automatic_event_404', false, true, false, true, false, false, false);
-                            ?>
-                            <p class="primary-heading-color">
-                                <span class="primary-text-color primary_heading">Event name:</span>
-                                404
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="d-flex align-items-center">
-                            <?php PYS()->render_switcher_input( 'automatic_event_search_enabled' ); ?>
-                            <h4 class="card-heading secondary_heading">Track searches</h4>
-                        </div>
-                        <?php cardCollapseSettings(); ?>
-                    </div>
-                    <div class="card-body">
-                        <div class="gap-24">
-                            <?php
-                            enableEventForEachPixel('automatic_event_search', true, true, true, true, true, true, true);
-                            ?>
-                            <div>
-                                <p class="primary-text-color primary_heading mb-8">Event name:</p>
-                                <p class="primary-heading-color mb-8">On Google Analytics the event is called search
-                                    (standard
-                                    event).</p>
-                                <p class="primary-heading-color mb-8">On Google Ads the event is called search (custom
-                                    event).</p>
-                                <p class="primary-heading-color mb-8">On Facebook, Pinterest called Search (standard
-                                    event).</p>
-                                <p class="primary-heading-color mb-8">On Bing the event is called search (custom
-                                    event).</p>
-	                            <?php if ( isRedditActive() ) : ?>
-                                    <p class="primary-heading-color mt-8">On Reddit the event is called Search (standard
-                                        event).</p>
-	                            <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track Rage Clicks</h4>
-                        </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
-                                <?php
-                                DummyEventForEachPixel();
-                                ?>
-                                <div class="d-flex align-items-center">
-                                    <label class="primary_heading mr-16">Fire after</label>
-                                    <?php renderDummyNumberInput( 3); ?>
-                                    <label class="ml-16">quick clicks on the same element (within 2 seconds)</label>
-                                </div>
-                                <p>Fires when a visitor clicks the same element rapidly — a sign of frustration or a broken UI element.</p>
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name:</span>
-                                    RageClick
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track Video Speed (global)</h4>
-                        </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
-                                <?php
-                                DummyEventForEachPixel();
-                                ?>
-
-                                <p>Fires when a visitor increases the playback speed of any HTML5, YouTube, or Vimeo video on the site.</p>
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name:</span>
-                                    VideoSpeed
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track AdSense</h4>
-                        </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
-                                <?php
-                                DummyEventForEachPixel();
-                                ?>
-
-                                    <p>Fires when the website visitor clicks on an AdSense ad.</p>
+                                    <p>Fires when the website visitor scrolls the page.</p>
 
                                     <p class="primary-heading-color">
                                         <span class="primary-text-color primary_heading">Event name:</span>
-                                        AdSense
+                                        PageScroll
                                     </p>
+
+                                    <?php if ( isRedditActive() ) : ?>
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                            PageScroll (custom event)
+                                        </p>
+                                    <?php endif; ?>
+
+                                    <p class="form-text text-small">*Google Analytics 4 automatically tracks 90% page scroll
+                                        with an event called "scroll". If you want, you can disable this event for Google
+                                        Analytics</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track internal</h4>
-                        </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
-                                <?php
-                                    DummyEventForEachPixel();
-                                ?>
 
-                                <p>Fires when the website visitor clicks on internal links.</p>
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_time_on_page_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track time on page</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="gap-24">
+                                    <?php
+                                    enableEventForEachPixel('automatic_event_time_on_page', true, true, true, true, true, false, true);
+                                    ?>
+                                    <div class="d-flex align-items-center">
+                                        <label class="primary_heading mr-16">Trigger for time</label>
+                                        <?php PYS()->render_number_input( 'automatic_event_time_on_page_value', '', false, 100 ); ?>
+                                        <label class="ml-20">seconds</label>
+                                    </div>
 
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name:</span>
-                                    InternalClick
-                                </p>
-
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name on TikTok:</span>
-                                    ClickButton
-                                </p>
-
-	                            <?php if ( isRedditActive() ) : ?>
                                     <p class="primary-heading-color">
-                                        <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                        ClickButton (custom event)
+                                        <span class="primary-text-color primary_heading">Event name:</span>
+                                        TimeOnPage
                                     </p>
-	                            <?php endif; ?>
 
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Specific parameters:</span>
-                                    <span class="purple-label">text</span>
-                                    <span class="purple-label">target_url</span>
-                                </p>
+                                    <?php if ( isRedditActive() ) : ?>
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                            TimeOnPage (custom event)
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track outbound</h4>
-                        </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
-                                <?php
-                                DummyEventForEachPixel();
-                                ?>
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_comment_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track comments</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="gap-24">
+                                    <?php
+                                    enableEventForEachPixel('automatic_event_comment', true, true, true, true, true, false, true);
+                                    ?>
+                                    <p>Fires when the website visitor ads a comment.</p>
 
-                                <p>Fire this event when the visitor clicks on links to other domains.</p>
-
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name:</span>
-                                    OutboundClick
-                                </p>
-
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name on TikTok:</span>
-                                    ClickButton
-                                </p>
-
-	                            <?php if ( isRedditActive() ) : ?>
                                     <p class="primary-heading-color">
-                                        <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                        ClickButton (custom event)
+                                        <span class="primary-text-color primary_heading">Event name:</span>
+                                        Comment
                                     </p>
-	                            <?php endif; ?>
 
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Specific parameters:</span>
-                                    <span class="purple-label">text</span>
-                                    <span class="purple-label">target_url</span>
-                                </p>
+                                    <?php if ( isRedditActive() ) : ?>
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                            Comment (custom event)
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
 
-                                <p class="form-text text-small">*Google Analytics 4 automatically tracks clicks on links to
-                                    external
-                                    domains with an event called "click". If you want, you can disable this event for Google
-                                    Analytics</p>
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading"><?php _e( 'Track embedded videos', 'pys' ); ?></h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php if ( Facebook()->enabled() ) : ?>
+                                            <div class="d-flex align-items-center">
+                                                <?php renderDummySwitcher(); ?>
+                                                <h4 class="switcher-label secondary_heading">Enable on Facebook</h4>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php if ( GA()->enabled() ) : ?>
+                                            <div class="d-flex align-items-center">
+                                                <?php renderDummySwitcher(); ?>
+                                                <h4 class="switcher-label secondary_heading">Enable on Google Analytics</h4>
+                                            </div>
+
+                                            <div>
+                                                <?php renderDummyCheckbox( "Disable YouTube videos for Google Analytics" ); ?>
+                                            </div>
+                                        <?php endif; ?>
+
+
+                                        <div class="d-flex align-items-center">
+                                            <?php renderDummySwitcher(); ?>
+                                            <h4 class="switcher-label secondary_heading">Enable on Google Ads</h4>
+                                        </div>
+
+                                        <?php if ( Bing()->enabled() ) : ?>
+                                            <div class="d-flex align-items-center">
+                                                <?php renderDummySwitcher(); ?>
+                                                <h4 class="switcher-label secondary_heading">Enable on Bing</h4>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php if ( Pinterest()->enabled() ) : ?>
+                                            <div class="d-flex align-items-center">
+                                                <?php renderDummySwitcher(); ?>
+                                                <h4 class="switcher-label secondary_heading">Enable on Pinterest</h4>
+                                            </div>
+                                        <?php endif; ?>
+
+
+                                        <div class="d-flex align-items-center">
+                                            <?php renderDummySwitcher(); ?>
+                                            <h4 class="switcher-label secondary_heading">Enable on TikTok</h4>
+                                        </div>
+
+                                        <div class="d-flex align-items-center">
+                                            <label class="primary_heading mr-8">Trigger for play value</label><?php
+                                            renderDummySelectInput( 'Play' ); ?>
+                                        </div>
+
+                                        <?php if ( Reddit()->enabled() ) : ?>
+                                            <div class="d-flex align-items-center">
+                                                <?php Reddit()->render_switcher_input( 'automatic_event_video_enabled' ); ?>
+                                                <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <label class="primary_heading mr-8">Trigger for play value</label><?php
+                                                renderDummySelectInput( 'Play' ); ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php if ( GTM()->enabled() ) : ?>
+                                            <div class="d-flex align-items-center">
+                                                <?php renderDummySwitcher(); ?>
+                                                <h4 class="switcher-label secondary_heading">Enable on GTM dataLayer</h4>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <div>
+                                            <?php renderDummyCheckbox('Track YouTube embedded video');?>
+                                        </div>
+
+                                        <div>
+                                            <?php renderDummyCheckbox('Track Vimeo embedded video');?>
+                                        </div>
+
+                                        <div>
+                                            <?php renderDummyCheckbox('Track HTML5 embedded video');?>
+                                        </div>
+
+                                        <p><?php _e( 'Fires when the website visitor watches embedded YouTube, Vimeo, or HTML5 videos.', 'pys' ); ?></p>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name:</span>
+                                            WatchVideo
+                                        </p>
+
+                                        <?php if ( isRedditActive() ) : ?>
+                                            <p class="primary-heading-color">
+                                                <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                                WatchVideo (custom event)
+                                            </p>
+                                        <?php endif; ?>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Specific parameters:</span>
+                                            <span class="purple-label">progress</span>
+                                            <span class="purple-label">video_type</span>
+                                            <span class="purple-label">video_title</span>
+                                            <span class="purple-label">video_id</span>
+                                        </p>
+
+                                        <p class="form-text text-small"><?php _e( '*Google Analytics 4 automatically tracks YouTube embedded
+                                videos with two events called "video" and "video_progress". You can disable this event for
+                                Google Analytics YouTube videos.', 'pys' ); ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading">Track Video Speed (global)</h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php
+                                        DummyEventForEachPixel();
+                                        ?>
+
+                                        <p>Fires when a visitor increases the playback speed of any HTML5, YouTube, or Vimeo video on the site.</p>
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name:</span>
+                                            VideoSpeed
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track embedded YouTube or
-                                Vimeo video views</h4>
+
+                <div class="automatic-events-group" id="auto-clicks">
+                    <h3 class="secondary_heading_type2 mb-8" style="margin-top: 32px;">
+                        <?php _e( 'Click behaviour', 'pys' ); ?>
+                    </h3>
+                    <p class="text-gray mb-16">
+                        <?php _e( 'Where the visitor clicks and what they download.', 'pys' ); ?>
+                    </p>
+                    <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24">
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_download_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track Downloads</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="gap-24">
+                                    <?php
+                                    enableEventForEachPixel('automatic_event_download', true, true, true, true, true, true, true);
+                                    ?>
+                                    <div>
+                                        <div class="primary_heading">Extension of files to track as downloads:</div>
+                                        <?php PYS()->render_tags_select_input( 'automatic_event_download_extensions' ); ?>
+
+                                        <p class="form-text text-small mt-8">Fires when the website visitor open files with the
+                                            designated format.</p>
+                                    </div>
+
+                                    <p class="primary-heading-color">
+                                        <span class="primary-text-color primary_heading">Event name:</span>
+                                        Download
+                                    </p>
+
+                                    <?php if ( isRedditActive() ) : ?>
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                            Download (custom event)
+                                        </p>
+                                    <?php endif; ?>
+
+                                    <p class="primary-heading-color">
+                                        <span class="primary-text-color primary_heading">Specific parameters:</span>
+                                        <span class="purple-label">download_type</span>
+                                        <span class="purple-label">download_name</span>
+                                        <span class="purple-label">download_url</span>
+                                    </p>
+
+                                    <p class="form-text text-small">*Google Analytics 4 automatically tracks this action with an
+                                        event called "file_download". If you want, you can disable this event for Google
+                                        Analytics</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading">Track internal</h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php
+                                            DummyEventForEachPixel();
+                                        ?>
+
+                                        <p>Fires when the website visitor clicks on internal links.</p>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name:</span>
+                                            InternalClick
+                                        </p>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name on TikTok:</span>
+                                            ClickButton
+                                        </p>
+
+                                        <?php if ( isRedditActive() ) : ?>
+                                            <p class="primary-heading-color">
+                                                <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                                ClickButton (custom event)
+                                            </p>
+                                        <?php endif; ?>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Specific parameters:</span>
+                                            <span class="purple-label">text</span>
+                                            <span class="purple-label">target_url</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading">Track outbound</h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php
+                                        DummyEventForEachPixel();
+                                        ?>
+
+                                        <p>Fire this event when the visitor clicks on links to other domains.</p>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name:</span>
+                                            OutboundClick
+                                        </p>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name on TikTok:</span>
+                                            ClickButton
+                                        </p>
+
+                                        <?php if ( isRedditActive() ) : ?>
+                                            <p class="primary-heading-color">
+                                                <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                                ClickButton (custom event)
+                                            </p>
+                                        <?php endif; ?>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Specific parameters:</span>
+                                            <span class="purple-label">text</span>
+                                            <span class="purple-label">target_url</span>
+                                        </p>
+
+                                        <p class="form-text text-small">*Google Analytics 4 automatically tracks clicks on links to
+                                            external
+                                            domains with an event called "click". If you want, you can disable this event for Google
+                                            Analytics</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading">Track AdSense</h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php
+                                        DummyEventForEachPixel();
+                                        ?>
+
+                                            <p>Fires when the website visitor clicks on an AdSense ad.</p>
+
+                                            <p class="primary-heading-color">
+                                                <span class="primary-text-color primary_heading">Event name:</span>
+                                                AdSense
+                                            </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
+                </div>
+
+                <div class="automatic-events-group" id="auto-leads">
+                    <h3 class="secondary_heading_type2 mb-8" style="margin-top: 32px;">
+                        <?php _e( 'Lead actions', 'pys' ); ?>
+                    </h3>
+                    <p class="text-gray mb-16">
+                        <?php _e( 'High-intent moves toward contacting you or buying.', 'pys' ); ?>
+                    </p>
+                    <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24">
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_form_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track Forms</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="gap-24">
+                                    <?php
+                                    enableEventForEachPixel( 'automatic_event_form', true, true, true, true, true, true, true );
+                                    ?>
+
+                                    <p>The Form event will fire when a form is successfully submitted for the following
+                                        plugins: Contact Form 7, Forminator, WP Forms, WS Forms, Formidable Pro, Ninja Forms,
+                                        and Fluent Forms. For forms added by different means, we will fire the event when the
+                                        submit button is clicked. Watch <a href="https://www.youtube.com/watch?v=c4Hrb8WK5bw"
+                                                                           target="_blank" class="link">this video</a> to learn
+                                        more.
+                                    </p>
+
+                                    <p>Fires when the website visitor clicks form submit buttons.</p>
+
+                                    <?php
+                                    $eventsFormFactory = apply_filters( "pys_form_event_factory", [] );
+                                    if ( !empty( $eventsFormFactory ) ) : ?>
+                                        <div>
+                                            <?php
+                                            foreach ( $eventsFormFactory as $activeFormPlugin ) : ?>
+                                                <p class="primary-heading-color detecting-form-description">
+                                                    <span class="primary-text-color primary_heading"><?php echo $activeFormPlugin->getName(); ?> detected</span>
+                                                    - we will fire the Form event for each successfully submitted form.
+                                                </p>
+
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif;
+
+                                    if ( $eventsFormFactory ) :
+                                        ?>
+                                        <div>
+                                            <?php PYS()->render_checkbox_input( 'enable_success_send_form', 'Fire the event only for the supported plugins, when the form is successfully submitted.' ); ?>
+                                        </div>
+                                        <p>Configure Lead or other events using our <a
+                                                    href="<?php echo buildAdminUrl( 'pixelyoursite', 'events' ); ?>"
+                                                    class="link">events
+                                                triggers</a>. Learn how from <a
+                                                    href="https://www.youtube.com/watch?v=c4Hrb8WK5bw"
+                                                    target="_blank" class="link">this video</a></p>
+                                    <?php endif; ?>
+
+                                    <p class="primary-heading-color">
+                                        <span class="primary-text-color primary_heading">Event name:</span>
+                                        Form
+                                    </p>
+
+                                    <?php if ( isRedditActive() ) : ?>
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name on Reddit:</span>
+                                            FormSubmit (custom event)
+                                        </p>
+                                    <?php endif; ?>
+
+                                    <p class="primary-heading-color">
+                                        <span class="primary-text-color primary_heading">Specific parameters:</span>
+                                        <span class="purple-label">text</span>
+                                        <span class="purple-label">from_class</span>
+                                        <span class="purple-label">form_id</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_search_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track searches</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="gap-24">
+                                    <?php
+                                    enableEventForEachPixel('automatic_event_search', true, true, true, true, true, true, true);
+                                    ?>
+                                    <div>
+                                        <p class="primary-text-color primary_heading mb-8">Event name:</p>
+                                        <p class="primary-heading-color mb-8">On Google Analytics the event is called search
+                                            (standard
+                                            event).</p>
+                                        <p class="primary-heading-color mb-8">On Google Ads the event is called search (custom
+                                            event).</p>
+                                        <p class="primary-heading-color mb-8">On Facebook, Pinterest called Search (standard
+                                            event).</p>
+                                        <p class="primary-heading-color mb-8">On Bing the event is called search (custom
+                                            event).</p>
+                                        <?php if ( isRedditActive() ) : ?>
+                                            <p class="primary-heading-color mt-8">On Reddit the event is called Search (standard
+                                                event).</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading">Track tel links</h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php
+                                        DummyEventForEachPixel();
+                                        ?>
+
+                                        <p>Fires when the website visitor clicks on HTML links marked with "tel".</p>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name:</span>
+                                            TelClick
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading">Track email links</h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php
+                                        DummyEventForEachPixel();
+                                        ?>
+
+                                        <p>Fires when the website visitor clicks on HTML links marked with "email".</p>
+
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name:</span>
+                                            EmailClick
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="automatic-events-group" id="auto-accounts">
+                    <h3 class="secondary_heading_type2 mb-8" style="margin-top: 32px;">
+                        <?php _e( 'Account events', 'pys' ); ?>
+                    </h3>
+                    <p class="text-gray mb-16">
+                        <?php _e( 'Identity changes inside WordPress.', 'pys' ); ?>
+                    </p>
+                    <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24">
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track user signup</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="gap-24">
                                 <?php if ( Facebook()->enabled() ) : ?>
                                     <div class="d-flex align-items-center">
-                                        <?php renderDummySwitcher(); ?>
+                                        <?php Facebook()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
                                         <h4 class="switcher-label secondary_heading">Enable on Facebook</h4>
                                     </div>
                                 <?php endif; ?>
 
                                 <?php if ( GA()->enabled() ) : ?>
                                     <div class="d-flex align-items-center">
-                                        <?php renderDummySwitcher(); ?>
+                                        <?php GA()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
                                         <h4 class="switcher-label secondary_heading">Enable on Google Analytics</h4>
-                                    </div>
-
-                                    <div>
-                                        <?php renderDummyCheckbox( "Disable YouTube videos for Google Analytics" ); ?>
                                     </div>
                                 <?php endif; ?>
 
-
-                                <div class="d-flex align-items-center">
-                                    <?php renderDummySwitcher(); ?>
-                                    <h4 class="switcher-label secondary_heading">Enable on Google Ads</h4>
-                                </div>
-
                                 <?php if ( Bing()->enabled() ) : ?>
                                     <div class="d-flex align-items-center">
-                                        <?php renderDummySwitcher(); ?>
+                                        <?php Bing()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
                                         <h4 class="switcher-label secondary_heading">Enable on Bing</h4>
                                     </div>
                                 <?php endif; ?>
 
                                 <?php if ( Pinterest()->enabled() ) : ?>
                                     <div class="d-flex align-items-center">
-                                        <?php renderDummySwitcher(); ?>
+                                        <?php Pinterest()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
                                         <h4 class="switcher-label secondary_heading">Enable on Pinterest</h4>
                                     </div>
                                 <?php endif; ?>
 
-
-                                <div class="d-flex align-items-center">
-                                    <?php renderDummySwitcher(); ?>
-                                    <h4 class="switcher-label secondary_heading">Enable on TikTok</h4>
-                                </div>
-
-                                <div class="d-flex align-items-center">
-                                    <label class="primary_heading mr-8">Trigger for scroll value</label><?php
-                                    renderDummySelectInput( 'Play' ); ?>
-                                </div>
-
-                                <div>
-                                    <?php renderDummyCheckbox('Track YouTube embedded video');?>
-                                </div>
-
-                                <div>
-                                    <?php renderDummyCheckbox('Track Vimeo embedded video');?>
-                                </div>
-
-	                            <?php if ( Reddit()->enabled() ) : ?>
+                                <?php if ( Reddit()->enabled() ) : ?>
                                     <div class="d-flex align-items-center">
-			                            <?php Reddit()->render_switcher_input( 'automatic_event_video_enabled' ); ?>
+                                        <?php Reddit()->render_switcher_input( 'automatic_event_signup_enabled' ); ?>
                                         <h4 class="switcher-label secondary_heading">Enable on Reddit</h4>
-                                    </div>
-	                            <?php endif; ?>
-
-                                <?php if ( GTM()->enabled() ) : ?>
-                                    <div class="d-flex align-items-center">
-                                        <?php renderDummySwitcher(); ?>
-                                        <h4 class="switcher-label secondary_heading">Enable on GTM dataLayer</h4>
                                     </div>
                                 <?php endif; ?>
 
-                                <p>Fires when the website visitor watches embedded YouTube or Vimeo
-                                    videos.</p>
+                                <?php if ( GTM()->enabled() ) : ?>
+                                    <div class="line"></div>
+                                        <div class="d-flex align-items-center">
+                                            <?php GTM()->render_switcher_input('automatic_event_signup_enabled'); ?>
+                                            <h4 class="switcher-label secondary_heading">Enable on GTM dataLayer</h4>
+                                        </div>
+                                    <div class="line"></div>
+                                <?php endif; ?>
 
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name:</span>
-                                    WatchVideo
-                                </p>
 
-	                            <?php if ( isRedditActive() ) : ?>
+                                    <p>Fires when the website visitor signup for a WordPress account.</p>
+
+                                    <div>
+                                        <p class="primary-text-color primary_heading mb-8">Event name:</p>
+                                        <p class="primary-heading-color mb-8">On Google Analytics the event is called sign_up
+                                            (standard
+                                            event).</p>
+                                        <p class="primary-heading-color mb-8">On Facebook the event is called
+                                            CompleteRegistration
+                                            (standard event).</p>
+                                        <p class="primary-heading-color mb-8">On Pinterest the event is called Signup (standard
+                                            event).</p>
+                                        <p class="primary-heading-color mb-8">On Bing the event is called sign_up (custom
+                                            event).</p>
+                                        <?php if ( isRedditActive() ) : ?>
+                                            <p class="primary-heading-color mt-8">On Reddit the event is called SignUp (standard
+                                                event).</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_login_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track user login</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="gap-24">
+                                    <?php
+                                    enableEventForEachPixel('automatic_event_login', true, true, true, true, true, false, true);
+                                    ?>
+                                    <p>Fires when the website visitor logins a WordPress account.</p>
+
+                                    <div>
+                                        <p class="primary-text-color primary_heading mb-8">Event name:</p>
+                                        <p class="primary-heading-color mb-8">On Google Analytics the event is called login
+                                            (standard event).</p>
+                                        <p class="primary-heading-color mb-8">On Google Ads the event is called login (custom
+                                            event).</p>
+                                        <p class="primary-heading-color mb-8">On Facebook, Pinterest, Bing<?php if ( isRedditActive() ) : ?>, Reddit<?php endif; ?> the event is
+                                            called
+                                            Login (custom event).</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="automatic-events-group" id="auto-health">
+                    <h3 class="secondary_heading_type2 mb-8" style="margin-top: 32px;">
+                        <?php _e( 'Site health & diagnostics', 'pys' ); ?>
+                    </h3>
+                    <p class="text-gray mb-16">
+                        <?php _e( 'Things going wrong — broken pages, rage clicks.', 'pys' ); ?>
+                    </p>
+                    <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24">
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="d-flex align-items-center">
+                                    <?php PYS()->render_switcher_input( 'automatic_event_404_enabled' ); ?>
+                                    <h4 class="card-heading secondary_heading">Track 404 pages</h4>
+                                </div>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="gap-24">
+                                    <?php
+                                    enableEventForEachPixel('automatic_event_404', false, true, false, true, false, false, false);
+                                    ?>
                                     <p class="primary-heading-color">
-                                        <span class="primary-text-color primary_heading">Event name on Reddit:</span>
-                                        WatchVideo (custom event)
+                                        <span class="primary-text-color primary_heading">Event name:</span>
+                                        404
                                     </p>
-	                            <?php endif; ?>
-
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Specific parameters:</span>
-                                    <span class="purple-label">progress</span>
-                                    <span class="purple-label">video_type</span>
-                                    <span class="purple-label">video_title</span>
-                                    <span class="purple-label">video_id</span>
-                                </p>
-
-                                <p class="form-text text-small">*Google Analytics 4 automatically tracks YouTube embedded
-                                    videos with two events called "video" and "video_progress". You can disable this event for
-                                    Google Analytics YouTube videos.</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track tel links</h4>
-                        </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
-                                <?php
-                                DummyEventForEachPixel();
-                                ?>
-
-                                <p>Fires when the website visitor clicks on HTML links marked with "tel".</p>
-
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name:</span>
-                                    TelClick
-                                </p>
+                        <div class="card card-style6">
+                            <div class="card-header card-header-style2 has_switch">
+                                <div class="disable-card d-flex align-items-center">
+                                    <?php renderDummySwitcher(); ?>
+                                    <h4 class="card-heading secondary_heading">Track Rage Clicks</h4>
+                                </div>
+                                <div class="d-flex align-items-center flex-collapse-block">
+                                    <?php renderProBadge(); ?>
+                                    <?php cardCollapseSettings(); ?>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-style6">
-                    <div class="card-header card-header-style2 has_switch">
-                        <div class="disable-card d-flex align-items-center">
-                            <?php renderDummySwitcher(); ?>
-                            <h4 class="card-heading secondary_heading">Track email links</h4>
-                        </div>
-                        <div class="d-flex align-items-center flex-collapse-block">
-                            <?php renderProBadge(); ?>
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="pro-feature-container">
-                            <div class="gap-24">
-                                <?php
-                                DummyEventForEachPixel();
-                                ?>
-
-                                <p>Fires when the website visitor clicks on HTML links marked with "email".</p>
-
-                                <p class="primary-heading-color">
-                                    <span class="primary-text-color primary_heading">Event name:</span>
-                                    EmailClick
-                                </p>
+                            <div class="card-body">
+                                <div class="pro-feature-container">
+                                    <div class="gap-24">
+                                        <?php
+                                        DummyEventForEachPixel();
+                                        ?>
+                                        <div class="d-flex align-items-center">
+                                            <label class="primary_heading mr-16">Fire after</label>
+                                            <?php renderDummyNumberInput( 3); ?>
+                                            <label class="ml-16">quick clicks on the same element (within 2 seconds)</label>
+                                        </div>
+                                        <p>Fires when a visitor clicks the same element rapidly — a sign of frustration or a broken UI element.</p>
+                                        <p class="primary-heading-color">
+                                            <span class="primary-text-color primary_heading">Event name:</span>
+                                            RageClick
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
