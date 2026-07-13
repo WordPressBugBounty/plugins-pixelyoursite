@@ -376,17 +376,6 @@ function getTriggerType($event_id) {
  * EASY DIGITAL DOWNLOADS
  */
 
-function getEddDownloadContentId( $download_id ) {
-
-    if ( GTM()->getOption( 'edd_content_id' ) == 'download_sku' ) {
-        $content_id = get_post_meta( $download_id, 'edd_sku', true );
-    } else {
-        $content_id = $download_id;
-    }
-
-    $prefix = GTM()->getOption( 'edd_content_id_prefix' );
-    $suffix = GTM()->getOption( 'edd_content_id_suffix' );
-
-    return $prefix . $content_id . $suffix;
-
+function getEddDownloadContentId( $download_id, $price_id = null ) {
+    return PixelYourSite\getEddContentId( GTM(), $download_id, $price_id );
 }

@@ -258,6 +258,21 @@ function adminIncompatibleVersionNotice( $pluginName, $minVersion ) {
     <?php
 }
 
+function pys_meta_pixel_missing_capi() {
+    if (!Facebook()->enabled()) {
+        return false;
+    }
+    $pixel_ids = (array) Facebook()->getOption('pixel_id');
+    $main_pixel_set = !empty($pixel_ids) && !empty($pixel_ids[0]);
+    if (!$main_pixel_set) {
+        return false;
+    }
+    $use_server_api = Facebook()->getOption('use_server_api');
+    $tokens = (array) Facebook()->getOption('server_access_api_token');
+    $token  = reset($tokens);
+    return (!$use_server_api || empty($token));
+}
+
 function adminRenderNotices() {
 
 
@@ -274,20 +289,8 @@ function adminRenderNotices() {
      */
 
     $now = time();
-    $apiTokens = Facebook()->getOption('server_access_api_token');
-    if(Facebook()->enabled() && !$apiTokens)
-    {
-        $meta_key = 'pys_notice_dont_CAPI_start_delay';
-        $user_id = get_current_user_id();
-        $start_delay = get_option( $meta_key ) ?? get_user_meta( $user_id, $meta_key );
-        $day_ago = time() - DAY_IN_SECONDS;
-        if($start_delay && $start_delay > $day_ago) {
-            adminRenderNotCAPI(PYS());
-        }
-        else if(!$start_delay){
-            update_option($meta_key, time());
-        }
-
+    if (pys_meta_pixel_missing_capi()) {
+        adminRenderCapiNudgeNotice();
     }
     if ( isPinterestActive( false ) && isPinterestVersionIncompatible() ) {
         adminIncompatibleVersionNotice( 'PixelYourSite Pinterest Add-On', PYS_FREE_PINTEREST_MIN_VERSION );
@@ -322,18 +325,10 @@ function adminRenderNotices() {
     }
 
     $ga_tracking_id = GA()->getPixelIDs() ;
-    $noticeRenderNotSupportUA = false;
     if ( GA()->enabled() && empty( $ga_tracking_id ) ) {
         $no_ga_pixels = true;
-
     } else {
         $no_ga_pixels = false;
-        if (!isGaV4($ga_tracking_id)) {
-            $noticeRenderNotSupportUA = true;
-        }
-    }
-    if(GA()->enabled() && $noticeRenderNotSupportUA){
-        adminRenderNotSupportUA($noticeRenderNotSupportUA);
     }
     $no_pinterest_pixels = false;
     if ( isPinterestActive() ) {
@@ -482,6 +477,58 @@ function adminNoticeDismissHandler() {
 
 }
 
+function adminRenderCapiNudgeNotice() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    $user_id  = get_current_user_id();
+    $dismissed = get_user_meta($user_id, 'pys_capi_nudge_dismissed', true);
+    if ($dismissed) {
+        return;
+    }
+    ?>
+    <div class="notice notice-warning is-dismissible pys_capi_nudge_notice pys-notice">
+        <p>
+            <b>Configure Meta Conversion API in PixelYourSite!</b>
+            It will help with conversion measurement and optimisation.
+            <a href="https://www.youtube.com/watch?v=fAwsayYLo5s" target="_blank" class="notice-link">
+                Check this video to learn how to do it.
+            </a>
+        </p>
+    </div>
+    <script type="application/javascript">
+        jQuery(document).on('click', '.pys_capi_nudge_notice .notice-dismiss', function () {
+            jQuery.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'pys_capi_nudge_dismiss',
+                    nonce: '<?php echo esc_attr(wp_create_nonce('pys_capi_nudge_dismiss')); ?>',
+                    user_id: '<?php echo esc_attr($user_id); ?>'
+                }
+            });
+        });
+    </script>
+    <?php
+}
+
+add_action('wp_ajax_pys_capi_nudge_dismiss', 'PixelYourSite\adminCapiNudgeDismissHandler');
+
+function adminCapiNudgeDismissHandler() {
+    if (empty($_REQUEST['nonce']) || !wp_verify_nonce($_REQUEST['nonce'], 'pys_capi_nudge_dismiss')) {
+        wp_send_json_error(); return;
+    }
+    if (empty($_REQUEST['user_id'])) {
+        wp_send_json_error(); return;
+    }
+    $user_id = (int) $_REQUEST['user_id'];
+    if ($user_id !== get_current_user_id()) {
+        wp_send_json_error(); return;
+    }
+    update_user_meta($user_id, 'pys_capi_nudge_dismissed', true);
+    wp_send_json_success();
+}
+
 function adminRenderNotCAPI( $plugin ) {
 
     $slug = $plugin->getSlug();
@@ -555,7 +602,7 @@ function adminNoticeCAPIDismissHandler() {
 
     // save time when notice was dismissed
     $meta_key = 'pys_' . sanitize_text_field( $_REQUEST['addon_slug'] ) . '_' . sanitize_text_field( $_REQUEST['meta_key'] ) . '_dismissed_at';
-    update_option( $meta_key, time() );
+    update_user_meta( sanitize_text_field( $_REQUEST['user_id'] ), $meta_key, time() );
     die();
 }
 
@@ -631,65 +678,6 @@ function adminRenderNoPixelsNotice() {
     </script>
 
     <?php
-}
-
-
-function adminRenderNotSupportUA( $show = false) {
-
-
-    $user_id = get_current_user_id();
-
-    // show only if never dismissed or dismissed more than a week ago
-    $meta_key = 'pys_ga_UA_notice_dismissed_at';
-    $dismissed_at = get_option( $meta_key ) ?? get_user_meta( $user_id, $meta_key );
-    $week_ago = time() - WEEK_IN_SECONDS;
-    if ( $dismissed_at && is_array( $dismissed_at ) ) {
-        $dismissed_at = reset( $dismissed_at );
-    }
-    if ( !$dismissed_at || ($dismissed_at && $dismissed_at < $week_ago) && $show) {
-            ?>
-            <div class="notice notice-error is-dismissible pys_ga_UA_notice">
-                <p><b>PixelYourSite Tip: </b>The old Universal Analytics properties are not supported by Google Analytics anymore. You must use the new GA4 properties instead. <a href="https://www.youtube.com/watch?v=KkiGbfl1q48" target="_blank">Watch this video to find how to get your GA4 tag</a>.</p>
-            </div>
-            <?php
-    }
-    ?>
-
-    <script type="application/javascript">
-        jQuery(document).on('click', '.pys_ga_UA_notice .notice-dismiss', function () {
-
-            jQuery.ajax({
-                url: ajaxurl,
-                data: {
-                    action: 'pys_notice_UA_dismiss',
-                    nonce: '<?php echo esc_attr( wp_create_nonce( 'pys_notice_UA_dismiss' ) ); ?>',
-                    user_id: '<?php echo esc_attr( $user_id ); ?>',
-                    addon_slug: 'ga',
-                    meta_key: 'UA_notice'
-                }
-            })
-
-        })
-    </script>
-
-    <?php
-}
-add_action( 'wp_ajax_pys_notice_UA_dismiss', 'PixelYourSite\adminNoticeUADismissHandler' );
-
-function adminNoticeUADismissHandler() {
-
-    if ( empty( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], 'pys_notice_UA_dismiss' ) ) {
-        return;
-    }
-
-    if ( empty( $_REQUEST['user_id'] ) || empty( $_REQUEST['addon_slug'] ) || empty( $_REQUEST['meta_key'] ) ) {
-        return;
-    }
-
-    // save time when notice was dismissed
-    $meta_key = 'pys_' . sanitize_text_field( $_REQUEST['addon_slug'] ) . '_' . sanitize_text_field( $_REQUEST['meta_key'] ) . '_dismissed_at';
-    update_option( $meta_key, time() );
-    die();
 }
 
 

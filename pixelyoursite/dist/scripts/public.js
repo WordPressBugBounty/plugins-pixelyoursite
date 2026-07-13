@@ -14,6 +14,112 @@
     if(options.hasOwnProperty("track_cookie_for_subdomains") && options.track_cookie_for_subdomains) {
         domain = getRootDomain(true);
     }
+
+    // Per-page referrer for Facebook CAPI events. Captured once per script
+    // load so SPA-style navigations within the same HTML document do not
+    // overwrite it. Internal/external is NOT filtered — Meta expects this
+    // field to describe the URL of the previous page for THIS event.
+    var pageReferrer = '';
+    try {
+        pageReferrer = stripUrlQuery((document.referrer || '').toString());
+    } catch (e) {}
+
+    // Session-entry referrer (fallback). Captured at session start the first
+    // time the visitor lands from an EXTERNAL site, mirrored to a session
+    // cookie so PHP can read it for orphan events (async/cron) that arrive
+    // without a per-page payload. Never the primary source.
+    var PYS_SESSION_ENTRY_REFERRER_KEY = 'pys_session_entry_referrer';
+    function stripUrlQuery(url) {
+        if (!url) return '';
+        var clean = String(url);
+        var q = clean.indexOf('?');
+        if (q !== -1) clean = clean.substring(0, q);
+        var h = clean.indexOf('#');
+        if (h !== -1) clean = clean.substring(0, h);
+        return clean;
+    }
+    var sessionEntryReferrer = '';
+    function getOrInitSessionEntryReferrer(consentGranted) {
+        var value = '';
+        try {
+            if (typeof window.sessionStorage !== 'undefined') {
+                value = window.sessionStorage.getItem(PYS_SESSION_ENTRY_REFERRER_KEY) || '';
+            }
+        } catch (e) {}
+
+        if (!value) {
+            var cookieValue = Cookies.get(PYS_SESSION_ENTRY_REFERRER_KEY);
+            if (cookieValue && cookieValue !== 'undefined') {
+                value = cookieValue;
+                try {
+                    if (typeof window.sessionStorage !== 'undefined') {
+                        window.sessionStorage.setItem(PYS_SESSION_ENTRY_REFERRER_KEY, value);
+                    }
+                } catch (e) {}
+            }
+        }
+
+        if (!value) {
+            var raw = '';
+            try {
+                raw = stripUrlQuery((document.referrer || '').toString());
+            } catch (e) {}
+            if (raw) {
+                var refHost = '';
+                try {
+                    refHost = new URL(raw).hostname;
+                } catch (e) {}
+                if (refHost && refHost !== window.location.hostname) {
+                    value = raw;
+                    try {
+                        if (typeof window.sessionStorage !== 'undefined') {
+                            window.sessionStorage.setItem(PYS_SESSION_ENTRY_REFERRER_KEY, value);
+                        }
+                    } catch (e) {}
+                }
+            }
+        }
+
+        // Mirror to a session cookie only once consent is given. The cookie
+        // is session-scoped (no expires) and dies with the browser, just
+        // like the sessionStorage entry.
+        if (value && consentGranted && options && options.cookie
+            && !options.cookie.disabled_all_cookie) {
+            var existingCookie = Cookies.get(PYS_SESSION_ENTRY_REFERRER_KEY);
+            if (!existingCookie || existingCookie === 'undefined') {
+                Cookies.set(PYS_SESSION_ENTRY_REFERRER_KEY, value, { path: '/', domain: domain });
+            }
+        }
+
+        sessionEntryReferrer = value;
+        return value;
+    }
+
+    // Populate sessionStorage / sessionEntryReferrer immediately. Cookie
+    // mirroring is deferred to the consent-gated path in Facebook.loadPixel().
+    getOrInitSessionEntryReferrer(false);
+
+    // Per-page event referrer (session cookie). Snapshot of document.referrer
+    // for the CURRENT page, refreshed on every page load. Read server-side
+    // by saveFbTagsInOrder() to capture the buyer's checkout-page referrer
+    // for orphan CAPI events (APT, gateway webhooks, manual status changes).
+    // Internal URLs are intentionally NOT filtered — the goal is the page
+    // that led the buyer to checkout, which is usually internal.
+    // If document.referrer is empty (direct navigation), the previous value
+    // is preserved so a session that began with an external referrer keeps
+    // it across same-tab navigations.
+    var PYS_EVENT_REFERRER_KEY = 'pys_event_referrer';
+    function writeEventReferrerCookie() {
+        if (!pageReferrer) {
+            return;
+        }
+        if (!options || !options.cookie || options.cookie.disabled_all_cookie) {
+            return;
+        }
+        try {
+            Cookies.set(PYS_EVENT_REFERRER_KEY, pageReferrer, { path: '/', domain: domain });
+        } catch (e) {}
+    }
     /**
      * Resolve parameter value based on mode (static or dynamic)
      *
@@ -281,7 +387,7 @@
 
             try {
 
-                let referrer = document.referrer.toString(),
+                let referrer = stripUrlQuery(document.referrer.toString()),
                     source;
 
                 let direct = referrer.length === 0;
@@ -792,6 +898,16 @@
                     edd_order: data.edd_order || '0'
                 };
 
+                const forwardedReferrer = data.referrer_url || pageReferrer;
+                if (forwardedReferrer) {
+                    restApiData.referrer_url = forwardedReferrer;
+                }
+
+                // Variant A: send the actual page URL where the event happened
+                // so the server sets event_source_url to this page, not the
+                // REST endpoint. PHP applies enable_remove_source_url_params.
+                restApiData.event_source_url = data.url || window.location.href;
+
                 // Try to send using sendBeacon first (if enabled)
                 if (options.useSendBeacon && navigator.sendBeacon) {
                     try {
@@ -1157,10 +1273,11 @@
             },
 
             loadGTMScript: function (id = '') {
-                const domain = options.gtm.gtm_container_domain ?? 'www.googletagmanager.com';
+                // Strip trailing slash to allow both "domain.com" and "domain.com/" inputs.
+                const domain = ( options.gtm.gtm_container_domain ?? 'www.googletagmanager.com' ).replace( /\/$/, '' );
                 const loader = options.gtm.gtm_container_identifier ?? 'gtm';
-                const gtm_auth = options.gtm.gtm_auth ?? ''; // Set this if needed
-                const gtm_preview = options.gtm.gtm_preview ?? ''; // Set this if needed
+                const gtm_auth = options.gtm.gtm_auth ?? '';
+                const gtm_preview = options.gtm.gtm_preview ?? '';
                 const datalayer_name = options.gtm.gtm_dataLayer_name ?? 'dataLayer';
 
                 window[ datalayer_name ] = window[ datalayer_name ] || [];
@@ -1168,16 +1285,10 @@
                     window[ datalayer_name ].push( arguments );
                 };
 
-                if ( options.google_consent_mode ) {
-                    let data = {};
-                    data[ 'analytics_storage' ] = options.gdpr.analytics_storage.enabled ? options.gdpr.analytics_storage.value : 'granted';
-                    data[ 'ad_storage' ] = options.gdpr.ad_storage.enabled ? options.gdpr.ad_storage.value : 'granted';
-                    data[ 'ad_user_data' ] = options.gdpr.ad_user_data.enabled ? options.gdpr.ad_user_data.value : 'granted';
-                    data[ 'ad_personalization' ] = options.gdpr.ad_personalization.enabled ? options.gdpr.ad_personalization.value : 'granted';
-
-                    this.GTMdataLayerName = datalayer_name;
-                    this.loadDefaultGTMConsent( 'consent', 'default', data );
-                }
+                // Push consent defaults synchronously before the GTM script tag is inserted.
+                // When PYS loads the GTM snippet itself (non-dataLayer-only mode), this ensures
+                // defaults are in the dataLayer before GTM processes any events.
+                this.pushGTMConsentDefaults( datalayer_name );
 
                 (function(w, d, s, l, i) {
                     w[l] = w[l] || [];
@@ -1186,7 +1297,23 @@
                     const j = d.createElement(s);
                     const dl = l !== 'dataLayer' ? '&l=' + l : '';
                     j.async = true;
-                    j.src = 'https://' + domain + '/' + loader + '.js?id=' + i + dl;
+
+                    // Detect domain format: bare hostname (legacy) vs full URL / relative path (new).
+                    // Legacy "www.googletagmanager.com" → prepend https:// and append .js.
+                    // New format "/metrics" or "https://custom.com" → use as-is.
+                    //   Identifier with extension (e.g. "gtm.js")  → file:   domain/gtm.js?id=
+                    //   Identifier without extension (e.g. "g4h25o") → path: domain/g4h25o/?id=
+                    const isNewFormat = domain.startsWith( 'http://' )
+                                     || domain.startsWith( 'https://' )
+                                     || domain.startsWith( '/' );
+
+                    if ( !isNewFormat ) {
+                        j.src = 'https://' + domain + '/' + loader + '.js?id=' + i + dl;
+                    } else {
+                        const hasExtension = loader.includes( '.' );
+                        j.src = domain + '/' + loader + ( hasExtension ? '?' : '/?' ) + 'id=' + i + dl;
+                    }
+
                     if (gtm_auth && gtm_preview) {
                         j.src += '&gtm_auth=' + gtm_auth + '&gtm_preview=' + gtm_preview + '&gtm_cookies_win=x';
                     }
@@ -1197,6 +1324,23 @@
 
             loadDefaultGTMConsent: function() {
                 window[ this.GTMdataLayerName ].push( arguments );
+            },
+
+            // Extracted helper: push GTM consent defaults to the dataLayer.
+            // Called from loadGTMScript (when PYS loads the snippet) and from
+            // GTM.loadPixel when gtm_just_data_layer is enabled, so defaults are
+            // always present regardless of which code path loads the GTM container.
+            pushGTMConsentDefaults: function( datalayer_name ) {
+                if ( !options.google_consent_mode ) {
+                    return;
+                }
+                let data = {};
+                data[ 'analytics_storage' ]  = options.gdpr.analytics_storage.enabled  ? options.gdpr.analytics_storage.value  : 'granted';
+                data[ 'ad_storage' ]         = options.gdpr.ad_storage.enabled         ? options.gdpr.ad_storage.value         : 'granted';
+                data[ 'ad_user_data' ]       = options.gdpr.ad_user_data.enabled       ? options.gdpr.ad_user_data.value       : 'granted';
+                data[ 'ad_personalization' ] = options.gdpr.ad_personalization.enabled ? options.gdpr.ad_personalization.value : 'granted';
+                this.GTMdataLayerName = datalayer_name;
+                this.loadDefaultGTMConsent( 'consent', 'default', data );
             },
 
             /**
@@ -1991,6 +2135,9 @@
                         if(allData.hasOwnProperty('edd_order')) {
                             json['edd_order'] = allData.edd_order;
                         }
+                        if (pageReferrer) {
+                            json.referrer_url = pageReferrer;
+                        }
 
                         if (allData.e_id === "automatic_event_internal_link" || allData.e_id === "automatic_event_outbound_link") {
                             setTimeout(() => Utils.sendServerAjaxRequest(options.ajaxUrl, json), 500);
@@ -2130,6 +2277,16 @@
                 if(getUrlParameter('fbclid')) {
                     Cookies.set('_fbc',genereateFbc(),  { expires: expires,path: '/',domain: domain });
                 }
+
+                // Now that Facebook consent is confirmed, mirror the session
+                // entry referrer (if any) into the session cookie so PHP can
+                // use it as a fallback for orphan server-only events.
+                getOrInitSessionEntryReferrer(true);
+
+                // Refresh the per-page event referrer cookie so checkout
+                // hooks can snapshot the buyer's prior page.
+                writeEventReferrerCookie();
+
                 // initialize pixel
                 options.facebook.pixelIds.forEach(function (pixelId) {
                     if (options.facebook.removeMetadata) {
@@ -2314,7 +2471,7 @@
                     return;
                 var event = Utils.clone(options.dynamicEvents.edd_add_to_cart_on_button_click[this.tag()]);
 
-                if (window.pysEddProductData.hasOwnProperty(download_id)) {
+                if (window.pysEddProductData && window.pysEddProductData.hasOwnProperty(download_id)) {
 
                     var index;
 
@@ -2397,6 +2554,15 @@
                     edd_order: allData.edd_order || 0
                 };
 
+                if (pageReferrer) {
+                    restApiData.referrer_url = pageReferrer;
+                }
+
+                // Variant A: send the actual page URL where the event happened
+                // so the server sets event_source_url to this page, not the
+                // REST endpoint. PHP applies enable_remove_source_url_params.
+                restApiData.event_source_url = window.location.href;
+
                 // Try sendBeacon first
                 if (navigator.sendBeacon) {
                     const formData = new FormData();
@@ -2444,6 +2610,9 @@
                 }
                 if (allData.hasOwnProperty('edd_order')) {
                     json['edd_order'] = allData.edd_order;
+                }
+                if (pageReferrer) {
+                    json.referrer_url = pageReferrer;
                 }
 
                 Utils.sendServerAjaxRequest(options.ajaxUrl, json);
@@ -2750,7 +2919,7 @@
                 var event = Utils.clone(options.dynamicEvents.edd_add_to_cart_on_button_click[this.tag()]);
 
 
-                if (window.pysEddProductData.hasOwnProperty(download_id)) {
+                if (window.pysEddProductData && window.pysEddProductData.hasOwnProperty(download_id)) {
 
                     var index;
 
@@ -2965,6 +3134,10 @@
                 if(options.gtm.gtm_just_data_layer) {
                     console.warn && console.warn("[PYS] Google Tag Manager container code placement set to OFF !!!");
                     console.warn && console.warn("[PYS] Data layer codes are active but GTM container must be loaded using custom coding !!!");
+                    // Push consent defaults even when GTM script loading is handled externally.
+                    // Fixes the case where gtm_just_data_layer=true with tracking IDs configured,
+                    // which previously skipped loadGTMScript() entirely and never pushed defaults.
+                    Utils.pushGTMConsentDefaults( datalayer_name );
                     if(options.gtm.trackingIds.length == 0){
                         Utils.loadGTMScript();
                     }
@@ -3127,7 +3300,7 @@
                 var event = Utils.clone(options.dynamicEvents.edd_add_to_cart_on_button_click[this.tag()]);
 
 
-                if (window.pysEddProductData.hasOwnProperty(download_id)) {
+                if (window.pysEddProductData && window.pysEddProductData.hasOwnProperty(download_id)) {
 
                     var index;
 
@@ -3376,7 +3549,7 @@
                                             getPixelBySlag(pixels[i]).fireEvent(tikEvent.name, event);
                                         } else {
                                             if (options.enable_remove_download_url_param) {
-                                                href = href.split('?')[0];
+                                                href = stripUrlQuery(href);
                                             }
                                             event.params.download_url = href;
                                             event.params.download_type = extension;

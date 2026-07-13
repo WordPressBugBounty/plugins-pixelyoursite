@@ -251,6 +251,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     ) ); ?>
                                 </div>
                                 <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php Facebook()->render_switcher_input( 'edd_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">For downloads with price variations use the parent product ID for each variation</h4>
+                                    </div>
+                                </div>
+                                <div>
                                     <div class="mb-8">
                                         <label class="primary_heading">content_id prefix</label>
                                     </div>
@@ -289,6 +295,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                                         'download_id' => 'Download ID',
                                         'download_sku'   => 'Download SKU',
                                     ) ); ?>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php GATags()->render_switcher_input( 'edd_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">For downloads with price variations use the parent product ID for each variation</h4>
+                                    </div>
                                 </div>
                                 <div>
                                     <div class="mb-8">
@@ -330,6 +342,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                                         'download_id' => 'Download ID',
                                         'download_sku'   => 'Download SKU',
                                     ) ); ?>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php Pinterest()->render_switcher_input( 'edd_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">For downloads with price variations use the parent product ID for each variation</h4>
+                                    </div>
                                 </div>
                                 <div>
                                     <div class="mb-8">
@@ -383,6 +401,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     ) ); ?>
                                 </div>
                                 <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php Bing()->render_switcher_input( 'edd_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">For downloads with price variations use the parent product ID for each variation</h4>
+                                    </div>
+                                </div>
+                                <div>
                                     <div class="mb-8">
                                         <label class="primary_heading">ID prefix</label>
                                     </div>
@@ -431,6 +455,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 							            'download_id' => 'Download ID',
 							            'download_sku'   => 'Download SKU',
 						            ) ); ?>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php Reddit()->render_switcher_input( 'edd_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">For downloads with price variations use the parent product ID for each variation</h4>
+                                    </div>
                                 </div>
                                 <div>
                                     <div class="mb-8">
@@ -482,6 +512,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                                         'download_id' => 'Download ID',
                                         'download_sku'   => 'Download SKU',
                                     ) ); ?>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php GTM()->render_switcher_input( 'edd_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">For downloads with price variations use the parent product ID for each variation</h4>
+                                    </div>
                                 </div>
                                 <div>
                                     <div class="mb-8">

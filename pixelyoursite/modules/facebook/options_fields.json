@@ -26,6 +26,7 @@
   "edd_content_id": "select",
   "edd_content_id_prefix": "text",
   "edd_content_id_suffix": "text",
+  "edd_variable_as_simple": "checkbox",
   "edd_purchase_enabled": "checkbox",
   "edd_initiate_checkout_enabled": "checkbox",
   "edd_remove_from_cart_enabled": "checkbox",

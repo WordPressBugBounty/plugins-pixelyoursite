@@ -55,16 +55,16 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <h4 class="primary_heading"><?php _e( 'Server-side Tagging (sGTM):', 'pys' );?></h4>
                     <div class="">
                         <h4 class="secondary_heading mb-8"><?php _e( 'sGTM Container Domain:', 'pys' );?></h4>
-                        <?php GTM()->render_text_input( 'gtm_container_domain'); ?>
+                        <?php GTM()->render_text_input( 'gtm_container_domain', 'e.g. sgtm.example.com or /custom-loader-path'); ?>
                         <p class="text-gray">
-                            <? _e( 'Enter your custom domain name if you are using a custom server side GTM container for tracking.', 'pys' );?>
+                            <?php _e( 'Enter a bare hostname (e.g. <b>sgtm.example.com</b>) for a standard sGTM setup, a full URL (e.g. <b>https://sgtm.example.com</b>), or a relative path (e.g. <b>/custom-loader-path</b>) for custom server-side routing. Leave default for standard GTM.', 'pys' );?>
                         </p>
                     </div>
                     <div>
                         <h4 class="secondary_heading mb-8"><?php _e( 'sGTM container identifier:', 'pys' );?></h4>
-                        <?php GTM()->render_text_input( 'gtm_container_identifier'); ?>
+                        <?php GTM()->render_text_input( 'gtm_container_identifier', 'e.g. gtm.js or loader-id'); ?>
                         <p class="text-gray">
-                            <? _e( 'Only use if you are using a custom loader.', 'pys' );?>
+                            <?php _e( 'Use <b>gtm.js</b> for a standard loader (file), or a path segment without an extension (e.g. <b>loader-id</b>) for custom server-side routes — the segment will be treated as a directory and produce <b>/custom-loader-path/loader-id/?id=</b>. Leave default for standard GTM.', 'pys' );?>
                         </p>
                     </div>
                 </div>

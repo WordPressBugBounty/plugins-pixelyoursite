@@ -19,16 +19,29 @@ if ( ! defined( 'ABSPATH' ) ) {
         <div class="card-body">
 
             <input type="checkbox" class="general-settings-checkbox" id="fb_settings_switch" style="display: none">
-            <div class="d-flex pixel-wrap align-items-center justify-content-between">
-                <div class="pixel-heading d-flex justify-content-start align-items-center">
-                    <img class="tag-logo" alt="meta-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/meta-logo.svg">
-                    <h3 class="secondary_heading">Your Meta Pixel</h3>
+            <div class="pixel-wrap">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="pixel-heading d-flex justify-content-start align-items-center" style="flex-wrap:wrap;">
+                        <img class="tag-logo" alt="meta-logo" src="<?php echo PYS_FREE_URL; ?>/dist/images/meta-logo.svg">
+                        <h3 class="secondary_heading">Your Meta Pixel</h3>
+                    </div>
+                    <div>
+                        <label for="fb_settings_switch">
+                            <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                        </label>
+                    </div>
                 </div>
-                <div>
-                    <label for="fb_settings_switch">
-                        <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
-                    </label>
-                </div>
+                <?php if (pys_meta_pixel_missing_capi()) : ?>
+                    <div class="notice notice-warning inline pys-capi-inline-warning" style="flex-basis:100%;width:100%;margin:8px 0 0px;">
+                        <p>
+                            <strong>IMPORTANT:</strong> Configure Meta Conversion API to improve tracking.
+                            <a href="https://www.youtube.com/watch?v=fAwsayYLo5s" target="_blank" class="link">
+                                Watch this video to learn how to do it.
+                            </a>
+                        </p>
+                    </div>
+                <?php endif; ?>
+
             </div>
            <div class="settings_content_wrap">
                 <div class="settings_content">
@@ -40,9 +53,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <h4 class="switcher-label secondary_heading">Enable Pixel</h4>
                         </div>
                         <div class="pixel-data-wrap">
-                            <div class="d-flex align-items-center">
-                                <?php Facebook()->render_checkbox_input( "use_server_api", 'Enable Conversion API (add the token below)' ); ?>
-                            </div>
+                            <?php
+                            $_pys_pixel_ids    = (array) Facebook()->getOption('pixel_id');
+                            $_pys_pixel_set    = Facebook()->enabled() && !empty($_pys_pixel_ids) && !empty($_pys_pixel_ids[0]);
+                            $_pys_use_capi     = (bool) Facebook()->getOption('use_server_api');
+                            $_pys_capi_tokens  = (array) Facebook()->getOption('server_access_api_token');
+                            $_pys_capi_token   = reset($_pys_capi_tokens);
+                            ?>
                             <div class="facebook-description">
                                 <p class="text-gray pb-8">
                                     <?php _e('Install multiple Meta Pixels with CAPI support:', 'pys');?>
@@ -64,9 +81,20 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 </div>
                             </div>
 
+                            <div class="d-flex align-items-center">
+                                <?php Facebook()->render_switcher_input( "use_server_api" ); ?>
+                                <h4 class="switcher-label secondary_heading"><?php _e('Enable Conversion API', 'pys'); ?></h4>
+                            </div>
+                            <div class="notice notice-warning inline pys-capi-pixel-warning pys-capi-enable-warning<?php echo !($_pys_pixel_set && !$_pys_use_capi) ? ' pys-capi-hidden' : ''; ?>">
+                                <p>Enable Conversion API for this pixel. <a href="https://www.youtube.com/watch?v=HM98mGZshvc" target="_blank" class="link">Watch this video to learn how to do it.</a></p>
+                            </div>
+
                             <div>
                                 <h4 class="primary_heading mb-4">Conversion API:</h4>
                                 <?php Facebook()->render_text_area_array_item( "server_access_api_token", "Api token" ) ?>
+                            </div>
+                            <div class="notice notice-warning inline pys-capi-pixel-warning pys-capi-token-warning<?php echo !($_pys_pixel_set && $_pys_use_capi && empty($_pys_capi_token)) ? ' pys-capi-hidden' : ''; ?>">
+                                <p>Add the Conversion API token for this pixel. <a href="https://www.youtube.com/watch?v=HM98mGZshvc" target="_blank" class="link">Watch this video to learn how to do it.</a></p>
                             </div>
 
                             <div>

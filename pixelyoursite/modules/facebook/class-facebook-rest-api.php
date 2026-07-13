@@ -40,10 +40,21 @@ class Facebook_REST_API {
         $eventID = $request->get_param( 'eventID' );
         $woo_order = $request->get_param( 'woo_order' );
         $edd_order = $request->get_param( 'edd_order' );
+        $referrer_url = $request->get_param( 'referrer_url' );
+        $event_source_url = $request->get_param( 'event_source_url' );
 
+        // Variant B fallback: when the browser did not send an explicit page
+        // URL, use this REST request's Referer header. For a fetch/sendBeacon
+        // fired from the visitor's page, Referer IS that page URL — which is
+        // what Meta expects for event_source_url (never the REST endpoint).
+        if ( empty( $event_source_url ) ) {
+            $referer = $request->get_header( 'referer' );
+            if ( ! empty( $referer ) ) {
+                $event_source_url = esc_url_raw( $referer );
+            }
+        }
 
-
-        $singleEvent = $this->data_to_single_event( $event, $data, $eventID, $ids, $woo_order, $edd_order );
+        $singleEvent = $this->data_to_single_event( $event, $data, $eventID, $ids, $woo_order, $edd_order, $referrer_url, $event_source_url );
 
         // Send event using existing Facebook server logic
         FacebookServer()->sendEventsNow( array( $singleEvent ) );
@@ -88,6 +99,23 @@ class Facebook_REST_API {
             $is_same_origin = ! empty( $site_host )
                 && isset( $referer_parts['host'] )
                 && strtolower( $referer_parts['host'] ) === $site_host;
+        }
+
+        // Per-IP rate limiting: max requests per minute per namespace.
+        // The limit is configured via the 'pys_check_permission_rate_limit'
+        // option (Global Settings > Ajax options). Default is 60 (1 req/sec).
+        if ( $is_same_origin ) {
+            $ip    = PYS()->get_user_ip();
+            $key   = 'pys_rl_' . md5( $ip . '_pys-facebook/v1' );
+            $count = (int) get_transient( $key );
+
+            // Maximum allowed requests per minute, per IP, per pixel namespace.
+            $limit = max( 1, (int) PYS()->getOption( 'pys_check_permission_rate_limit' ) );
+
+            if ( $count >= $limit ) {
+                return new \WP_Error( 'rate_limited', 'Too many requests', [ 'status' => 429 ] );
+            }
+            set_transient( $key, $count + 1, 60 );
         }
 
         /**
@@ -147,6 +175,18 @@ class Facebook_REST_API {
                 'default'           => '0',
                 'sanitize_callback' => array( $this, 'sanitize_order_id' ),
             ),
+            'referrer_url' => array(
+                'required'          => false,
+                'type'              => 'string',
+                'default'           => '',
+                'sanitize_callback' => 'esc_url_raw',
+            ),
+            'event_source_url' => array(
+                'required'          => false,
+                'type'              => 'string',
+                'default'           => '',
+                'sanitize_callback' => 'esc_url_raw',
+            ),
         );
     }
 
@@ -198,7 +238,7 @@ class Facebook_REST_API {
     /**
      * Convert data to SingleEvent object
      */
-    private function data_to_single_event( $event_name, $params, $event_id, $ids, $woo_order, $edd_order ) {
+    private function data_to_single_event( $event_name, $params, $event_id, $ids, $woo_order, $edd_order, $referrer_url = '', $event_source_url = '' ) {
         $singleEvent = new SingleEvent( "", "" );
 
         $payload = array(
@@ -208,6 +248,14 @@ class Facebook_REST_API {
             'edd_order' => $edd_order,
             'pixelIds'  => $ids
         );
+
+        if ( ! empty( $referrer_url ) && wp_http_validate_url( $referrer_url ) ) {
+            $payload['referrer_url'] = $referrer_url;
+        }
+
+        if ( ! empty( $event_source_url ) && wp_http_validate_url( $event_source_url ) ) {
+            $payload['event_source_url'] = $event_source_url;
+        }
 
         $singleEvent->addParams( $params );
         $singleEvent->addPayload( $payload );

@@ -98,7 +98,7 @@ class GA extends Settings implements Pixel {
 	public function getPixelIDs() {
 
 		$ids = (array) $this->getOption( 'tracking_id' );
-        if(count($ids) == 0) {
+        if(count($ids) == 0 || empty($ids[0])) { // casting "" to array yields [""], so also reject an empty first id
             return apply_filters("pys_ga_ids",[]);
         } else {
 			$id = array_shift($ids);
@@ -1100,7 +1100,7 @@ class GA extends Settings implements Pixel {
             'currency' => edd_get_currency(),
 			'items'           => array(
 				array(
-					'item_id'       => GA\Helpers\getEddDownloadContentId($download_id),
+					'item_id'       => GA\Helpers\getEddDownloadContentId($download_id, $price_index),
 					'item_name'     => $download_post->post_title,
 					'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
 					'quantity' => 1,
@@ -1173,6 +1173,9 @@ class GA extends Settings implements Pixel {
 				$price_index = null;
 			}
 
+			// Normalized price id for the content id: keep 0 (first variation), null only when there is no price option.
+			$content_price_id = isset( $item_options['price_id'] ) && $item_options['price_id'] !== '' ? $item_options['price_id'] : null;
+
 			/**
 			 * Price as is used for all events except Purchase to avoid wrong values in Product Performance report.
 			 */
@@ -1193,7 +1196,7 @@ class GA extends Settings implements Pixel {
 			}
 
 			$item = array(
-				'item_id'       => GA\Helpers\getEddDownloadContentId($download_id),
+				'item_id'       => GA\Helpers\getEddDownloadContentId($download_id, $content_price_id),
 				'item_name'     => $download_post->post_title,
 				'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
 				'quantity' => $cart_item['quantity'],
@@ -1225,7 +1228,7 @@ class GA extends Settings implements Pixel {
 		}
 
         if ( $value_enabled ) {
-            $amount = edd_get_payment_amount( $payment_id );
+            $amount = $context == 'purchase' ? edd_get_payment_amount( $payment_id ) : $total_value;
             $params['value']    = getEddEventValue( $value_option, $amount, $global_value );
         }
 		
@@ -1247,6 +1250,9 @@ class GA extends Settings implements Pixel {
 
 		$price_index = ! empty( $cart_item['options'] ) ? $cart_item['options']['price_id'] : null;
 
+		// Normalized price id for the content id: keep 0 (first variation), null only when there is no price option.
+		$content_price_id = isset( $cart_item['options']['price_id'] ) && $cart_item['options']['price_id'] !== '' ? $cart_item['options']['price_id'] : null;
+
 		return array(
             'name' => 'remove_from_cart',
 			'data' => array(
@@ -1254,7 +1260,7 @@ class GA extends Settings implements Pixel {
 				'currency'        => edd_get_currency(),
 				'items'           => array(
 					array(
-						'item_id'       => GA\Helpers\getEddDownloadContentId($download_id),
+						'item_id'       => GA\Helpers\getEddDownloadContentId($download_id, $content_price_id),
 						'item_name'     => $download_post->post_title,
 						'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
 						'quantity' => $cart_item['quantity'],

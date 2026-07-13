@@ -14,5 +14,6 @@
 
   "edd_content_id": "select",
   "edd_content_id_prefix": "text",
-  "edd_content_id_suffix": "text"
+  "edd_content_id_suffix": "text",
+  "edd_variable_as_simple": "checkbox"
 }

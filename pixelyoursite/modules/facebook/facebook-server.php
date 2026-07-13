@@ -66,10 +66,38 @@ class FacebookServer {
     }
 
     /**
+     * Snapshot the per-page referrer URL into each event's payload.
+     *
+     * Reads $_SERVER['HTTP_REFERER'] of the current synchronous request —
+     * the URL of the page where the event actually happened. Must run before
+     * the event is serialized into the wp-async-task queue: by the time the
+     * loopback handler executes, HTTP_REFERER belongs to the loopback itself
+     * and is meaningless.
+     *
+     * @param SingleEvent[] $events
+     */
+    private function snapshotReferrerOnEvents( $events ) {
+        if ( empty( $events ) ) {
+            return;
+        }
+        $referrer = pys_snapshot_event_referrer_url();
+        if ( empty( $referrer ) ) {
+            return;
+        }
+        foreach ( $events as $event ) {
+            if ( $event instanceof SingleEvent && empty( $event->getPayloadValue( 'referrer_url' ) ) ) {
+                $event->addPayload( [ 'referrer_url' => $referrer ] );
+            }
+        }
+    }
+
+    /**
      * Send event in shutdown hook (not work in ajax)
      * @param SingleEvent[] $events
      */
     public function sendEventsAsync($events) {
+
+        $this->snapshotReferrerOnEvents( $events );
 
         $serverEvents = [];
         foreach ($events as $event) {
@@ -91,6 +119,8 @@ class FacebookServer {
      * @param SingleEvent[] $events
      */
     public function sendEventsNow($events) {
+
+        $this->snapshotReferrerOnEvents( $events );
 
         foreach ($events as $event) {
             $serverEvent = ServerEventHelper::mapEventToServerEvent($event);
@@ -322,6 +352,7 @@ class FacebookServer {
         $pysData = [];
         $pysData['fbc'] = ServerEventHelper::getFbc();
         $pysData['fbp'] = ServerEventHelper::getFbp();
+
         $order = wc_get_order($order_param);
         if (isWooCommerceVersionGte('3.0.0') && !empty($order)) {
             // WooCommerce >= 3.0

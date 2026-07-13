@@ -41,6 +41,13 @@ class TriggerEvent {
     private $form_submit_mode = 'both';
     private $form_field_type = '';
     private $created_via_est = false;
+    private $video_speed_urls     = array();
+    private $video_speed_rate     = 'any';
+    private $video_speed_data     = array();
+    private $video_speed_triggers = array();
+    private $click_count          = 1;
+    private $click_time_limit     = 0;
+    private $gads_phone_numbers   = array();
 
     public static $allowedTriggers = array(
         'page_visit',

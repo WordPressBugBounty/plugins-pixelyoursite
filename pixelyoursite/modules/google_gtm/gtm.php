@@ -80,7 +80,7 @@ class GTM extends Settings implements Pixel {
 <!-- Google Tag Manager by PYS -->
 <script data-cfasync="false" data-pagespeed-no-defer' . ( $has_html5_support ? ' type="text/javascript"' : '' ) . '>
 	var pys_datalayer_name = "' . esc_js( $gtm_dataLayer_name ) . '";
-	window.' . esc_js( $gtm_dataLayer_name ) . ' = window.' . esc_js( $gtm_dataLayer_name ) . ' || [];';
+	window["' . esc_js( $gtm_dataLayer_name ) . '"] = window["' . esc_js( $gtm_dataLayer_name ) . '"] || [];';
 
         if($this->getOption( 'check_list') != 'disabled' && !empty($this->getOption( 'check_list_contain'))){
             $elementName = 'gtm.'.$this->getOption( 'check_list');
@@ -88,7 +88,78 @@ class GTM extends Settings implements Pixel {
             $element[$elementName] = array_values($this->getOption( 'check_list_contain'));
             $_gtm_top_content .= esc_js( $gtm_dataLayer_name ).'.push('.json_encode($element).');';
         }
-        $_gtm_top_content .= '</script> 
+
+        // Push consent defaults early in <head> so any custom GTM snippet already
+        // finds them in the dataLayer before GTM initialises (fixes gcd=...l... issue
+        // and ensures gtm_just_data_layer mode works correctly with consent mode).
+        $is_consent_mode = PYS()->getOption( 'google_consent_mode' )
+            || has_filter( 'cm_google_consent_mode' )
+            || has_filter( 'pys_analytics_storage_mode' )
+            || has_filter( 'pys_ad_storage_mode' )
+            || has_filter( 'pys_ad_user_data_mode' )
+            || has_filter( 'pys_ad_personalization_mode' );
+
+        if ( $is_consent_mode ) {
+            /**
+             * Signal that PixelYourSite is natively emitting the Google Consent
+             * Mode default() call in its <head> bootstrap. Consent management
+             * plugins (e.g. Consent Magic) can check this filter and skip any
+             * regex/DOM stripping of gtag('consent','default', {...}) inside
+             * the PYS inline script, which otherwise leaves a broken statement
+             * fragment (e.g. "window.;") and triggers a SyntaxError when the
+             * parked script is later unblocked.
+             *
+             * Example (consumer side):
+             *
+             *     if ( apply_filters( 'pys_google_consent_mode_handled', false ) ) {
+             *         // PYS already wrote gtag('consent','default', {...}).
+             *         // Skip cleanup of consent calls in PYS scripts.
+             *         return $script_content;
+             *     }
+             *
+             * @since 9.8.1
+             * @param bool $handled Whether PYS already emitted consent defaults.
+             */
+            add_filter( 'pys_google_consent_mode_handled', '__return_true' );
+
+            // Resolve initial default values using the same filter chain as class-events-manager.
+            // ConsentMagic and other integrations populate cm_google_consent_mode with
+            // denied/granted values based on stored cookies.
+            $consent_values = apply_filters( 'cm_google_consent_mode', array(
+                'analytics_storage'  => array( 'value' => 'denied' ),
+                'ad_storage'         => array( 'value' => 'denied' ),
+                'ad_user_data'       => array( 'value' => 'denied' ),
+                'ad_personalization' => array( 'value' => 'denied' ),
+            ) );
+
+            // Allow individual pys_*_mode filters to override values.
+            if ( has_filter( 'pys_analytics_storage_mode' ) ) {
+                $consent_values['analytics_storage']['value'] = apply_filters( 'pys_analytics_storage_mode', true ) ? 'granted' : 'denied';
+            }
+            if ( has_filter( 'pys_ad_storage_mode' ) ) {
+                $consent_values['ad_storage']['value'] = apply_filters( 'pys_ad_storage_mode', true ) ? 'granted' : 'denied';
+            }
+            if ( has_filter( 'pys_ad_user_data_mode' ) ) {
+                $consent_values['ad_user_data']['value'] = apply_filters( 'pys_ad_user_data_mode', true ) ? 'granted' : 'denied';
+            }
+            if ( has_filter( 'pys_ad_personalization_mode' ) ) {
+                $consent_values['ad_personalization']['value'] = apply_filters( 'pys_ad_personalization_mode', true ) ? 'granted' : 'denied';
+            }
+
+            $consent_default = array(
+                'analytics_storage'  => $consent_values['analytics_storage']['value'],
+                'ad_storage'         => $consent_values['ad_storage']['value'],
+                'ad_user_data'       => $consent_values['ad_user_data']['value'],
+                'ad_personalization' => $consent_values['ad_personalization']['value'],
+                'wait_for_update'    => 500,
+            );
+
+            $_gtm_top_content .= '
+	window.gtag=window.gtag||function(){window["' . esc_js( $gtm_dataLayer_name ) . '"].push(arguments);};
+	gtag("consent","default",' . wp_json_encode( $consent_default ) . ')';
+        }
+
+        $_gtm_top_content .= '</script>
 <!-- End Google Tag Manager by PYS -->';
 
         if ( $echo ) {
@@ -1270,7 +1341,7 @@ class GTM extends Settings implements Pixel {
             'currency' => edd_get_currency(),
             'items'           => array(
                 array(
-                    'item_id'       => Helpers\getEddDownloadContentId($download_id),
+                    'item_id'       => Helpers\getEddDownloadContentId($download_id, $price_index),
                     'item_name'     => $download_post->post_title,
                     'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
                     'quantity' => 1,
@@ -1344,6 +1415,9 @@ class GTM extends Settings implements Pixel {
                 $price_index = null;
             }
 
+            // Normalized price id for the content id: keep 0 (first variation), null only when there is no price option.
+            $content_price_id = isset( $item_options['price_id'] ) && $item_options['price_id'] !== '' ? $item_options['price_id'] : null;
+
             /**
              * Price as is used for all events except Purchase to avoid wrong values in Product Performance report.
              */
@@ -1364,7 +1438,7 @@ class GTM extends Settings implements Pixel {
             }
 
             $item = array(
-                'item_id'       => Helpers\getEddDownloadContentId($download_id),
+                'item_id'       => Helpers\getEddDownloadContentId($download_id, $content_price_id),
                 'item_name'     => $download_post->post_title,
                 'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
                 'quantity' => $cart_item['quantity'],
@@ -1396,7 +1470,7 @@ class GTM extends Settings implements Pixel {
         }
 
         if ( $value_enabled ) {
-            $amount = edd_get_payment_amount( $payment_id );
+            $amount = $context == 'purchase' ? edd_get_payment_amount( $payment_id ) : $total_value;
             $params['value']    = getEddEventValue( $value_option, $amount, $global_value );
         }
 
@@ -1418,6 +1492,9 @@ class GTM extends Settings implements Pixel {
 
         $price_index = ! empty( $cart_item['options'] ) ? $cart_item['options']['price_id'] : null;
 
+        // Normalized price id for the content id: keep 0 (first variation), null only when there is no price option.
+        $content_price_id = isset( $cart_item['options']['price_id'] ) && $cart_item['options']['price_id'] !== '' ? $cart_item['options']['price_id'] : null;
+
         return array(
             'name' => 'remove_from_cart',
             'data' => array(
@@ -1425,7 +1502,7 @@ class GTM extends Settings implements Pixel {
                 'currency'        => edd_get_currency(),
                 'items'           => array(
                     array(
-                        'item_id'       => Helpers\getEddDownloadContentId($download_id),
+                        'item_id'       => Helpers\getEddDownloadContentId($download_id, $content_price_id),
                         'item_name'     => $download_post->post_title,
                         'category' => implode( '/', getObjectTerms( 'download_category', $download_id ) ),
                         'quantity' => $cart_item['quantity'],

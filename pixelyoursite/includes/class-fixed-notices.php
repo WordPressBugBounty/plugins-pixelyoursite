@@ -371,21 +371,18 @@ class NoticesFixed {
         }
         if(get_option('free_next_chain_notice') != $minOrderBlock)
         {
-            if((get_option('free_next_chain_notice') < $minOrderBlock && get_user_meta($user_id, 'free_next_chain_notice', true) < $minOrderBlock) && $minOrderBlock != 999999)
+            if(get_option('free_next_chain_notice') < $minOrderBlock && $minOrderBlock != 999999)
             {
-                update_option('free_next_chain_notice', $minOrderBlock);
                 update_option('free_expiration_chain_notice_dismissed_at', time() + $this->convertTimeToSeconds(isset($noticeBlock[$minOrderBlock]['wait']) ? $noticeBlock[$minOrderBlock]['wait'] : 24, 'hours'));
             }
-            else if((get_option('free_next_chain_notice') > $minOrderBlock || get_user_meta($user_id, 'free_next_chain_notice', true) > $minOrderBlock) && $minOrderBlock != 999999)
+            else if(get_option('free_next_chain_notice') > $minOrderBlock && $minOrderBlock != 999999)
             {
                 update_option('free_expiration_chain_notice_dismissed_at', time() + $this->convertTimeToSeconds(0, 'seconds'));
             }
-            else{
-                update_option('free_next_chain_notice', $minOrderBlock);
-            }
+            update_option('free_next_chain_notice', $minOrderBlock);
         }
 
-        if(isset($noticeBlock[$minOrderBlock]) && (get_option('free_next_chain_notice') >= $minOrderBlock && time() >= get_option('free_expiration_chain_notice_dismissed_at')))
+        if(isset($noticeBlock[$minOrderBlock]) && (get_option('free_next_chain_notice') == $minOrderBlock && time() >= get_option('free_expiration_chain_notice_dismissed_at')))
         {
 
             return $noticeBlock[$minOrderBlock];

@@ -79,6 +79,15 @@ include "html-popovers.php";
                         <?php _e('This option improves site performance by using the modern sendBeacon API which allows the browser to reliably deliver events in the background while prioritizing resources for the page itself. Falls back to jQuery.ajax if sendBeacon is not supported.', 'pys');?>
                     </p>
                 </div>
+                <div>
+                    <div class="d-flex align-items-center number-option-block">
+                        <label class="primary_heading"><?php _e('REST API rate limit (requests per minute per IP):', 'pys');?></label>
+                        <?php PYS()->render_number_input( 'pys_check_permission_rate_limit', '', false, null, 1, 1 ); ?>
+                    </div>
+                    <p class="text-gray mt-4">
+                        <?php _e('Maximum number of server-side tracking requests allowed per minute, per IP address, for each pixel endpoint. Requests over this limit receive an HTTP 429 response. Default is 60 (1 request per second). Increase this value if legitimate fast-browsing customers are being blocked, especially on stores with multiple active pixels firing on every page.', 'pys');?>
+                    </p>
+                </div>
             </div>
         </div>
     </div>

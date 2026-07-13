@@ -10,8 +10,8 @@
   "gtm_just_data_layer": false,
 
   "gtm_dataLayer_name": "dataLayer",
-  "gtm_container_domain": "www.googletagmanager.com",
-  "gtm_container_identifier": "gtm",
+  "gtm_container_domain": "https://www.googletagmanager.com",
+  "gtm_container_identifier": "gtm.js",
   "gtm_auth": "",
   "gtm_preview": "",
 
@@ -68,6 +68,7 @@
   "edd_content_id": "download_id",
   "edd_content_id_prefix": "",
   "edd_content_id_suffix": "",
+  "edd_variable_as_simple": true,
 
   "edd_frequent_shopper_enabled": true,
   "edd_vip_client_enabled": true,

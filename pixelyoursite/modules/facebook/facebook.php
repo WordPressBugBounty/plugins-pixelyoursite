@@ -884,7 +884,7 @@ class Facebook extends Settings implements Pixel {
 
 		$params = array(
 			'content_type' => 'product',
-			'content_ids'  =>  Helpers\getFacebookEddDownloadContentId( $download_id ),
+			'content_ids'  =>  Helpers\getFacebookEddDownloadContentId( $download_id, $price_index ),
 		);
 
 		// content_name, category_name
@@ -893,7 +893,7 @@ class Facebook extends Settings implements Pixel {
 
 		// currency, value
 		if ( PYS()->getOption( 'edd_add_to_cart_value_enabled' ) ) {
-            
+
             $amount = getEddDownloadPriceToDisplay( $download_id, $price_index );
 			$value_option = PYS()->getOption( 'edd_add_to_cart_value_option' );
 			$global_value = PYS()->getOption( 'edd_add_to_cart_value_global', 0 );
@@ -906,7 +906,7 @@ class Facebook extends Settings implements Pixel {
 		// contents
 		$params['contents'] =  array(
 			array(
-				'id'         => (string) $download_id,
+				'id'         => Helpers\getFacebookEddDownloadContentId( $download_id, $price_index ),
 				'quantity'   => 1,
 				//'item_price' => getEddDownloadPriceToDisplay( $download_id ),
 			)
@@ -966,7 +966,17 @@ class Facebook extends Settings implements Pixel {
 		foreach ( $cart as $cart_item_key => $cart_item ) {
 
 			$download_id   = (int) $cart_item['id'];
-			$content_ids[] = Helpers\getFacebookEddDownloadContentId( $download_id );
+
+			if ( in_array( $context, array( 'Purchase', 'FrequentShopper', 'VipClient', 'BigWhale' ) ) ) {
+				$item_options = $cart_item['item_number']['options'];
+			} else {
+				$item_options = $cart_item['options'];
+			}
+
+			// Normalized price id for the content id: keep 0 (first variation), null only when there is no price option.
+			$content_price_id = isset( $item_options['price_id'] ) && $item_options['price_id'] !== '' ? $item_options['price_id'] : null;
+
+			$content_ids[] = Helpers\getFacebookEddDownloadContentId( $download_id, $content_price_id );
 
 			// content_name, category_name
 			$custom_audiences = Helpers\getEddCustomAudiencesOptimizationParams( $download_id );
@@ -977,12 +987,6 @@ class Facebook extends Settings implements Pixel {
 			$tags = array_merge( $tags, getObjectTerms( 'download_tag', $download_id ) );
 
 			$num_items += $cart_item['quantity'];
-
-			if ( in_array( $context, array( 'Purchase', 'FrequentShopper', 'VipClient', 'BigWhale' ) ) ) {
-				$item_options = $cart_item['item_number']['options'];
-			} else {
-				$item_options = $cart_item['options'];
-			}
 
 			// calculate cart items total
 			if ( $value_enabled ) {
@@ -997,7 +1001,7 @@ class Facebook extends Settings implements Pixel {
 			
 			// contents
 			$contents[] = array(
-				'id'         => (string) $download_id,
+				'id'         => Helpers\getFacebookEddDownloadContentId( $download_id, $content_price_id ),
 				'quantity'   => $cart_item['quantity'],
 			);
 
@@ -1043,9 +1047,12 @@ class Facebook extends Settings implements Pixel {
 		$download_id = $cart_item['id'];
 		$price_index = ! empty( $cart_item['options'] ) ? $cart_item['options']['price_id'] : null;
 
+		// Normalized price id for the content id: keep 0 (first variation), null only when there is no price option.
+		$content_price_id = isset( $cart_item['options']['price_id'] ) && $cart_item['options']['price_id'] !== '' ? $cart_item['options']['price_id'] : null;
+
 		$params = array(
 			'content_type' => 'product',
-			'content_ids' => Helpers\getFacebookEddDownloadContentId( $download_id )
+			'content_ids' => Helpers\getFacebookEddDownloadContentId( $download_id, $content_price_id )
 		);
 
 		// content_name, category_name, tags
@@ -1055,7 +1062,7 @@ class Facebook extends Settings implements Pixel {
 		$params['num_items'] = $cart_item['quantity'];
 		$params['contents'] =  array(
 			array(
-				'id'         => (string) $download_id,
+				'id'         => Helpers\getFacebookEddDownloadContentId( $download_id, $content_price_id ),
 				'quantity'   => $cart_item['quantity'],
 				//'item_price' => getEddDownloadPriceToDisplay( $download_id, $price_index ),
 			)

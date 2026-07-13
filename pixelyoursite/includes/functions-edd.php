@@ -6,6 +6,48 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+/**
+ * Build the EDD download content id for a pixel tag, honoring the edd_variable_as_simple option.
+ *
+ * Single source of truth for the EDD content-id logic in this plugin: every pixel's own helper
+ * (getFacebookEddDownloadContentId / getEddDownloadContentId / ...) delegates here, passing its
+ * own settings object so per-tag options (edd_content_id, prefix, suffix, edd_variable_as_simple)
+ * are still honored.
+ *
+ * @param Settings      $settings         Pixel/settings object storing edd_content_id / prefix / suffix.
+ * @param int|string    $download_id      EDD download (post) id.
+ * @param int|null      $price_id         Selected price option id. 0 is a valid variation; pass null for downloads without price variations.
+ * @param Settings|null $variableSettings Settings object storing edd_variable_as_simple. Defaults to $settings; pass a different object where the two live apart (free Facebook stores content_id on PYS but the switcher on the Facebook tag).
+ *
+ * @return string
+ */
+function getEddContentId( $settings, $download_id, $price_id = null, $variableSettings = null ) {
+
+	if ( null === $variableSettings ) {
+		$variableSettings = $settings;
+	}
+
+	if ( $settings->getOption( 'edd_content_id' ) == 'download_sku' ) {
+		$content_id = get_post_meta( $download_id, 'edd_sku', true );
+		if ( empty( $content_id ) ) {
+			$content_id = $download_id; // fall back to the download id when no SKU is set
+		}
+	} else {
+		$content_id = $download_id;
+	}
+
+	// For downloads with price variations, append the price id unless the option
+	// forces the parent (simple) download id for every variation.
+	if ( ! $variableSettings->getOption( 'edd_variable_as_simple' ) && null !== $price_id ) {
+		$content_id = $content_id . '-' . $price_id;
+	}
+
+	$prefix = $settings->getOption( 'edd_content_id_prefix' );
+	$suffix = $settings->getOption( 'edd_content_id_suffix' );
+
+	return $prefix . $content_id . $suffix;
+}
+
 function getEddPaymentKey() {
 	global $edd_receipt_args;
 

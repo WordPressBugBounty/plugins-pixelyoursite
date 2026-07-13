@@ -14,5 +14,6 @@
 
   "edd_content_id": "download_id",
   "edd_content_id_prefix": "",
-  "edd_content_id_suffix": ""
+  "edd_content_id_suffix": "",
+  "edd_variable_as_simple": true
 }

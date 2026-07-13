@@ -95,17 +95,7 @@ function getWooCartItemId( $item ) {
  * EASY DIGITAL DOWNLOADS
  */
 
-function getEddDownloadContentId( $download_id )
+function getEddDownloadContentId( $download_id, $price_id = null )
 {
-
-    if (PixelYourSite\GATags()->getOption('edd_content_id') == 'download_sku') {
-        $content_id = get_post_meta($download_id, 'edd_sku', true);
-    } else {
-        $content_id = $download_id;
-    }
-
-    $prefix = PixelYourSite\GATags()->getOption('edd_content_id_prefix');
-    $suffix = PixelYourSite\GATags()->getOption('edd_content_id_suffix');
-
-    return $prefix . $content_id . $suffix;
+    return PixelYourSite\getEddContentId( PixelYourSite\GATags(), $download_id, $price_id );
 }

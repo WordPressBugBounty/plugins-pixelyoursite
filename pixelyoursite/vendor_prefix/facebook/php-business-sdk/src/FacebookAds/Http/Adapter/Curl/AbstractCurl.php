@@ -121,10 +121,9 @@ abstract class AbstractCurl implements CurlInterface {
   }
 
   /**
-   * @param int $age
    * @return array
    */
-  public static function version($age) {
-    return curl_version($age);
+  public static function version() {
+    return curl_version();
   }
 }

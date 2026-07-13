@@ -253,6 +253,29 @@ use PixelYourSite\GA\Helpers;
         </div>
     </div>
 
+    <!-- Global Custom Parameters for GA & Ads Events (PRO) -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('Custom Parameters for All GA & Ads Events', 'pys');?></h4>
+            <?php renderProBadge(); ?>
+        </div>
+        <div class="card-body">
+            <div class="pro-feature-container">
+                <div class="gap-24">
+                    <div>
+                        <p class="text-gray">
+                            <?php _e('Add custom parameters that will be sent with all GA4 and Google Ads events.', 'pys');?>
+                        </p>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary btn-primary-type2" type="button" disabled>
+                            <?php _e('Add Parameter', 'pys');?>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Cross-Domain Tracking -->
     <!-- @link: https://developers.google.com/analytics/devguides/collection/gtagjs/cross-domain -->
     <div class="card card-style6 card-static">

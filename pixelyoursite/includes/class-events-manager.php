@@ -23,6 +23,7 @@ class EventsManager {
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueueScripts' ),10 );
         add_action( 'wp_enqueue_scripts', array( $this, 'setupEventsParams' ),14 );
+        $this->setupEddButtonHooks();
         add_action( 'wp_enqueue_scripts', array( $this, 'outputData' ),15 );
 		add_action( 'wp_footer', array( $this, 'outputNoScriptData' ), 10 );
 
@@ -278,8 +279,7 @@ class EventsManager {
 				$params = array();
 				if( get_post_type() == "post" && !is_archive() ) {
 					global $post;
-					$catIds = wp_get_object_terms( $post->ID, 'category', array( 'fields' => 'names' ) );
-					$params[ 'post_category' ] = implode(", ",$catIds) ;
+					$params[ 'post_category' ] = implode( ', ', getObjectTerms( 'category', $post->ID ) );
 				}
 
 				$slug = $pixel->getSlug();
@@ -291,12 +291,7 @@ class EventsManager {
 			}
 		}
 
-        if(EventsEdd()->isEnabled()) {
-            // AddToCart on button
-            if ( isEventEnabled( 'edd_add_to_cart_enabled') && PYS()->getOption( 'edd_add_to_cart_on_button_click' ) ) {
-                add_action( 'edd_purchase_link_end', array( $this, 'setupEddSingleDownloadData' ) );
-            }
-        }
+        // edd_purchase_link_end is now registered early in setupEddButtonHooks() (called from constructor)
 
         if(EventsWoo()->isEnabled()){
             // AddToCart on button and Affiliate
@@ -691,6 +686,20 @@ class EventsManager {
         <?php
 
     }
+    /**
+     * Register edd_purchase_link_end hook as early as possible (from the
+     * constructor, on 'init') so it is added before any content is rendered.
+     * Required for block/FSE themes and page builders (e.g. Elementor shortcodes)
+     * where the purchase form is generated before wp_enqueue_scripts fires.
+     */
+    public function setupEddButtonHooks() {
+        if ( EventsEdd()->isEnabled() ) {
+            if ( isEventEnabled( 'edd_add_to_cart_enabled' ) && PYS()->getOption( 'edd_add_to_cart_on_button_click' ) ) {
+                add_action( 'edd_purchase_link_end', array( $this, 'setupEddSingleDownloadData' ) );
+            }
+        }
+    }
+
     static function isTrackExternalId(){
         return PYS()->getOption("send_external_id") && !apply_filters( 'pys_disable_externalID_by_gdpr', false ) && !apply_filters( 'pys_disable_all_cookie', false );
     }

@@ -9,6 +9,105 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Strip the query string and fragment from a URL.
+ * Used to keep referrer_url free of tracking/PII params before
+ * storage or sending to Meta CAPI.
+ */
+function pys_strip_url_query_and_fragment( $url ) {
+    if ( empty( $url ) ) {
+        return '';
+    }
+    $clean = strtok( (string) $url, '?#' );
+    return is_string( $clean ) ? $clean : '';
+}
+
+/**
+ * Read the session-entry referrer URL captured by the frontend JS.
+ *
+ * The frontend stores the visitor's first external referrer of the session
+ * in the `pys_session_entry_referrer` session cookie. This helper is the
+ * LAST-resort fallback for orphan server-only events that arrive without
+ * a per-page payload (e.g. async loopback without snapshot, cron jobs).
+ *
+ * @return string Validated absolute URL, or '' when missing/invalid.
+ */
+function pys_get_session_entry_referrer_url() {
+    if ( ! empty( $_COOKIE['pys_session_entry_referrer'] ) ) {
+        $url = esc_url_raw( wp_unslash( $_COOKIE['pys_session_entry_referrer'] ) );
+        $url = pys_strip_url_query_and_fragment( $url );
+        if ( $url && wp_http_validate_url( $url ) ) {
+            return $url;
+        }
+    }
+    return '';
+}
+
+/**
+ * Snapshot the per-page referrer for an event being created server-side.
+ *
+ * Reads `$_SERVER['HTTP_REFERER']` of the CURRENT synchronous request — this
+ * is the URL of the page where the event actually happened, which is what
+ * Meta's `referrer_url` expects. MUST be called synchronously, at the moment
+ * the SingleEvent is created (Woo/EDD hooks, form handlers, template-driven
+ * events). Inside an async loopback handler this value belongs to the
+ * loopback request itself and is meaningless — never call from there.
+ *
+ * @return string Validated absolute URL, or '' when missing/invalid.
+ */
+function pys_snapshot_event_referrer_url() {
+    if ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
+        $url = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
+        $url = pys_strip_url_query_and_fragment( $url );
+        if ( $url && wp_http_validate_url( $url ) ) {
+            return $url;
+        }
+    }
+    return '';
+}
+
+/**
+ * Resolve the final, clean, validated referrer_url for a server event.
+ *
+ * Sources, in order:
+ *   1. SingleEvent payload — per-page value snapshotted either from
+ *      the browser REST/AJAX payload or from
+ *      pys_snapshot_event_referrer_url() in a synchronous
+ *      Woo/EDD hook at event creation time.
+ *   2. pys_get_session_entry_referrer_url() — last-resort fallback
+ *      for orphan events (async loopback without snapshot, cron).
+ *
+ * Returns '' when no source yields a valid URL or consent is missing.
+ * $_SERVER['HTTP_REFERER'] is never consulted here.
+ *
+ * @param \PixelYourSite\SingleEvent $event
+ * @return string
+ */
+function pys_resolve_event_referrer_url( $event ) {
+    if ( ! Consent()->checkConsent( 'facebook' ) ) {
+        return '';
+    }
+
+    $url = '';
+    if ( $event && method_exists( $event, 'getPayloadValue' ) ) {
+        $url = (string) $event->getPayloadValue( 'referrer_url' );
+    }
+    if ( $url === '' ) {
+        $url = pys_get_session_entry_referrer_url();
+    }
+    if ( $url === '' ) {
+        return '';
+    }
+
+    $url = esc_url_raw( $url );
+    $url = pys_strip_url_query_and_fragment( $url );
+
+    if ( $url && wp_http_validate_url( $url ) ) {
+        return $url;
+    }
+    return '';
+}
+
+/**
  * Check if EDD Recurring plugin is active.
  * Uses static caching to prevent repeated checks.
  *
@@ -1037,9 +1136,9 @@ function getCurrentPageUrl($removeQuery = false) {
 }
 
 function removeProtocolFromUrl( $url ) {
-    
-    if ( extension_loaded( 'mbstring' ) ) {
-        
+
+    if ( extension_loaded( 'mbstring' ) && class_exists( 'URL\Normalizer' ) ) {
+
         $un = new URL\Normalizer();
         $un->setUrl( $url );
         $url = $un->normalize();
@@ -1072,60 +1171,88 @@ function removeProtocolFromUrl( $url ) {
  * @return bool
  */
 function compareURLs( $url, $base = '', $rule = 'match' ) {
-    
+
     // use current page url if not set
     if ( empty( $base ) ) {
         $base = getCurrentPageUrl();
     }
-    
+
+    // Normalize base ONCE here; _compareURLsInternal receives it already clean
     $base = removeProtocolFromUrl( $base );
-    
+
+    return _compareURLsInternal( $url, $base, $rule );
+
+}
+
+/**
+ * Internal URL comparison helper. Expects $base already normalized via removeProtocolFromUrl().
+ * Avoids double normalization of $base during recursive array iteration.
+ *
+ * @param string|array $url
+ * @param string       $base  Already processed by removeProtocolFromUrl()
+ * @param string       $rule
+ *
+ * @return bool
+ */
+function _compareURLsInternal( $url, $base, $rule ) {
+
     if ( is_string( $url ) ) {
-        
+
         if ( empty( $url ) || '*' === $url ) {
             return true;
         }
-        
+
         $url = rtrim( $url, '*' );  // for backward capability
+
+        // Remember whether the user entered a path (leading slash) BEFORE
+        // normalization strips it, so "contains" can anchor to the path and
+        // not match inside the domain name (e.g. "/cart" vs "turenorthcart.com").
+        $url_had_leading_slash = ( isset( $url[0] ) && $url[0] === '/' );
+
         $url = removeProtocolFromUrl( $url );
-        
+
         if ( $rule == 'match' ) {
-            return $base == $url;
+            return rtrim( $base, '/' ) === rtrim( $url, '/' );
         }
-        
+
         if ( $rule == 'contains' ) {
-            
-            if ( $base == $url ) {
+
+            // If the user entered a path, anchor the match to the path so it
+            // cannot accidentally match inside the domain name.
+            // e.g. "/cart" must match "site.com/cart" but not "turenorthcart.com".
+            $needle = $url_had_leading_slash ? '/' . $url : $url;
+
+            if ( $base == $needle ) {
                 return true;
             }
 
-            if(empty($base) || empty($url)) {
+            if ( empty( $base ) || empty( $needle ) ) {
                 return false;
             }
-            
-            if ( strpos( $base, $url ) !== false ) {
+
+            if ( strpos( $base, $needle ) !== false ) {
                 return true;
             }
-            
+
             return false;
-            
+
         }
-        
+
         return false;
-        
+
     } else {
-        
-        // recursively compare each url
+
+        // $base is already normalized — iterate without re-normalizing
         foreach ( $url as $single_url ) {
-            
-            if ( compareURLs( $single_url['value'], $base, $single_url['rule'] ) ) {
+
+            if ( _compareURLsInternal( $single_url['value'], $base, $single_url['rule'] ) ) {
                 return true;
             }
-            
+
         }
-        
+
         return false;
-        
+
     }
 
 }

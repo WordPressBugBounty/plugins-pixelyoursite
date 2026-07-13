@@ -12,6 +12,7 @@ class FacebookAsyncTask extends \WP_Async_Task {
                 if (empty($this->_body_data)) {
                     return array('data' => base64_encode(serialize($data)));
                 } else {
+                    ServerEventHelper::requireServerSideClasses();
                     $oldData = unserialize(base64_decode($this->_body_data['data']), ['allowed_classes' => [
                         'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\Event',
                         'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\UserData',
@@ -34,6 +35,7 @@ class FacebookAsyncTask extends \WP_Async_Task {
 
     protected function run_action() {
         try {
+            ServerEventHelper::requireServerSideClasses();
             $data = unserialize(base64_decode($_POST['data']), ['allowed_classes' => [
                 'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\Event',
                 'PYS_PRO_GLOBAL\FacebookAds\Object\ServerSide\UserData',

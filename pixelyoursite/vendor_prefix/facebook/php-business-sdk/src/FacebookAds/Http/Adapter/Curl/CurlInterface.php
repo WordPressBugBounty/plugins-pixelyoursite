@@ -99,8 +99,7 @@ interface CurlInterface {
   public function unescape($string);
 
   /**
-   * @param int $age
    * @return array
    */
-  public static function version($age);
+  public static function version();
 }

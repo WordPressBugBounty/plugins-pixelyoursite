@@ -2151,4 +2151,25 @@ jQuery(document).ready(function($) {
         headButtonBlock.find(".icon-load").addClass("active");
         passwordBlock.find(".maskedInput").attr("disabled", true);
     });
+
+    // ---- Meta CAPI dynamic warnings ----
+    (function () {
+        function updateMetaCapiWarnings($container) {
+            var $toggle  = $container.find('#pys_facebook_use_server_api');
+            var $token   = $container.find('textarea[name*="facebook"][name*="server_access_api_token"]').first();
+            var on       = $toggle.is(':checked');
+            var hasToken = $token.val().trim() !== '';
+            $container.find('.pys-capi-enable-warning').toggleClass('pys-capi-hidden', on);
+            $container.find('.pys-capi-token-warning').toggleClass('pys-capi-hidden', !(on && !hasToken));
+        }
+
+        $( document ).on('change', '#pys_facebook_use_server_api', function () {
+            updateMetaCapiWarnings($( this ).closest('.pixel-data-wrap'));
+        });
+
+        $( document ).on('input', 'textarea[name*="facebook"][name*="server_access_api_token"]', function () {
+            updateMetaCapiWarnings($( this ).closest('.pixel-data-wrap'));
+        });
+    })();
+    // ---- / Meta CAPI dynamic warnings ----
 } );

@@ -477,19 +477,10 @@ function isDefaultWooContentIdLogic() {
  * EASY DIGITAL DOWNLOADS
  */
 
-function getFacebookEddDownloadContentId( $download_id ) {
-
-	if ( PixelYourSite\PYS()->getOption( 'edd_content_id' ) == 'download_sku' ) {
-		$content_id = get_post_meta( $download_id, 'edd_sku', true );
-	} else {
-		$content_id = $download_id;
-	}
-
-	$prefix = PixelYourSite\PYS()->getOption( 'edd_content_id_prefix' );
-	$suffix = PixelYourSite\PYS()->getOption( 'edd_content_id_suffix' );
-
-	return $prefix . $content_id . $suffix;
-
+function getFacebookEddDownloadContentId( $download_id, $price_id = null ) {
+	// content_id / prefix / suffix are stored on the core plugin (PYS) for the free Facebook tag,
+	// while the edd_variable_as_simple switcher is stored on the Facebook tag.
+	return PixelYourSite\getEddContentId( PixelYourSite\Facebook(), $download_id, $price_id );
 }
 
 /**
