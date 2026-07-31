@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.2.1' );
+define( 'PYS_FREE_VERSION', '11.2.2' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
 define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );
@@ -66,6 +66,7 @@ require_once PYS_FREE_PATH.'/includes/events/CustomEventClasses/class-conditiona
 require_once PYS_FREE_PATH.'/modules/facebook/facebook.php';
 require_once PYS_FREE_PATH.'/modules/facebook/facebook-server.php';
 require_once PYS_FREE_PATH.'/modules/facebook/class-facebook-rest-api.php';
+require_once PYS_FREE_PATH.'/includes/class-rest-api-guard.php';
 require_once PYS_FREE_PATH.'/modules/google_analytics/ga.php';
 require_once PYS_FREE_PATH.'/modules/google_tags/gatags.php';
 require_once PYS_FREE_PATH.'/modules/google_gtm/gtm.php';
@@ -87,4 +88,6 @@ PixelYourSite\PYS();
 
 add_action( 'init', function() {
     \PixelYourSite\Facebook_REST_API();
+    // Central REST API guard (Facebook + add-on endpoints) via rest_pre_dispatch.
+    \PixelYourSite\RestAPIGuard::instance();
 }, 9 );

@@ -342,7 +342,7 @@ function singleCheckLicense( $license_key, $plugin)
 
     $response = wp_remote_post( 'https://www.pixelyoursite.com', array(
         'timeout'   => 30,
-        'sslverify' => false,
+        'sslverify' => (bool) apply_filters( 'edd_sl_api_request_verify_ssl', true ),
         'body'      => $api_params
     ) );
 
@@ -355,7 +355,10 @@ function singleCheckLicense( $license_key, $plugin)
 
         $admin_notice = array(
             'class' => 'danger',
-            'msg'   => __("The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: {$ip_list}", 'pixelyoursite')
+            'msg'   => sprintf(
+                __( 'The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: %s', 'pys' ),
+                $ip_list
+            )
         );
 
 	    if ( ! empty( $admin_notice ) ) {
@@ -568,7 +571,7 @@ function licenseActivate( $license_key, $plugin ) {
 
 	$response = wp_remote_post( 'https://www.pixelyoursite.com', array(
 		'timeout'   => 120,
-		'sslverify' => false,
+		'sslverify' => (bool) apply_filters( 'edd_sl_api_request_verify_ssl', true ),
 		'body'      => $api_params
 	) );
 
@@ -582,7 +585,10 @@ function licenseActivate( $license_key, $plugin ) {
 
         $admin_notice = array(
             'class' => 'danger',
-            'msg'   => __("The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: {$ip_list}", 'pixelyoursite')
+            'msg'   => sprintf(
+                __( 'The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: %s', 'pys' ),
+                $ip_list
+            )
         );
 
 		if ( ! empty( $admin_notice ) ) {
@@ -611,7 +617,7 @@ function licenseDeactivate( $license_key, $plugin ) {
 
 	$response = wp_remote_post( 'https://www.pixelyoursite.com', array(
 		'timeout'   => 120,
-		'sslverify' => false,
+		'sslverify' => (bool) apply_filters( 'edd_sl_api_request_verify_ssl', true ),
 		'body'      => $api_params
 	) );
 
@@ -624,7 +630,10 @@ function licenseDeactivate( $license_key, $plugin ) {
 
         $admin_notice = array(
             'class' => 'danger',
-            'msg'   => __("The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: {$ip_list}", 'pixelyoursite')
+            'msg'   => sprintf(
+                __( 'The request may have been blocked by our firewall. Please try again later. If the problem persists, contact our support and provide the following IP addresses: %s', 'pys' ),
+                $ip_list
+            )
         );
 
 		if ( ! empty( $admin_notice ) ) {

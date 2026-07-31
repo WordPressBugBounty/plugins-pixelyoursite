@@ -230,6 +230,49 @@ class EventsManager {
         }
         $options['cache_bypass'] = time();
 
+        if ( PYS()->getOption( 'fetch_user_data_via_rest' ) ) {
+            unset( $options['ajax_event'] );
+            unset( $options['cache_bypass'] );
+            unset( $options['tracking_analytics'] );
+            unset( $options['gdpr']['all_disabled_by_api'] );
+            unset( $options['gdpr']['facebook_disabled_by_api'] );
+            unset( $options['gdpr']['analytics_disabled_by_api'] );
+            unset( $options['gdpr']['google_ads_disabled_by_api'] );
+            unset( $options['gdpr']['pinterest_disabled_by_api'] );
+            unset( $options['gdpr']['bing_disabled_by_api'] );
+            unset( $options['gdpr']['reddit_disabled_by_api'] );
+            unset( $options['gdpr']['externalID_disabled_by_api'] );
+            unset( $options['cookie'] );
+            $options['dynamicDataUrl'] = rest_url( 'pys/v1/dynamic-options' );
+
+            /*
+             * Strip per-pixel user data (advanced matching) out of the HTML. The
+             * endpoint above returns it per visitor instead — see
+             * PYS::serve_dynamic_options().
+             *
+             * Note these keys live in $data, filled by the pixel loop at the top of
+             * this method, not in the $options array the rest of this block edits.
+             * The two are merged only afterwards.
+             *
+             * Purchase confirmation pages are left untouched: their data is
+             * order-derived and cannot be rebuilt on a REST request, and those pages
+             * are never HTML-cached. See isPurchaseConfirmationPage().
+             */
+            if ( ! isPurchaseConfirmationPage() ) {
+                foreach ( getDynamicUserDataKeys() as $slug => $keys ) {
+                    foreach ( $keys as $key ) {
+                        if ( isset( $data[ $slug ][ $key ] ) ) {
+                            // Emptied, not removed: the front-end reads
+                            // Object.keys( options.<slug>.<key> ).length and would
+                            // throw on undefined. An empty value is a state that
+                            // already occurs whenever there is nothing to match on.
+                            $data[ $slug ][ $key ] = array();
+                        }
+                    }
+                }
+            }
+        }
+
         $data = array_merge( $data, $options );
 
 		wp_localize_script( 'pys', 'pysOptions', $data );

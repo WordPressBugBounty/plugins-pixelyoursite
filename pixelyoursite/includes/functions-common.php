@@ -9,6 +9,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * True when the visitor's request reached the site over HTTPS.
+ *
+ * $_SERVER['HTTPS'] alone is unreliable behind an SSL-terminating proxy
+ * (Cloudflare, load balancer, reverse proxy): PHP sees plain HTTP while the
+ * browser is on HTTPS, so every URL we build comes out as http:// and the
+ * browser blocks it as mixed content. Also check the forwarded-proto header
+ * and is_ssl(), which covers FORCE_SSL setups and port 443.
+ */
+function pys_is_request_secure() {
+    if ( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) === 'on' ) {
+        return true;
+    }
+
+    if ( ! empty( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) ) {
+        // Proxy chains send a comma-separated list, e.g. "https, http".
+        $forwarded = explode( ',', $_SERVER['HTTP_X_FORWARDED_PROTO'] );
+        if ( strtolower( trim( $forwarded[0] ) ) === 'https' ) {
+            return true;
+        }
+    }
+
+    return is_ssl();
+}
+
+/**
+ * Request scheme with "://" appended, ready to prepend to host + REQUEST_URI.
+ */
+function pys_get_request_protocol() {
+    return pys_is_request_secure() ? 'https://' : 'http://';
+}
+
+/**
  * Strip the query string and fragment from a URL.
  * Used to keep referrer_url free of tracking/PII params before
  * storage or sending to Meta CAPI.
@@ -19,6 +51,24 @@ function pys_strip_url_query_and_fragment( $url ) {
     }
     $clean = strtok( (string) $url, '?#' );
     return is_string( $clean ) ? $clean : '';
+}
+
+/**
+ * Absolute URL of the page currently being requested.
+ *
+ * @param bool $with_query Keep the query string. Pass false for the
+ *                         origin+path form the frontend JS writes into the
+ *                         select_prod_list cookie (url.origin + url.pathname),
+ *                         so PHP-side comparisons can match it.
+ */
+function pys_get_current_page_url( $with_query = true ) {
+    $host = ! empty( $_SERVER['HTTP_HOST'] )
+        ? $_SERVER['HTTP_HOST']
+        : parse_url( get_site_url(), PHP_URL_HOST );
+    $uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+    $url = pys_get_request_protocol() . $host . $uri;
+
+    return $with_query ? $url : pys_strip_url_query_and_fragment( $url );
 }
 
 /**
@@ -658,6 +708,8 @@ function getProductCogOrder( $args ) {
 }
 
 function getAvailableProductCogCart() {
+    if ( ! isWooCartAvailable() ) return '';
+
     $shipping        = WC()->cart->get_shipping_total();
     $cart_total_base = WC()->cart->get_total( 'edit' ) - $shipping;
 
@@ -832,6 +884,19 @@ function get_product_cost_by_cat( $product_id ) {
  */
 function isWooCommerceActive() {
     return class_exists( 'woocommerce' );
+}
+
+/**
+ * Check if WooCommerce cart is initialized and safe to use.
+ *
+ * WC()->cart stays null on requests where WooCommerce does not load the cart
+ * (admin, cron, REST, or when a third-party plugin disables cart/session
+ * loading on the front-end), so every cart access must be guarded.
+ *
+ * @return bool
+ */
+function isWooCartAvailable() {
+    return isWooCommerceActive() && function_exists( 'WC' ) && WC() !== null && WC()->cart !== null;
 }
 
 /**
@@ -1639,6 +1704,53 @@ function getBrowserTime(){
 
     $dateTimeString = implode("|", $dateTime);
     return $dateTimeString;
+}
+
+/**
+ * Pixel-option keys that carry visitor PII (email, phone, name, address) into the
+ * localized pysOptions object, and therefore into the page HTML. When
+ * 'fetch_user_data_via_rest' is enabled these are emptied before the options are
+ * printed and delivered per-visitor by the pys/v1/dynamic-options endpoint
+ * instead, so a shared HTML cache cannot serve one visitor's identity to another.
+ *
+ * Keyed by pixel slug. Add-ons that ship their own user data register through the
+ * filter rather than being hard-coded here. Slugs whose pixel is not registered or
+ * not configured are simply skipped, so listing tiktok here costs nothing and keeps
+ * this map identical to the Pro one.
+ *
+ * @return array<string, string[]>
+ */
+function getDynamicUserDataKeys() {
+    return apply_filters( 'pys_dynamic_user_data_keys', array(
+        'facebook'  => array( 'advancedMatching' ),
+        'tiktok'    => array( 'advanced_matching' ),
+        'pinterest' => array( 'advancedMatching' ),
+        'reddit'    => array( 'advanced_matching' ),
+    ) );
+}
+
+/**
+ * Purchase confirmation pages are exempt from the PII strip described above.
+ *
+ * Their advanced matching data comes from the order, which is resolved from the
+ * current request URL (order key / payment key) and guarded by the strict 'pii'
+ * access check. The REST endpoint never receives that URL, so it cannot rebuild
+ * the order context — and passing the order key into a second request would just
+ * spread it across more access logs. These pages are also excluded from HTML
+ * caching by every cache plugin, so leaving the data inline is safe.
+ *
+ * @return bool
+ */
+function isPurchaseConfirmationPage() {
+    if ( isWooCommerceActive() && PYS()->woo_is_order_received_page() ) {
+        return true;
+    }
+
+    if ( isEddActive() && function_exists( 'edd_is_success_page' ) && edd_is_success_page() ) {
+        return true;
+    }
+
+    return false;
 }
 
 /**

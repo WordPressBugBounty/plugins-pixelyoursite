@@ -175,6 +175,18 @@ class Facebook_REST_API {
                 'default'           => '0',
                 'sanitize_callback' => array( $this, 'sanitize_order_id' ),
             ),
+            'event_slug' => array(
+                'required'          => false,
+                'type'              => 'string',
+                'default'           => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ),
+            'order_key'  => array(
+                'required'          => false,
+                'type'              => 'string',
+                'default'           => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ),
             'referrer_url' => array(
                 'required'          => false,
                 'type'              => 'string',

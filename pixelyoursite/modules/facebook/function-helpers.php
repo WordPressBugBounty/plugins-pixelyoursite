@@ -58,23 +58,20 @@ function getAdvancedMatchingParams() {
 		 * Add purchase WooCommerce Advanced Matching params
 		 */
 
-		if ( PixelYourSite\PYS()->woo_is_order_received_page() && isset( $_REQUEST['key'] ) && $_REQUEST['key'] != "" ) {
-            $order_key = sanitize_key($_REQUEST['key']);
-            $cache_key = 'order_id_' . $order_key;
-            $order_id = get_transient( $cache_key );
-            global $wp;
-            if (empty($order_id) && $wp->query_vars['order-received']) {
+		/*
+		 * These params carry the buyer's email, phone, name and address in clear
+		 * text into the page HTML, so they need the strict 'pii' access context:
+		 * a matching order key, the order's own logged-in customer, or an order
+		 * created in this visitor's own session. Never the legacy gateway
+		 * fallback, which trades a little exposure for tracking coverage.
+		 */
+		$order_id = PixelYourSite\wooGetOrderIdFromRequest();
 
-                $order_id = absint( $wp->query_vars['order-received'] );
-                if ($order_id) {
-                    set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
-                }
-            }
-            if ( empty($order_id) ) {
-                $order_id = (int) wc_get_order_id_by_order_key( $order_key );
-                set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
-            }
-			$order    = wc_get_order( $order_id );
+		if ( PixelYourSite\PYS()->woo_is_order_received_page()
+		     && $order_id > 0
+		     && PixelYourSite\pysWooRequestCanAccessOrder( $order_id, 'pii' )
+		) {
+			$order = wc_get_order( $order_id );
 
 			if ( $order ) {
 
@@ -120,20 +117,16 @@ function getAdvancedMatchingParams() {
 
 		// skip payment confirmation page
 		if ( edd_is_success_page() && ! isset( $_GET['payment-confirmation'] ) ) {
-			global $edd_receipt_args;
 
-			$session = edd_get_purchase_session();
-			if ( isset( $_GET['payment_key'] ) ) {
-				$payment_key = urldecode( $_GET['payment_key'] );
-			} else if ( $session ) {
-				$payment_key = $session['purchase_key'];
-			} elseif ( $edd_receipt_args && $edd_receipt_args['payment_key'] ) {
-				$payment_key = $edd_receipt_args['payment_key'];
-			}
+			/*
+			 * These params carry the buyer's name and address in clear text into
+			 * the page HTML. Resolution used to be duplicated inline here; it now
+			 * goes through the shared helper, which also applies the access check.
+			 */
+			$payment_key = PixelYourSite\getEddPaymentKey();
+			$payment_id  = $payment_key ? (int) edd_get_purchase_id_by_key( $payment_key ) : 0;
 
-			if ( isset( $payment_key ) ) {
-
-				$payment_id = edd_get_purchase_id_by_key( $payment_key );
+			if ( $payment_id > 0 && PixelYourSite\pysEddRequestCanAccessOrder( $payment_id ) ) {
 
 				if ( $payment = edd_get_payment( $payment_id ) ) {
 
@@ -382,6 +375,13 @@ function getWooSingleAddToCartParams( $_product_id, $qty = 1 ) {
 function getWooCartParams( $context = 'cart' ) {
 
 	$params['content_type'] = 'product';
+
+	// cart may be not initialized on this request
+	if ( ! PixelYourSite\isWooCartAvailable() ) {
+		$params['content_ids'] = array();
+
+		return $params;
+	}
 
 	$content_ids        = array();
 	$content_names      = array();
