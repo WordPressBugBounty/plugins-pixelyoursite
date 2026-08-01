@@ -566,7 +566,7 @@ class Facebook extends Settings implements Pixel {
 
 	private function getWooAddToCartOnCartEventParams() {
 
-		if ( ! $this->getOption( 'woo_add_to_cart_enabled' ) || ! isWooCartAvailable() ) {
+		if ( ! $this->getOption( 'woo_add_to_cart_enabled' ) ) {
 			return false;
 		}
 
@@ -670,7 +670,7 @@ class Facebook extends Settings implements Pixel {
 
 	private function getWooInitiateCheckoutEventParams() {
 
-		if ( ! $this->getOption( 'woo_initiate_checkout_enabled' ) || ! isWooCartAvailable() ) {
+		if ( ! $this->getOption( 'woo_initiate_checkout_enabled' ) ) {
 			return false;
 		}
 
@@ -689,12 +689,24 @@ class Facebook extends Settings implements Pixel {
 		if ( ! $this->getOption( 'woo_purchase_enabled' ) ) {
 			return false;
 		}
-        $order_id = wooGetOrderIdFromRequest();
-        if ( $order_id < 1 ) return false;
+        $order_key = sanitize_key($_REQUEST['key']);
+        $cache_key = 'order_id_' . $order_key;
+        $order_id = get_transient( $cache_key );
+        global $wp;
+        if (PYS()->woo_is_order_received_page() && empty($order_id) && $wp->query_vars['order-received']) {
 
+            $order_id = absint( $wp->query_vars['order-received'] );
+            if ($order_id) {
+                set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+            }
+        }
+        if ( empty($order_id) ) {
+            $order_id = (int) wc_get_order_id_by_order_key( $order_key );
+            set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+        }
         $order    = wc_get_order( $order_id );
         if(!$order) return false;
-
+        
         $content_ids        = array();
         $content_names      = array();
         $content_categories = array();
@@ -767,8 +779,7 @@ class Facebook extends Settings implements Pixel {
 		return array(
 			'name' => 'Purchase',
 			'data' => $params,
-            'woo_order' => $order_id,
-            'order_key' => $order->get_order_key()
+            'woo_order' => $order_id
 		);
 
 	}
@@ -1020,7 +1031,6 @@ class Facebook extends Settings implements Pixel {
             $params['value'] = edd_get_payment_amount( $payment_id );
             $params['currency'] = edd_get_currency();
             $data['edd_order'] = $payment_id;
-            $data['order_key'] = function_exists('edd_get_payment_key') ? edd_get_payment_key( $payment_id ) : $payment_key;
 		}
 
         $data['data'] = $params;

@@ -168,7 +168,6 @@
   "google_consent_mode": true,
 
   "use_send_beacon": true,
-  "fetch_user_data_via_rest": false,
   "pys_check_permission_rate_limit": 60,
 
   "data_persistency": "keep_data"

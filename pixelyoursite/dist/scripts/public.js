@@ -891,13 +891,11 @@
                 // Prepare data for REST API
                 const restApiData = {
                     event: data.event,
-                    event_slug: data.event_slug || '',
                     data: JSON.stringify(data.data || {}),
                     ids: JSON.stringify(data.ids || []),
                     eventID: data.event_id || data.eventID || '',
                     woo_order: data.woo_order || '0',
-                    edd_order: data.edd_order || '0',
-                    order_key: data.order_key || ''
+                    edd_order: data.edd_order || '0'
                 };
 
                 const forwardedReferrer = data.referrer_url || pageReferrer;
@@ -2125,7 +2123,6 @@
                             action: 'pys_api_event',
                             pixel: 'facebook',
                             event: name,
-                            event_slug: allData.e_id,
                             data:params,
                             ids:options.facebook.pixelIds,
                             eventID:allData.eventID,
@@ -2137,9 +2134,6 @@
                         }
                         if(allData.hasOwnProperty('edd_order')) {
                             json['edd_order'] = allData.edd_order;
-                        }
-                        if(allData.hasOwnProperty('order_key') && allData.order_key) {
-                            json['order_key'] = allData.order_key;
                         }
                         if (pageReferrer) {
                             json.referrer_url = pageReferrer;
@@ -2557,8 +2551,7 @@
                     ids: allData.pixelIds || options.facebook.pixelIds,
                     eventID: allData.eventID,
                     woo_order: allData.woo_order || 0,
-                    edd_order: allData.edd_order || 0,
-                    order_key: allData.order_key || ''
+                    edd_order: allData.edd_order || 0
                 };
 
                 if (pageReferrer) {
@@ -2617,9 +2610,6 @@
                 }
                 if (allData.hasOwnProperty('edd_order')) {
                     json['edd_order'] = allData.edd_order;
-                }
-                if (allData.hasOwnProperty('order_key') && allData.order_key) {
-                    json['order_key'] = allData.order_key;
                 }
                 if (pageReferrer) {
                     json.referrer_url = pageReferrer;
@@ -3228,7 +3218,7 @@
 
             },
 
-            onWooAddToCartOnSingleEvent: function (product_id, qty, product_type, $form) {
+            onWooAddToCartOnSingleEvent: function (product_id, qty, product_type, is_external, $form, prod_info) {
                 window.pysWooProductData = window.pysWooProductData || [];
 
                 if(!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag()))
@@ -3379,7 +3369,7 @@
     window.getPixelBySlag = getPixelBySlag;
 
 
-    function pysNormalInit() {
+    $(document).ready(function () {
 
         if($("#pys_late_event").length > 0) {
             var dirAttr = $("#pys_late_event").attr("dir");
@@ -4001,61 +3991,6 @@
         // setup Enrich content
         if(Utils.isCheckoutPage()) {
             Utils.addCheckoutFields();
-        }
-    }
-
-    $(document).ready(function () {
-        if ( options.dynamicDataUrl ) {
-            fetch( options.dynamicDataUrl, {
-                method: 'GET',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: { 'Accept': 'application/json' }
-            } )
-                .then( function(r) { return r.ok ? r.json() : Promise.reject(r.status); } )
-                .then( function(dynamic) {
-                    options.ajax_event         = dynamic.ajax_event;
-                    options.cache_bypass       = dynamic.cache_bypass;
-                    options.tracking_analytics = dynamic.tracking_analytics;
-                    if ( dynamic.gdpr_dynamic && options.gdpr ) {
-                        Object.assign( options.gdpr, dynamic.gdpr_dynamic );
-                        if ( dynamic.gdpr_dynamic.analytics_storage_value !== null )
-                            options.gdpr.analytics_storage.value = dynamic.gdpr_dynamic.analytics_storage_value;
-                        if ( dynamic.gdpr_dynamic.ad_storage_value !== null )
-                            options.gdpr.ad_storage.value = dynamic.gdpr_dynamic.ad_storage_value;
-                        if ( dynamic.gdpr_dynamic.ad_user_data_value !== null )
-                            options.gdpr.ad_user_data.value = dynamic.gdpr_dynamic.ad_user_data_value;
-                        if ( dynamic.gdpr_dynamic.ad_personalization_value !== null )
-                            options.gdpr.ad_personalization.value = dynamic.gdpr_dynamic.ad_personalization_value;
-                    }
-                    options.cookie = dynamic.cookie;
-
-                    // Per-pixel user data (advanced matching) that was emptied out of
-                    // the cached HTML. An inline value that still holds something wins:
-                    // on pages we never strip (order received / EDD success) the HTML
-                    // carries the order's own data, which beats the account-level data
-                    // this endpoint can see.
-                    if ( dynamic.pixels ) {
-                        for ( var slug in dynamic.pixels ) {
-                            if ( ! dynamic.pixels.hasOwnProperty( slug ) || ! options[ slug ] ) continue;
-                            for ( var key in dynamic.pixels[ slug ] ) {
-                                if ( ! dynamic.pixels[ slug ].hasOwnProperty( key ) ) continue;
-                                var inline = options[ slug ][ key ];
-                                if ( ! inline || Object.keys( inline ).length === 0 ) {
-                                    options[ slug ][ key ] = dynamic.pixels[ slug ][ key ];
-                                }
-                            }
-                        }
-                    }
-
-                    pysNormalInit();
-                } )
-                .catch( function(err) {
-                    if ( options.debug ) console.warn( '[PYS] dynamic-options fetch failed:', err );
-                    pysNormalInit();
-                } );
-        } else {
-            pysNormalInit();
         }
     });
 

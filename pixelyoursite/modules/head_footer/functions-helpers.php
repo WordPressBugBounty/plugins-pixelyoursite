@@ -125,7 +125,7 @@ function get_order_subtotal() {
         wooIsRequestContainOrderId()
     ) {
 		$order_id = wooGetOrderIdFromRequest();
-		if( $order_id < 1 ) return ''; // -1 when the visitor may not see this order
+		if(!$order_id) return '';
 		$order    = wc_get_order( $order_id );
 		if(!$order) return false;
 
@@ -147,7 +147,7 @@ function get_order_total() {
         && wooIsRequestContainOrderId()) {
 
 		$order_id = wooGetOrderIdFromRequest();
-		if( $order_id < 1 ) return ''; // -1 when the visitor may not see this order
+		if(!$order_id) return '';
 		$order    = wc_get_order( $order_id );
 		if(!$order) return false;
 		return (float)$order->get_total();
@@ -188,17 +188,22 @@ function get_edd_order_meta( $metakey ) {
 	}
 
 	$session = edd_get_purchase_session();
+	if ( isset( $_GET['payment_key'] ) ) {
+		$payment_key = urldecode( $_GET['payment_key'] );
+	} else if ( $session ) {
+		$payment_key = $session['purchase_key'];
+	} elseif ( $edd_receipt_args && $edd_receipt_args['payment_key'] ) {
+		$payment_key = $edd_receipt_args['payment_key'];
+	}
 
-	// shared resolution, so the three copies of this logic cannot drift apart
-	$payment_key = PixelYourSite\getEddPaymentKey();
-
-	if ( ! $payment_key ) {
+	if ( ! isset( $payment_key ) ) {
 		return '';
 	}
 
-	$payment_id = (int) edd_get_purchase_id_by_key( $payment_key );
+	$payment_id    = edd_get_purchase_id_by_key( $payment_key );
+	$user_can_view = edd_can_view_receipt( $payment_key );
 
-	if ( $payment_id < 1 || ! PixelYourSite\pysEddRequestCanAccessOrder( $payment_id ) ) {
+	if ( ! $user_can_view && ! empty( $payment_key ) && ! is_user_logged_in() && ! edd_is_guest_payment( $payment_id ) ) {
 		return '';
 	}
 

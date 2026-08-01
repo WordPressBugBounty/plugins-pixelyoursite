@@ -95,12 +95,6 @@ final class PYS extends Settings implements Plugin {
 
         // run Events Manager
         add_action( 'template_redirect', array( $this, 'managePixels' ), 1);
-
-        // REST endpoint for dynamic (user-specific) pysOptions — registered early
-        // so it is available for REST API requests (before template_redirect fires).
-        add_action( 'rest_api_init', array( $this, 'register_dynamic_options_route' ) );
-        $this->prevent_cron_spawn_on_dynamic_options();
-
         // track user login event
         add_action('wp_login', [$this,'userLogin'], 10, 2);
         // track user registrations
@@ -138,15 +132,6 @@ final class PYS extends Settings implements Plugin {
 	    // Hook for Store API (passes WC_Order object instead of order_id)
 	    add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'saveExternalIDInOrder' ), 10, 1 );
 
-	    /*
-	     * Remember which orders this visitor created, so the purchase event still
-	     * fires when a payment gateway returns them without the order key.
-	     * See pysWooRequestCanAccessOrder() in includes/functions-woo.php.
-	     */
-	    add_action( 'woocommerce_checkout_order_processed', array( $this, 'woo_remember_session_order' ), 10, 1 );
-	    add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'woo_remember_session_order' ), 10, 1 );
-	    add_action( 'woocommerce_new_order', array( $this, 'woo_remember_session_order' ), 10, 1 );
-
 	    /**
 		 * For EDD
 		 */
@@ -182,7 +167,7 @@ final class PYS extends Settings implements Plugin {
 
             if (isset($_GET['download_logs']) && array_key_exists($_GET['download_logs'], $loggers)) {
                 if (!isset($_GET['_wpnonce_download_logs']) || !wp_verify_nonce($_GET['_wpnonce_download_logs'], 'download_logs_nonce')) {
-                    wp_die(__('Invalid nonce', 'pys'));
+                    wp_die(__('Invalid nonce', 'pixelyoursite'));
                 }
                 $logger = $loggers[$_GET['download_logs']];
                 if (is_callable($logger)) {
@@ -195,14 +180,14 @@ final class PYS extends Settings implements Plugin {
             foreach ($clearLoggers as $key => $logger) {
                 if (isset($_GET[$key]) && (is_callable($logger) || (is_callable([$logger[0], $logger[1]]) && method_exists($logger[0], $logger[1])))) {
                     if (!isset($_GET['_wpnonce_clear_logs']) || !wp_verify_nonce($_GET['_wpnonce_clear_logs'], 'clear_logs_nonce')) {
-                        wp_die(__('Invalid nonce', 'pys'));
+                        wp_die(__('Invalid nonce', 'pixelyoursite'));
                     }
                     if (is_callable($logger)) {
                         call_user_func($logger);
                     } else {
                         call_user_func([$logger[0], $logger[1]]);
                     }
-                    $actual_link = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+                    $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
                     wp_redirect(remove_query_arg($key, $actual_link));
                     exit;
                 }
@@ -210,7 +195,7 @@ final class PYS extends Settings implements Plugin {
 
             if ( isset( $_GET[ 'download_container' ] )) {
                 if (!isset($_GET['_wpnonce_template_logs']) || !wp_verify_nonce($_GET['_wpnonce_template_logs'], 'download_template_nonce')) {
-                    wp_die(__('Invalid nonce', 'pys'));
+                    wp_die(__('Invalid nonce', 'pixelyoursite'));
                 }
                 $this->containers->downloadContainerFile($_GET[ 'download_container' ]);
             }
@@ -331,7 +316,10 @@ final class PYS extends Settings implements Plugin {
                 $_SESSION['TrafficSource'] = getTrafficSource();
             }
             if (empty($_SESSION['LandingPage'])) {
-                $_SESSION['LandingPage'] = pys_get_current_page_url(false);
+                $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+                $currentUrl = $protocol . ($_SERVER['HTTP_HOST'] ?? parse_url(get_site_url(), PHP_URL_HOST)) . ($_SERVER['REQUEST_URI'] ?? '');
+                $landing = explode('?', $currentUrl)[0];
+                $_SESSION['LandingPage'] = $landing;
             }
             if (empty($_SESSION['TrafficUtms'])) {
                 $_SESSION['TrafficUtms'] = getUtms();
@@ -494,18 +482,6 @@ final class PYS extends Settings implements Plugin {
 	}
 
 	/**
-	 * Return a single registered pixel by its slug, or null when that pixel is
-	 * not registered (add-on missing or an incompatible version).
-	 *
-	 * @param string $slug
-	 *
-	 * @return Pixel|Settings|null
-	 */
-	public function getRegisteredPixel( $slug ) {
-		return $this->registeredPixels[ $slug ] ?? null;
-	}
-
-	/**
 	 * @param Pixel|Settings $plugin
 	 */
 	public function registerPlugin( &$plugin ) {
@@ -519,164 +495,6 @@ final class PYS extends Settings implements Plugin {
 	 */
     public function getRegisteredPlugins() {
 	    return $this->registeredPlugins;
-    }
-
-    /**
-     * WordPress spawns cron on the 'init' hook, before the REST router gets a
-     * chance to dispatch. With ALTERNATE_WP_CRON enabled, spawn_cron() answers
-     * the current request with a 302 to the same URL + ?doing_wp_cron=... and
-     * runs cron inline, so the front-end fetch() for dynamic-options receives a
-     * redirect where it expects JSON (and every page load pays for a synchronous
-     * cron run plus an extra round trip). Cron has plenty of other requests to
-     * piggyback on, so skip spawning it for this one route. Core does the same
-     * for the customizer, see WP_Customize_Manager::setup_theme().
-     */
-    private function prevent_cron_spawn_on_dynamic_options() {
-
-        if ( ! defined( 'ALTERNATE_WP_CRON' ) || ! ALTERNATE_WP_CRON ) {
-            return;
-        }
-
-        if ( empty( $_SERVER['REQUEST_URI'] ) ) {
-            return;
-        }
-
-        $route = 'pys/v1/dynamic-options';
-        $path  = untrailingslashit( (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) );
-
-        // Pretty permalinks give /wp-json/pys/v1/dynamic-options, plain ones
-        // give /?rest_route=/pys/v1/dynamic-options.
-        $is_route = substr( $path, - strlen( $route ) ) === $route
-            || ( isset( $_GET['rest_route'] ) && trim( wp_unslash( $_GET['rest_route'] ), '/' ) === $route );
-
-        if ( $is_route ) {
-            remove_action( 'init', 'wp_cron' );
-        }
-
-    }
-
-    public function register_dynamic_options_route() {
-        register_rest_route( 'pys/v1', '/dynamic-options', array(
-            'methods'             => \WP_REST_Server::READABLE,
-            'callback'            => array( $this, 'serve_dynamic_options' ),
-            'permission_callback' => '__return_true',
-        ) );
-    }
-
-    public function serve_dynamic_options( $request ) {
-        nocache_headers();
-
-        // WordPress resets the current user to 0 for any REST request that
-        // does not carry an X-WP-Nonce / _wpnonce (see rest_cookie_check_errors
-        // in wp-includes/rest-api.php). Because this endpoint is called from a
-        // cached page that intentionally has no nonce in the HTML, we must
-        // restore the user manually by re-validating the auth cookie ourselves.
-        if ( ! is_user_logged_in() ) {
-            $cookie_user_id = wp_validate_auth_cookie( '', 'logged_in' );
-            if ( $cookie_user_id ) {
-                wp_set_current_user( $cookie_user_id );
-            }
-        }
-
-        if ( $this->is_user_agent_bot() ) {
-            return new \WP_REST_Response( array(), 200 );
-        }
-
-        $pys_analytics_storage_mode  = has_filter( 'pys_analytics_storage_mode' );
-        $pys_ad_storage_mode         = has_filter( 'pys_ad_storage_mode' );
-        $pys_ad_user_data_mode       = has_filter( 'pys_ad_user_data_mode' );
-        $pys_ad_personalization_mode = has_filter( 'pys_ad_personalization_mode' );
-
-        $dynamic = array(
-            'ajax_event'   => wp_create_nonce( 'ajax-event-nonce' ),
-            'cache_bypass' => time(),
-
-            'tracking_analytics' => array(
-                'TrafficLanding' => sanitize_url( $_COOKIE['pys_landing_page'] ?? $_SESSION['LandingPage'] ?? 'undefined' ),
-                'TrafficUtms'    => getUtms(),
-                'TrafficUtmsId'  => getUtmsId(),
-            ),
-
-            'gdpr_dynamic' => array(
-                'all_disabled_by_api'        => apply_filters( 'pys_disable_by_gdpr', false ),
-                'facebook_disabled_by_api'   => apply_filters( 'pys_disable_facebook_by_gdpr', false ),
-                'analytics_disabled_by_api'  => apply_filters( 'pys_disable_analytics_by_gdpr', false ),
-                'google_ads_disabled_by_api' => apply_filters( 'pys_disable_google_ads_by_gdpr', false ),
-                'pinterest_disabled_by_api'  => apply_filters( 'pys_disable_pinterest_by_gdpr', false ),
-                'bing_disabled_by_api'       => apply_filters( 'pys_disable_bing_by_gdpr', false ),
-                'reddit_disabled_by_api'     => apply_filters( 'pys_disable_reddit_by_gdpr', false ),
-                'externalID_disabled_by_api' => apply_filters( 'pys_disable_externalID_by_gdpr', false ),
-                'analytics_storage_value'    => $pys_analytics_storage_mode
-                    ? ( apply_filters( 'pys_analytics_storage_mode', true ) ? 'granted' : 'denied' ) : null,
-                'ad_storage_value'           => $pys_ad_storage_mode
-                    ? ( apply_filters( 'pys_ad_storage_mode', true ) ? 'granted' : 'denied' ) : null,
-                'ad_user_data_value'         => $pys_ad_user_data_mode
-                    ? ( apply_filters( 'pys_ad_user_data_mode', true ) ? 'granted' : 'denied' ) : null,
-                'ad_personalization_value'   => $pys_ad_personalization_mode
-                    ? ( apply_filters( 'pys_ad_personalization_mode', true ) ? 'granted' : 'denied' ) : null,
-            ),
-
-            'cookie' => array(
-                'disabled_all_cookie'                => apply_filters( 'pys_disable_all_cookie', false ),
-                'disabled_start_session_cookie'      => apply_filters( 'pys_disabled_start_session_cookie', false ),
-                'disabled_advanced_form_data_cookie' => apply_filters( 'pys_disable_advanced_form_data_cookie', false )
-                                                        || apply_filters( 'pys_disable_advance_data_cookie', false ),
-                'disabled_landing_page_cookie'       => apply_filters( 'pys_disable_landing_page_cookie', false ),
-                'disabled_first_visit_cookie'        => apply_filters( 'pys_disable_first_visit_cookie', false ),
-                'disabled_trafficsource_cookie'      => apply_filters( 'pys_disable_trafficsource_cookie', false ),
-                'disabled_utmTerms_cookie'           => apply_filters( 'pys_disable_utmTerms_cookie', false ),
-                'disabled_utmId_cookie'              => apply_filters( 'pys_disable_utmId_cookie', false ),
-            ),
-        );
-
-        /*
-         * Per-pixel user data (advanced matching) that outputData() emptied out of
-         * the cached HTML. The values are re-read from getPixelOptions() so they
-         * are byte-identical to what the page would have printed, which also means
-         * add-ons need no changes to take part — they only have to appear in
-         * getDynamicUserDataKeys().
-         *
-         * Only the PII keys from that map are taken. Everything else the pixel
-         * returns is deliberately ignored: this request's URL is the endpoint, not
-         * the page, so context-dependent values (WPML language for pixelIds, order
-         * data, SuperPack tag rules) would not be trustworthy here.
-         */
-        $pixels = array();
-
-        foreach ( getDynamicUserDataKeys() as $slug => $keys ) {
-
-            $pixel = $this->getRegisteredPixel( $slug );
-            if ( ! $pixel || ! $pixel->configured() ) {
-                continue;
-            }
-
-            $pixel_options = $pixel->getPixelOptions();
-
-            foreach ( $keys as $key ) {
-                // Ship a key only when there is something in it. An empty value
-                // would overwrite the inline data on pages we never stripped.
-                if ( ! empty( $pixel_options[ $key ] ) ) {
-                    $pixels[ $slug ][ $key ] = $pixel_options[ $key ];
-                }
-            }
-        }
-
-        if ( ! empty( $pixels ) ) {
-            $dynamic['pixels'] = $pixels;
-        }
-
-        $response = new \WP_REST_Response( $dynamic, 200 );
-        $response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
-        $response->header( 'Pragma', 'no-cache' );
-        $response->header( 'X-Robots-Tag', 'noindex' );
-        /*
-         * This response is identity-specific: never let a shared cache key it by
-         * URL alone. Origin is listed too because setting a header on the response
-         * replaces any same-named one, and REST CORS handling may have sent
-         * 'Vary: Origin' — we must not drop it.
-         */
-        $response->header( 'Vary', 'Cookie, Origin' );
-        return $response;
     }
 
 	/**
@@ -860,7 +678,7 @@ final class PYS extends Settings implements Plugin {
             array( $this, 'adminPageMain' ), PYS_FREE_URL . '/dist/images/favicon.png' );
         add_submenu_page( 'pixelyoursite', 'Global Settings', 'Global Settings',
             'manage_pys', 'pixelyoursite_settings', array( $this, 'adminSinglePage' ) );
-        add_submenu_page('pixelyoursite',__('Queue Settings PRO', 'pys'),__('Queue Settings PRO', 'pys'),
+        add_submenu_page('pixelyoursite',__('Queue Settings PRO', 'pixelyoursite'),__('Queue Settings PRO', 'pixelyoursite'),
             'manage_options','pixelyoursite_queue_settings',array($this, 'adminSinglePage'),3);
         $addons = $this->registeredPlugins;
 
@@ -1331,31 +1149,6 @@ final class PYS extends Settings implements Plugin {
      * @param \WC_Order $order
      * @throws \JsonException
      */
-	/**
-	 * Remember an order created by the current visitor.
-	 *
-	 * Lets the purchase event fire for gateways and funnel plugins that return
-	 * the buyer without the order key, without opening the order-received page
-	 * up to order-ID enumeration.
-	 *
-	 * @param int|\WC_Order $order Order ID or order object, depending on the hook.
-	 */
-	public function woo_remember_session_order( $order ) {
-
-		if ( is_admin() && ! wp_doing_ajax() ) {
-			return; // orders created in wp-admin belong to a shop manager, not to a visitor
-		}
-
-		if ( $order instanceof \WC_Order ) {
-			$order_id = $order->get_id();
-		} else {
-			$order_id = absint( $order );
-		}
-
-		pysWooRecordSessionOrder( $order_id );
-
-	}
-
 	public function woo_checkout_process( $order_id, $posted_data, $order ) {
 		if ( !apply_filters( 'pys_disable_advanced_form_data_cookie', false ) && !apply_filters( 'pys_disable_advance_data_cookie', false ) ) {
 			$first_name = $order->get_billing_first_name();

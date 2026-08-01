@@ -87,10 +87,6 @@ class SingleEvent extends PYSEvent{
         $data['eventID'] = isset( $this->payload['eventID'] ) ? $this->payload['eventID'] : "";
         $data['woo_order'] = isset( $this->payload['woo_order'] ) ? $this->payload['woo_order'] : "";
         $data['edd_order'] = isset( $this->payload['edd_order'] ) ? $this->payload['edd_order'] : "";
-        // Order key is forwarded to the browser purchase event so the REST
-        // guard (RestAPIGuard) can bind the event to the specific order.
-        // Best-effort: empty when the event is not tied to an order.
-        $data['order_key'] = isset( $this->payload['order_key'] ) ? $this->payload['order_key'] : "";
 
         // Defense in Depth: this payload is consumed by wp_localize_script() in
         // EventsManager. Although wp_localize_script() JSON-encodes the array

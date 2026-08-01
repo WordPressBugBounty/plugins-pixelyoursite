@@ -131,32 +131,38 @@ class EventsWoo extends EventsFactory {
 
 
             case 'woo_purchase' : {
-                if ( ! PYS()->getOption( 'woo_purchase_enabled' )
-                     || ! PYS()->woo_is_order_received_page()
-                     || ! empty( $_REQUEST['wc-api'] ) // if is not api request
+                if(PYS()->getOption( 'woo_purchase_enabled' ) && PYS()->woo_is_order_received_page() &&
+                    isset( $_REQUEST['key'] )  && $_REQUEST['key'] != ""
+                    && empty($_REQUEST['wc-api']) // if is not api request
                 ) {
-                    return false;
+                    global $wp;
+                    $order_key = sanitize_key($_REQUEST['key']);
+                    $cache_key = 'order_id_' . $order_key;
+                    $order_id = get_transient( $cache_key );
+                    if (PYS()->woo_is_order_received_page() && empty($order_id) && isset($wp->query_vars['order-received']) && $wp->query_vars['order-received']) {
+
+                        $order_id = absint( $wp->query_vars['order-received'] );
+                        if ($order_id) {
+                            set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+                        }
+                    }
+                    if ( empty($order_id) ) {
+                        $order_id = (int) wc_get_order_id_by_order_key( $order_key );
+                        set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+                    }
+
+                    $order = wc_get_order($order_id);
+                    if(!$order) return false;
+                    $status = "wc-".$order->get_status("edit");
+
+                    $disabledStatuses = (array)PYS()->getOption("woo_order_purchase_disabled_status");
+
+                    if( in_array($status,$disabledStatuses)) {
+                        return false;
+                    }
+                    return true;
                 }
-
-                // -1 when the request references no order, or references one this
-                // visitor is not allowed to see (wrong/missing order key and not
-                // the order's own customer)
-                $order_id = wooGetOrderIdFromRequest();
-
-                if ( $order_id < 1 ) {
-                    return false;
-                }
-
-                $order = wc_get_order($order_id);
-                if(!$order) return false;
-                $status = "wc-".$order->get_status("edit");
-
-                $disabledStatuses = (array)PYS()->getOption("woo_order_purchase_disabled_status");
-
-                if( in_array($status,$disabledStatuses)) {
-                    return false;
-                }
-                return true;
+                return false;
             }
             case 'woo_view_content' : {
                 return PYS()->getOption( 'woo_view_content_enabled' ) && is_product();
@@ -174,12 +180,12 @@ class EventsWoo extends EventsFactory {
                 return PYS()->getOption( 'woo_add_to_cart_enabled' ) &&
                     PYS()->getOption( 'woo_add_to_cart_on_cart_page' ) &&
                     is_cart()
-                    && isWooCartAvailable() && count(WC()->cart->get_cart())>0;
+                    && count(WC()->cart->get_cart())>0;
             }
             case 'woo_add_to_cart_on_checkout_page': {
                 return PYS()->getOption( 'woo_add_to_cart_enabled' ) && PYS()->getOption( 'woo_add_to_cart_on_checkout_page' )
                     && is_checkout() && ! is_wc_endpoint_url()
-                    && isWooCartAvailable() && count(WC()->cart->get_cart())>0;
+                    && count(WC()->cart->get_cart())>0;
             }
 
             case 'woo_initiate_checkout': {
@@ -211,36 +217,33 @@ class EventsWoo extends EventsFactory {
                 return new SingleEvent($event,EventTypes::$DYNAMIC,'woo');
             case 'woo_purchase' : {
                 $events = array();
-
-                $order_id = wooGetOrderIdFromRequest();
-
-                if ( $order_id < 1 ) {
-                    return null;
+                $order_key = sanitize_key($_REQUEST['key']);
+                $cache_key = 'order_id_' . $order_key;
+                $order_id = get_transient( $cache_key );
+                global $wp;
+                if (PYS()->woo_is_order_received_page() && empty($order_id) && isset($wp->query_vars['order-received']) && $wp->query_vars['order-received']) {
+                    $order_id = absint( $wp->query_vars['order-received'] );
+                    if ($order_id) {
+                        set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+                    }
                 }
-
+                if ( empty($order_id) ) {
+                    $order_id = (int) wc_get_order_id_by_order_key( $order_key );
+                    set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+                }
                 $order = wc_get_order($order_id);
-                if ( ! $order ) {
-                    return null;
-                }
-
-                /*
-                 * Deduplication flag. Only ever written for a request that is
-                 * allowed to see this order: it permanently suppresses the
-                 * server-side purchase event, so an unauthenticated visitor must
-                 * not be able to set it by hitting the order-received URL.
-                 */
                 if ( isWooCommerceVersionGte('3.0.0') ) {
                     // WooCommerce >= 3.0
-                    $order->update_meta_data("_pys_purchase_event_fired",true);
-                    $order->save();
+                    if($order) {
+                        $order->update_meta_data("_pys_purchase_event_fired",true);
+                        $order->save();
+                    }
+
                 } else {
                     // WooCommerce < 3.0
                     update_post_meta( $order_id, '_pys_purchase_event_fired', true );
                 }
-
-                $purchaseEvent = new SingleEvent($event,EventTypes::$STATIC,'woo');
-                $purchaseEvent->args = array( 'order_id' => $order_id );
-                $events[] = $purchaseEvent;
+                $events[] = new SingleEvent($event,EventTypes::$STATIC,'woo');
 
                 return $events;
             }
@@ -284,7 +287,6 @@ class EventsWoo extends EventsFactory {
 
     function getRemoveFromCartEvents($eventId) {
         $events = [];
-        if ( ! isWooCartAvailable() ) return $events;
         foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
             $event = new SingleEvent($eventId,EventTypes::$DYNAMIC,self::getSlug());
             $event->args = ['key'=>$cart_item_key,'item'=>$cart_item];
@@ -295,7 +297,6 @@ class EventsWoo extends EventsFactory {
 
     private function getWooCartActiveCategories($activeIds) {
         $fireForCategory = array();
-        if ( ! isWooCartAvailable() ) return $fireForCategory;
         foreach (WC()->cart->cart_contents as $cart_item_key => $cart_item) {
             $_product =  wc_get_product( $cart_item['product_id'] );
             if(!$_product) continue;
@@ -353,7 +354,6 @@ class EventsWoo extends EventsFactory {
     }
     function getCartProductData() {
         $products_data = [];
-        if ( ! isWooCartAvailable() ) return $products_data;
         foreach ( WC()->cart->cart_contents as $cart_item_key => $cart_item ) {
             $product_id = empty($cart_item['variation_id']) ? $cart_item['product_id'] : $cart_item['variation_id'];
             $product = wc_get_product($product_id);
@@ -396,7 +396,6 @@ class EventsWoo extends EventsFactory {
         return $products_data;
     }
     function getCartCoupon() {
-        if ( ! isWooCartAvailable() ) return null;
         $coupons =  WC()->cart->get_applied_coupons();
         if ( count($coupons) > 0 ) {
             $firstCoupon = reset($coupons); // Получить первый элемент массива

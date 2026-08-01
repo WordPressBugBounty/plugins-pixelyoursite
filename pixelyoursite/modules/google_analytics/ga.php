@@ -610,7 +610,7 @@ class GA extends Settings implements Pixel {
         $items = array();
         $product_ids = array();
         $withTax = 'incl' === get_option( 'woocommerce_tax_display_cart' );
-        if(isWooCartAvailable() && WC()->cart->get_cart())
+        if(WC()->cart->get_cart())
         {
             foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
 
@@ -745,7 +745,7 @@ class GA extends Settings implements Pixel {
 
 	private function getWooAddToCartOnCartEventParams() {
 
-		if ( ! $this->getOption( 'woo_add_to_cart_enabled' ) || ! isWooCartAvailable() ) {
+		if ( ! $this->getOption( 'woo_add_to_cart_enabled' ) ) {
 			return false;
 		}
 
@@ -819,7 +819,7 @@ class GA extends Settings implements Pixel {
 
 	private function getWooInitiateCheckoutEventParams() {
 
-		if ( ! $this->getOption( 'woo_initiate_checkout_enabled' ) || ! isWooCartAvailable() ) {
+		if ( ! $this->getOption( 'woo_initiate_checkout_enabled' ) ) {
 			return false;
 		}
 
@@ -833,12 +833,24 @@ class GA extends Settings implements Pixel {
 	}
 	
 	private function getWooPurchaseEventParams() {
+        global $wp;
 		if ( ! $this->getOption( 'woo_purchase_enabled' ) ) {
 			return false;
 		}
+        $key = sanitize_key($_REQUEST['key']);
+        $cache_key = 'order_id_' . $key;
+        $order_id = get_transient( $cache_key );
+        if (PYS()->woo_is_order_received_page() && empty($order_id) && $wp->query_vars['order-received']) {
 
-        $order_id = wooGetOrderIdFromRequest();
-        if ( $order_id < 1 ) return false;
+            $order_id = absint( $wp->query_vars['order-received'] );
+            if ($order_id) {
+                set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+            }
+        }
+        if ( empty($order_id) ) {
+            $order_id = (int) wc_get_order_id_by_order_key( $key );
+            set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
+        }
 
         $order    = wc_get_order( $order_id );
         if(!$order) return false;
@@ -955,11 +967,6 @@ class GA extends Settings implements Pixel {
 	}
 
 	private function getWooCartParams($context='cart') {
-
-		// cart may be not initialized on this request
-		if ( ! isWooCartAvailable() ) {
-			return array();
-		}
 
 		$items = array();
 		$product_ids = array();

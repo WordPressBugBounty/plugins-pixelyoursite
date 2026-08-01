@@ -11,7 +11,7 @@ if ( isset( $_REQUEST[ 'id' ] ) ) {
 } else {
     $event = new CustomEvent();
 }
-$serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
+$serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
 
 ?>
 <div class="cards-wrapper cards-wrapper-style1 events-page-wrapper gap-24 mb-24">

@@ -99,11 +99,6 @@ class EventsEdd extends EventsFactory {
                     }
                     $payment_key = getEddPaymentKey();
                     $order_id = (int) edd_get_purchase_id_by_key( $payment_key );
-
-                    if ( $order_id < 1 || ! pysEddRequestCanAccessOrder( $order_id ) ) {
-                        return false;
-                    }
-
                     $status = edd_get_payment_status( $order_id );
 
                     // pending payment status used because we can't fire event on IPN
@@ -111,8 +106,7 @@ class EventsEdd extends EventsFactory {
                         return false;
                     }
 
-                    // the dedup flag is written in getEvent(), not here: a predicate
-                    // must not have side effects
+                    update_post_meta( $order_id, '_pys_purchase_event_fired', true );
                     return true;
                 }
                 return false;
@@ -143,25 +137,8 @@ class EventsEdd extends EventsFactory {
     function getEvent($event)
     {
         switch ($event) {
-            case 'edd_purchase': {
-                /*
-                 * Dedup flag, moved here out of isReadyForFire(). Once set, the
-                 * server-side purchase event bails out permanently, so it must only
-                 * ever be written on the event-build path — and only for a request
-                 * that is allowed to see this order.
-                 */
-                $order_id = (int) edd_get_purchase_id_by_key( getEddPaymentKey() );
-
-                if ( $order_id < 1 || ! pysEddRequestCanAccessOrder( $order_id ) ) {
-                    return null;
-                }
-
-                update_post_meta( $order_id, '_pys_purchase_event_fired', true );
-
-                return new SingleEvent($event,EventTypes::$STATIC,'edd');
-            }
-
             case 'edd_initiate_checkout':
+            case 'edd_purchase':
             case 'edd_add_to_cart_on_checkout_page' :
             case 'edd_view_category':
             case 'edd_view_content':{

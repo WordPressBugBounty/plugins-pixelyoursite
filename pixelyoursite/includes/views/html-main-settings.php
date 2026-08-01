@@ -80,48 +80,6 @@ include "html-popovers.php";
                     </p>
                 </div>
                 <div>
-                    <div class="d-flex align-items-center">
-                        <?php PYS()->render_switcher_input( 'fetch_user_data_via_rest' ); ?>
-                        <h4 class="switcher-label secondary_heading">
-                            <?php _e( 'Fetch user data via REST API <strong>(for shared HTML cache setups)</strong>', 'pys' ); ?>
-                        </h4>
-                    </div>
-                    <div class="pys-notice pys-notice-warning mt-4" style="background:#fff8e1;border-left:4px solid #f0ad4e;padding:12px 16px;border-radius:4px;">
-                        <strong><?php _e( '&#9888; Enable only if you use a shared HTML cache for logged-in users', 'pys' ); ?></strong>
-                        <p class="mt-2 mb-0">
-                            <?php _e(
-                                'When active, user-specific data is removed from the cached HTML and loaded on every '
-                                . 'page view via a separate REST API call: nonces, UTMs, and the Advanced Matching '
-                                . 'parameters of the Meta pixel (and of the Pinterest and Reddit tags when those '
-                                . 'add-ons are active). This prevents identity bleed between users served the same '
-                                . 'cached page (e.g. LiteSpeed Cache shared-cache mode).<br><br>'
-                                . '<strong>Do NOT enable on standard setups.</strong> It adds an extra REST request '
-                                . '(full WordPress boot) on every page view, which increases server CPU load and may '
-                                . 'delay pixel events on shared hosting.',
-                                'pys'
-                            ); ?>
-                        </p>
-                    </div>
-                    <p class="text-gray mt-4">
-                        <?php _e(
-                            'After enabling, also exclude <code>/wp-json/pys/v1/dynamic-options</code> from all '
-                            . 'caching rules in your caching plugin.',
-                            'pys'
-                        ); ?>
-                    </p>
-                    <p class="text-gray mt-4">
-                        <?php _e(
-                            'Order confirmation pages are an exception: their Advanced Matching comes from the order '
-                            . 'itself and stays in the page, because those pages are never HTML-cached and the data '
-                            . 'can only be read from the order URL.<br><br>'
-                            . 'Note that this option covers PixelYourSite only. Other plugins may also print personal '
-                            . 'data into the page (WooCommerce blocks, email marketing scripts), so if you cache pages '
-                            . 'for logged-in users, excluding them from the cache remains the safest setup.',
-                            'pys'
-                        ); ?>
-                    </p>
-                </div>
-                <div>
                     <div class="d-flex align-items-center number-option-block">
                         <label class="primary_heading"><?php _e('REST API rate limit (requests per minute per IP):', 'pys');?></label>
                         <?php PYS()->render_number_input( 'pys_check_permission_rate_limit', '', false, null, 1, 1 ); ?>
@@ -365,7 +323,7 @@ wp-content/plugins/pixelyoursite/dist/scripts/public.js
 wp-content/plugins/pixelyoursite/dist/scripts/js.cookie-2.1.3.min.js
 wp-content/plugins/pixelyoursite/dist/scripts/sha256.js
 wp-content/plugins/pixelyoursite/dist/scripts/tld.min.js
-wp-content/plugins/pixelyoursite/dist/jquery.bind-first-0.2.3.min.js
+wp-content/plugins/pixelyoursite-pro/dist/jquery.bind-first-0.2.3.min.js
                             <div class="copy-icon" data-toggle="pys-popover"
                                  data-tippy-trigger="click" data-tippy-placement="bottom"
                                  data-popover_id="copied-popover"></div></pre>

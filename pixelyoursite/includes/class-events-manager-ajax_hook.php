@@ -12,8 +12,6 @@ class AjaxHookEventManager {
     private static $_instance;
 
     static function addPendingEvent($name,$event) {
-        if ( ! function_exists( 'WC' ) || ! WC()->session ) return;
-
         $events = WC()->session->get( 'pys_events', array() );
         $events[$name] = $event;
         WC()->session->set( 'pys_events', $events );
@@ -227,7 +225,7 @@ class AjaxHookEventManager {
                 document.cookie = name + "=" + value + ";path=/;expires=" + d.toGMTString();
             }
             var name = 'pysAddToCartFragmentId';
-            var cartHash = "<?= isWooCartAvailable() ? WC()->cart->get_cart_hash() : '' ?>";
+            var cartHash = "<?=WC()->cart->get_cart_hash()?>";
 
             if(pys_getCookie(name) != cartHash) { // prevent re send event if user update page
                 <?php
