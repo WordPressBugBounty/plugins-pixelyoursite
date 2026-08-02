@@ -102,17 +102,20 @@ class GTM extends Settings implements Pixel {
         if ( $is_consent_mode ) {
             /**
              * Signal that PixelYourSite is natively emitting the Google Consent
-             * Mode default() call in its <head> bootstrap. Consent management
-             * plugins (e.g. Consent Magic) can check this filter and skip any
-             * regex/DOM stripping of gtag('consent','default', {...}) inside
-             * the PYS inline script, which otherwise leaves a broken statement
-             * fragment (e.g. "window.;") and triggers a SyntaxError when the
-             * parked script is later unblocked.
+             * Mode default command in its <head> bootstrap. Consent management
+             * plugins (e.g. Consent Magic) can check this filter and leave the
+             * PYS inline script alone: it must neither be parked (type="text/plain")
+             * nor have its consent command stripped, since defaults have to run
+             * before any tag loads.
+             *
+             * The snippet below deliberately contains no "gtag" identifier, so
+             * keyword-based blockers should not match it in the first place; this
+             * filter is the explicit belt-and-braces signal.
              *
              * Example (consumer side):
              *
              *     if ( apply_filters( 'pys_google_consent_mode_handled', false ) ) {
-             *         // PYS already wrote gtag('consent','default', {...}).
+             *         // PYS already pushed consent defaults itself.
              *         // Skip cleanup of consent calls in PYS scripts.
              *         return $script_content;
              *     }
@@ -154,9 +157,30 @@ class GTM extends Settings implements Pixel {
                 'wait_for_update'    => 500,
             );
 
+            // Emit the Consent Mode default() command WITHOUT using the identifier
+            // "gtag" anywhere in this snippet, and without touching window.gtag.
+            //
+            // 1. Consent management plugins detect analytics scripts by the bare
+            //    substring "gtag" in the inline body (Consent Magic:
+            //    CS_Script_Blocker js_needle). A snippet containing it gets parked
+            //    as type="text/plain" and its gtag('consent','default',{...}) call
+            //    gets regex-stripped, which used to leave the fragment "window.;"
+            //    -> SyntaxError when the parked script was re-injected on unblock.
+            //    Consent defaults must run immediately in <head>, never be parked.
+            //
+            // 2. Defining window.gtag here would pin it to the GTM data layer for
+            //    the whole page. Utils.loadGoogleTag() in public.js uses
+            //    `window.gtag = window.gtag || ...`, so it would keep that binding
+            //    and send every gtag('config'/'event') to the GTM data layer while
+            //    the gtag.js it loads listens on the GA data layer
+            //    (gtag/js?id=...&l=<ga_datalayer_name>). Tag Assistant then reports
+            //    "Some hits will only be sent after a config command is issued".
+            //
+            // Pushing the arguments object directly is exactly what gtag() does, so
+            // gtag.js / GTM read the command identically.
             $_gtm_top_content .= '
-	window.gtag=window.gtag||function(){window["' . esc_js( $gtm_dataLayer_name ) . '"].push(arguments);};
-	gtag("consent","default",' . wp_json_encode( $consent_default ) . ')';
+	(function(){var c=function(){window["' . esc_js( $gtm_dataLayer_name ) . '"].push(arguments);};
+	c("consent","default",' . wp_json_encode( $consent_default ) . ');})();';
         }
 
         $_gtm_top_content .= '</script>
@@ -848,7 +872,7 @@ class GTM extends Settings implements Pixel {
         $items = array();
         $product_ids = array();
         $withTax = 'incl' === get_option( 'woocommerce_tax_display_cart' );
-        if(WC()->cart->get_cart())
+        if(isWooCartAvailable() && WC()->cart->get_cart())
         {
             foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
 
@@ -920,7 +944,7 @@ class GTM extends Settings implements Pixel {
 
         foreach ($product_ids as $child_id) {
             $childProduct = wc_get_product($child_id);
-            if($childProduct || ($childProduct->get_type() == "variable" && $isGrouped)) {
+            if(!$childProduct || ($childProduct->get_type() == "variable" && $isGrouped)) {
                 continue;
             }
             $content_id = Helpers\getWooProductContentId($child_id);
@@ -985,7 +1009,7 @@ class GTM extends Settings implements Pixel {
 
     private function getWooAddToCartOnCartEventParams() {
 
-        if ( ! $this->getOption( 'woo_add_to_cart_enabled' ) ) {
+        if ( ! $this->getOption( 'woo_add_to_cart_enabled' ) || ! isWooCartAvailable() ) {
             return false;
         }
 
@@ -1059,7 +1083,7 @@ class GTM extends Settings implements Pixel {
 
     private function getWooInitiateCheckoutEventParams() {
 
-        if ( ! $this->getOption( 'woo_initiate_checkout_enabled' ) ) {
+        if ( ! $this->getOption( 'woo_initiate_checkout_enabled' ) || ! isWooCartAvailable() ) {
             return false;
         }
 
@@ -1073,24 +1097,12 @@ class GTM extends Settings implements Pixel {
     }
 
     private function getWooPurchaseEventParams() {
-        global $wp;
         if ( ! $this->getOption( 'woo_purchase_enabled' ) ) {
             return false;
         }
-        $key = sanitize_key($_REQUEST['key']);
-        $cache_key = 'order_id_' . $key;
-        $order_id = get_transient( $cache_key );
-        if (PYS()->woo_is_order_received_page() && empty($order_id) && $wp->query_vars['order-received']) {
 
-            $order_id = absint( $wp->query_vars['order-received'] );
-            if ($order_id) {
-                set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
-            }
-        }
-        if ( empty($order_id) ) {
-            $order_id = (int) wc_get_order_id_by_order_key( $key );
-            set_transient( $cache_key, $order_id, HOUR_IN_SECONDS );
-        }
+        $order_id = wooGetOrderIdFromRequest();
+        if ( $order_id < 1 ) return false;
 
         $order    = wc_get_order( $order_id );
         if(!$order) return false;
@@ -1209,6 +1221,11 @@ class GTM extends Settings implements Pixel {
     }
 
     private function getWooCartParams($context = 'cart') {
+
+        // cart may be not initialized on this request
+        if ( ! isWooCartAvailable() ) {
+            return array();
+        }
 
         $items = array();
         $product_ids = array();

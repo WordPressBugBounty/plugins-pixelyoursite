@@ -159,6 +159,7 @@
   "google_consent_mode": "checkbox",
 
   "use_send_beacon": "checkbox",
+  "fetch_user_data_via_rest": "checkbox",
   "pys_check_permission_rate_limit": "number",
 
   "data_persistency": "radio"

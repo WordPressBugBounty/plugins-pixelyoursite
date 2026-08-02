@@ -48,20 +48,148 @@ function getEddContentId( $settings, $download_id, $price_id = null, $variableSe
 	return $prefix . $content_id . $suffix;
 }
 
+/**
+ * Payment key submitted with the current request.
+ *
+ * EDD keys are strtolower( md5( ... ) ) (see edd_generate_order_payment_key), so
+ * case is not normally an issue — but sanitize_key() is still wrong here, because
+ * the `edd_generate_order_payment_key` filter lets a site change the format and
+ * sanitize_key() would silently mangle it.
+ *
+ * urldecode() is deliberately gone: PHP has already decoded $_GET, and a second
+ * pass corrupts any key that legitimately contains a percent sign.
+ *
+ * @return string Empty string when the request carries no key.
+ */
+function pysEddGetSubmittedPaymentKey() {
+
+	if ( isset( $_GET['payment_key'] ) && is_string( $_GET['payment_key'] ) && '' !== $_GET['payment_key'] ) {
+		return sanitize_text_field( wp_unslash( $_GET['payment_key'] ) );
+	}
+
+	return '';
+
+}
+
+/**
+ * Verify EDD's own receipt link token.
+ *
+ * EDD builds receipt links as ?id=<order id>&order=<md5( id . payment_key . email )>
+ * (edd_get_receipt_page_uri()), but its receipt shortcode resolves the key from
+ * the ID without ever checking that token — it relies on edd_can_view_receipt()
+ * at render time instead. We check the token, so an order ID on its own is never
+ * enough to get data out of this plugin.
+ *
+ * @param int $order_id
+ * @return bool
+ */
+function pysEddVerifyReceiptToken( $order_id ) {
+
+	if ( empty( $_GET['order'] ) || ! is_string( $_GET['order'] ) || ! function_exists( 'edd_get_order' ) ) {
+		return false;
+	}
+
+	$order = edd_get_order( absint( $order_id ) );
+
+	if ( empty( $order->id ) ) {
+		return false;
+	}
+
+	$submitted = sanitize_text_field( wp_unslash( $_GET['order'] ) );
+	$expected  = md5( $order->id . $order->payment_key . $order->email );
+
+	return hash_equals( $expected, $submitted );
+
+}
+
+/**
+ * Whether the current request may see this EDD order's data.
+ *
+ * Accepted, in order: EDD's own receipt rule (shop manager, the logged-in
+ * customer, or a live purchase session), possession of the payment key, and a
+ * verified receipt token.
+ *
+ * Possession of the key is deliberately enough. It is the secret EDD mints per
+ * order, it is the same model WooCommerce uses for order keys, and it is all an
+ * offsite gateway return carries when the purchase-session cookie does not
+ * survive the round trip. Sites that want to match EDD core exactly — which also
+ * demands a session or a login — can opt in with:
+ *
+ *     add_filter( 'pys_edd_require_receipt_access', '__return_true' );
+ *
+ * @param int $order_id
+ * @return bool
+ */
+function pysEddRequestCanAccessOrder( $order_id ) {
+
+	$order_id = absint( $order_id );
+
+	if ( ! $order_id || ! function_exists( 'edd_can_view_receipt' ) || ! function_exists( 'edd_get_payment_key' ) ) {
+		return false;
+	}
+
+	$real_key = (string) edd_get_payment_key( $order_id );
+
+	if ( '' === $real_key ) {
+		return false;
+	}
+
+	// EDD's own rule. Unlike WooCommerce's `view_order`, this one is sound for
+	// guests: logged out, it requires the purchase session key to match.
+	if ( edd_can_view_receipt( $real_key ) ) {
+		return true;
+	}
+
+	if ( apply_filters( 'pys_edd_require_receipt_access', false ) ) {
+		return false;
+	}
+
+	// Possession of the payment key. The submitted value is also compared
+	// lowercased because EDD keys are lowercase by construction, so lowercasing a
+	// candidate can only ever match the real key, never a different one.
+	$submitted = pysEddGetSubmittedPaymentKey();
+
+	if ( '' !== $submitted
+	     && ( hash_equals( $real_key, $submitted ) || hash_equals( $real_key, strtolower( $submitted ) ) ) ) {
+		return true;
+	}
+
+	return pysEddVerifyReceiptToken( $order_id );
+
+}
+
 function getEddPaymentKey() {
 	global $edd_receipt_args;
 
+	$submitted = pysEddGetSubmittedPaymentKey();
+
+	if ( '' !== $submitted ) {
+		return $submitted;
+	}
+
 	$session = edd_get_purchase_session();
 
-	if ( isset( $_GET['payment_key'] ) ) {
-		return urldecode( $_GET['payment_key'] );
-	} else if ( $session && isset($session['purchase_key']) ) {
+	if ( $session && isset( $session['purchase_key'] ) && '' !== $session['purchase_key'] ) {
 		return $session['purchase_key'];
-	} elseif (  $edd_receipt_args && isset($edd_receipt_args['payment_key']) && $edd_receipt_args['payment_key'] ) {
-		return $edd_receipt_args['payment_key'];
-	} else {
-		return false;
 	}
+
+	if ( ! empty( $edd_receipt_args['payment_key'] ) ) {
+		return $edd_receipt_args['payment_key'];
+	}
+
+	// EDD's own receipt link, ?id=<order id>&order=<token>. The token is verified,
+	// so this never turns a bare order ID into order data.
+	if ( ! empty( $_GET['id'] ) && ! empty( $_GET['order'] ) && function_exists( 'edd_get_payment_key' ) ) {
+		$order_id = absint( $_GET['id'] );
+		if ( $order_id && pysEddVerifyReceiptToken( $order_id ) ) {
+			$key = (string) edd_get_payment_key( $order_id );
+			if ( '' !== $key ) {
+				return $key;
+			}
+		}
+	}
+
+	return false;
 
 }
 

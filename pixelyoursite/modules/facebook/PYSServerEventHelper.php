@@ -198,7 +198,7 @@ class ServerEventHelper {
         $request_uri = null;
 
         if (!empty($_SERVER['REQUEST_URI'])) {
-            $start = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http")."://";
+            $start = pys_get_request_protocol();
             $host = $_SERVER['HTTP_HOST'] ?? parse_url(get_site_url(), PHP_URL_HOST);
             $request_uri = $start . $host . $_SERVER['REQUEST_URI'];
         }

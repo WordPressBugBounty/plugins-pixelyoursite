@@ -55,7 +55,7 @@ class EnrichOrder {
         $screen = isWooUseHPStorage()
             ? wc_get_page_screen_id( 'shop-order' )
             : 'shop_order';
-        add_meta_box( 'pys_enrich_fields_woo', __('PixelYourSite','pixelyoursite'),
+        add_meta_box( 'pys_enrich_fields_woo', __('PixelYourSite','pys'),
             array($this,"woo_render_order_fields"), $screen);
     }
 
@@ -157,7 +157,7 @@ class EnrichOrder {
     function woo_add_enrich_to_admin_email($order, $sent_to_admin) {
         if($sent_to_admin) {
             $orderId = $order->get_id();
-            echo "<h2 style='text-align: center'>". __('PixelYourSite','pixelyoursite')."</h2>";
+            echo "<h2 style='text-align: center'>". __('PixelYourSite','pys')."</h2>";
             echo "Your clients don't see this information! We send it to you in this \"New Order\" email. If you want to remove this data from the \"New Order\" email, open <a href='".admin_url("admin.php?page=pixelyoursite&tab=woo")."' target='_blank'>PixelYourSite's WooCommerce page</a>, disable \"Send reports data to the New Order email\" and save.
             <br/>With PixelYourSite Professional, you can view and download this data from the plugin's own reports page. Find out how WooCommerce Reports work and how to visualize and download your data: <a href='https://www.pixelyoursite.com/woocommerce-first-party-reports?utm_source=free-plugin&utm_medium=order-email&utm_campaign=order-email-link&utm_content=woocommerce-reports&utm_term=woocommerce-reports-email-link' target='_blank'>Click here for details</a>.<br/>";
             include 'views/html-order-meta-box.php';

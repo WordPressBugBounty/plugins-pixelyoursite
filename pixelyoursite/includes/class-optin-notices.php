@@ -35,7 +35,6 @@ class OptinNotice
         $this->checkEnqueueStyles();
 
         add_action( 'wp_ajax_pys_optin_add',  [$this,'pys_optin_add']);
-        add_action( 'wp_ajax_nopriv_pys_optin_add', [$this,'pys_optin_add']);
         add_action( 'admin_notices', [$this,'adminRenderOptinNotices'], 1 );
 
 
@@ -44,14 +43,25 @@ class OptinNotice
 
     function pys_optin_add()
     {
+        check_ajax_referer( 'pys_optin_add', 'nonce' );
+
+        if ( ! current_user_can( 'manage_pys' ) ) {
+            wp_send_json_error( null, 403 );
+        }
+
         $body = array(
             'action'  => 'optin_add',
-            'data'  => $_POST
+            'data'  => array(
+                'name'  => sanitize_text_field( wp_unslash( isset( $_POST['name'] ) ? $_POST['name'] : '' ) ),
+                'email' => sanitize_email( wp_unslash( isset( $_POST['email'] ) ? $_POST['email'] : '' ) ),
+                'tags'  => array_map( 'sanitize_text_field',
+                    wp_unslash( isset( $_POST['tags'] ) ? (array) $_POST['tags'] : array() ) ),
+            )
         );
 
         $response = wp_remote_post( 'https://www.pixelyoursite.com', array(
             'timeout'   => 30,
-            'sslverify' => false,
+            'sslverify' => true,
             'user-agent' => 'PixelYourSite/' . PYS_FREE_VERSION . '; ' . get_bloginfo( 'url' ),
             'body'      => $body
         ) );
@@ -178,11 +188,6 @@ class OptinNotice
                     },
                     beforeSend: function () {
                         $container.closest('.pys-notice-wrapper').fadeOut();
-                    },
-                    success: function (resp) {
-                        if (resp.success) {
-                            console.log(resp)
-                        }
                     }
                 })
             });
@@ -203,9 +208,9 @@ class OptinNotice
                 jQuery.ajax({
                     url: ajaxurl,
                     method: 'POST',
-                    crossDomain: true,
                     data: {
                         action: 'pys_optin_add',
+                        nonce: '<?php echo esc_attr( wp_create_nonce( 'pys_optin_add' ) ); ?>',
                         name: name,
                         email: email,
                         tags: tags
