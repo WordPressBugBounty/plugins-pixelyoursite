@@ -20,6 +20,18 @@ include_once "html-popovers.php";
 
         <nav class="nav nav-tabs">
 
+            <?php if ( getCurrentAdminPage() === SiteProfileAdmin::PAGE_SLUG ) :
+                 $import_active = SiteProfileAdmin::isImportActive();
+                ?>
+                <a class="nav-item nav-link <?php echo $import_active ? '' : 'active'; ?>"
+                   href="#" data-pys-profile-tab="export" data-pys-title="Export Site Profile">Export</a>
+                <a class="nav-item nav-link <?php echo $import_active ? 'active' : ''; ?>"
+                   href="#" data-pys-profile-tab="import" data-pys-title="Import Site Profile">Import</a>
+                <a class="nav-item nav-link"
+                   href="#" data-pys-profile-tab="apidocs" data-pys-title="Site Profile — API &amp; CLI">API &amp; CLI</a>
+
+            <?php else : ?>
+
             <?php foreach ( getAdminPrimaryNavTabs() as $tab_key => $tab_data ) : ?>
 
                 <?php
@@ -48,6 +60,8 @@ include_once "html-popovers.php";
 
             <?php endforeach; ?>
 
+            <?php endif; ?>
+
         </nav>
     </div>
 
@@ -68,6 +82,9 @@ include_once "html-popovers.php";
             break;
         case 'pixelyoursite_queue_settings':
             $title = 'Queue System PRO';
+            break;
+        case SiteProfileAdmin::PAGE_SLUG:
+            $title = SiteProfileAdmin::isImportActive() ? 'Import Site Profile' : 'Export Site Profile';
             break;
         default:
             $title = 'Welcome to PixelYourSite Pro';
@@ -116,6 +133,15 @@ include_once "html-popovers.php";
                         </form>
                         <?php
                         break;
+                    case 'pixelyoursite_mcp': ?>
+                        <form method="post" enctype="multipart/form-data" id="pys-form">
+                            <?php
+                            wp_nonce_field( 'pys_save_settings' );
+                            do_action( 'pys_admin_' . getCurrentAdminPage() );
+                            ?>
+                        </form>
+                        <?php
+                        break;
                     default:
                         do_action( 'pys_admin_' . getCurrentAdminPage() );
                 }
@@ -135,6 +161,9 @@ include_once "html-popovers.php";
                 include_once PYS_FREE_VIEW_PATH . '/UI/button-save.php';
                 break;
             case 'pixelyoursite_queue_settings':
+                include_once PYS_FREE_VIEW_PATH . '/UI/button-save.php';
+                break;
+            case 'pixelyoursite_mcp':
                 include_once PYS_FREE_VIEW_PATH . '/UI/button-save.php';
                 break;
         }

@@ -25,6 +25,58 @@ class FunctionsMigrate {
         $this->pys_free_version = get_option( 'pys_core_free_version', false );
 
         add_action('plugins_loaded', array($this,'maybeMigrate'), 1);
+        // Runs on 'admin_init' (i.e. after 'init'), so every options group has
+        // already located its defaults by the time we re-save them.
+        add_action('admin_init', array($this,'maybeBackfillStoredOptions'), 20);
+    }
+
+    /**
+     * Options saved before a plugin update do not contain the keys that update
+     * introduced. Such keys resolve to null for any read that happens before the
+     * defaults are loaded, which silently disables the features behind them
+     * (external_id/pbid being the visible case). Re-save every options group once
+     * per version so the stored rows always hold the full key set.
+     */
+    public function maybeBackfillStoredOptions() {
+
+        if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        // Never interfere with a settings save (adminProcessRequest, admin_init 11).
+        if ( ! empty( $_POST ) ) {
+            return;
+        }
+
+        if ( get_option( 'pys_free_options_backfilled_version' ) === PYS_FREE_VERSION ) {
+            return;
+        }
+
+        $groups = array_merge(
+            array( PYS() ),
+            array_values( PYS()->getRegisteredPixels() ),
+            array_values( PYS()->getRegisteredPlugins() )
+        );
+
+        foreach ( $groups as $group ) {
+
+            if ( ! $group instanceof Settings ) {
+                continue;
+            }
+
+            try {
+                $group->reloadOptions();        // stored values merged over the defaults
+                $group->updateOptions( array() ); // persist the merged set as is
+            } catch ( \Throwable $e ) {
+                error_log( 'PYS: options backfill failed for ' . $group->getSlug() . ': ' . $e->getMessage() );
+            }
+        }
+
+        update_option( 'pys_free_options_backfilled_version', PYS_FREE_VERSION, false );
     }
     public function maybeMigrate() {
 

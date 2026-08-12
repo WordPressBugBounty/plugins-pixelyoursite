@@ -181,9 +181,11 @@ class FacebookServer {
 
             $event =  new SingleEvent("woo_add_to_cart_on_button_click",EventTypes::$DYNAMIC,'woo');
             $event->args = ['productId' => $_product_id,'quantity' => $quantity];
-            add_filter('pys_conditional_post_id', function($id) use ($product_id) { return $product_id; });
+            // Remove only our own callback, not everything on the hook.
+            $conditional_post_id = function($id) use ($product_id) { return $product_id; };
+            add_filter('pys_conditional_post_id', $conditional_post_id);
             $events = Facebook()->generateEvents($event);
-            remove_all_filters('pys_conditional_post_id');
+            remove_filter('pys_conditional_post_id', $conditional_post_id);
 
             foreach ($events as $singleEvent) {
 
@@ -315,8 +317,12 @@ class FacebookServer {
 
             $api = Api::init(null, null, $this->access_token[$pixel_Id],false);
             $opts = $api->getHttpClient()->getAdapter()->getOpts();
-            if ($opts instanceof \ArrayObject && $opts->offsetExists(CURLOPT_CONNECTTIMEOUT)) {
-                $opts->offsetSet(CURLOPT_CONNECTTIMEOUT, 30);
+            if ($opts instanceof \ArrayObject) {
+                // CURLOPT_TIMEOUT was never set here, so the total transfer time
+                // was unbounded; and the offsetExists() guard meant even the
+                // connect timeout was skipped unless the SDK had pre-seeded it.
+                $opts->offsetSet(CURLOPT_CONNECTTIMEOUT, pys_server_connect_timeout());
+                $opts->offsetSet(CURLOPT_TIMEOUT, pys_server_request_timeout());
                 $api->getHttpClient()->getAdapter()->setOpts($opts);
             }
             /**

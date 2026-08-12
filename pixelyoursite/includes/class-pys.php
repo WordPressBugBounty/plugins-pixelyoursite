@@ -67,7 +67,8 @@ final class PYS extends Settings implements Plugin {
 
 	    // Priority 9 used to keep things same as on PRO version
         add_action( 'wp', array( $this, 'controllSessionStart'), 10);
-        add_action( 'init', array( $this, 'set_pbid'), 8);
+        // set_pbid() is NOT hooked separately: it reads plugin options, so it must
+        // run after init() has called locateOptions(). It is called from init().
         add_action( 'init', array( $this, 'init' ), 9 );
         add_action( 'init', array( $this, 'afterInit' ), 11 );
 
@@ -228,6 +229,10 @@ final class PYS extends Settings implements Plugin {
 		    PYS_FREE_PATH . '/includes/options_defaults.json'
 	    );
 
+	    // external_id must be resolved as early as possible, but only once the
+	    // options above are available, otherwise send_external_id reads as null.
+	    $this->set_pbid();
+
 	    // register pixels and plugins (add-ons)
 	    do_action( 'pys_register_pixels', $this );
 	    do_action( 'pys_register_plugins', $this );
@@ -319,26 +324,90 @@ final class PYS extends Settings implements Plugin {
     function controllSessionStart(){
         if(PYS()->getOption('session_disable')) return;
 
-        // Checking if the directory exists and is writable
-        if (!is_admin() && PHP_SAPI !== 'cli' && session_status() != PHP_SESSION_DISABLED) {
-            if (!headers_sent() && session_status() === PHP_SESSION_NONE) {
-                if (!session_start()) return;
-            }
+        if (is_admin() || PHP_SAPI === 'cli' || session_status() === PHP_SESSION_DISABLED) return;
 
-            if (session_status() !== PHP_SESSION_ACTIVE) return;
+        // Another plugin already opened the session — reuse it, exactly as before.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $this->populateSessionVisitData();
+            return;
+        }
 
-            if (empty($_SESSION['TrafficSource'])) {
-                $_SESSION['TrafficSource'] = getTrafficSource();
-            }
-            if (empty($_SESSION['LandingPage'])) {
-                $_SESSION['LandingPage'] = pys_get_current_page_url(false);
-            }
-            if (empty($_SESSION['TrafficUtms'])) {
-                $_SESSION['TrafficUtms'] = getUtms();
-            }
-            if (empty($_SESSION['TrafficUtmsId'])) {
-                $_SESSION['TrafficUtmsId'] = getUtmsId();
-            }
+        if (headers_sent()) return;
+
+        if ($this->shouldOpenSessionReadOnly()) {
+            /*
+             * PHP holds an exclusive lock on the session for the whole request,
+             * and this hook runs on 'wp', which fires for ?wc-ajax= requests too
+             * (WooCommerce dispatches those on 'template_redirect'). A slow
+             * request therefore serialised every other AJAX call on the page.
+             *
+             * read_and_close loads the data and releases the lock immediately:
+             * $_SESSION stays populated for reading, so every consumer behaves
+             * the same, and session_status() goes back to NONE, so any plugin
+             * that needs to write can open the session itself.
+             *
+             * Writing is deliberately skipped here: it would not persist. The
+             * visit data is written on the page request that opened the session,
+             * and every reader has a cookie fallback anyway.
+             */
+            @session_start(array('read_and_close' => true));
+            return;
+        }
+
+        if (!session_start()) return;
+        if (session_status() !== PHP_SESSION_ACTIVE) return;
+
+        $this->populateSessionVisitData();
+    }
+
+    /**
+     * Should the session be opened read-only for this request?
+     *
+     * True for requests we do not own and only ever read from: WooCommerce's
+     * ?wc-ajax= endpoints, admin-ajax, and the REST API.
+     *
+     * @return bool
+     */
+    private function shouldOpenSessionReadOnly() {
+
+        $read_only = false;
+
+        if (!empty($_GET['wc-ajax'])) {
+            $read_only = true;
+        } elseif (defined('WC_DOING_AJAX') && WC_DOING_AJAX) {
+            $read_only = true;
+        } elseif (defined('REST_REQUEST') && REST_REQUEST) {
+            $read_only = true;
+        } elseif (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+            $read_only = true;
+        }
+
+        /**
+         * filter pys_session_read_only
+         * Escape hatch for setups that need the session writable on AJAX.
+         *
+         * @param bool $read_only
+         */
+        return (bool) apply_filters('pys_session_read_only', $read_only);
+    }
+
+    /**
+     * Store the visit data we keep in the PHP session.
+     * Requires an active, writable session.
+     */
+    private function populateSessionVisitData() {
+
+        if (empty($_SESSION['TrafficSource'])) {
+            $_SESSION['TrafficSource'] = getTrafficSource();
+        }
+        if (empty($_SESSION['LandingPage'])) {
+            $_SESSION['LandingPage'] = pys_get_current_page_url(false);
+        }
+        if (empty($_SESSION['TrafficUtms'])) {
+            $_SESSION['TrafficUtms'] = getUtms();
+        }
+        if (empty($_SESSION['TrafficUtmsId'])) {
+            $_SESSION['TrafficUtmsId'] = getUtmsId();
         }
     }
 
@@ -377,13 +446,26 @@ final class PYS extends Settings implements Plugin {
     }
 
     public function get_pbid_ajax(){
-        if(defined('DOING_AJAX') && DOING_AJAX){
-            $isTrackExternalId = EventsManager::isTrackExternalId();
-            if ($isTrackExternalId && !empty($this->externalId)) {
-                $transient = get_transient('externalId-'.PYS()->get_user_ip());
-                wp_send_json_success( array('pbid'=> $this->externalId, 'transient' => !empty($transient) ? $transient : false ));
-            }
+        if ( ! defined('DOING_AJAX') || ! DOING_AJAX ) {
+            return;
         }
+
+        if ( ! EventsManager::isTrackExternalId() ) {
+            wp_send_json_error( array( 'reason' => 'external_id_disabled' ) );
+        }
+
+        // Defensive: external_id is normally set in init(), but never leave the
+        // request without a reply — the caller would get admin-ajax's bare "0".
+        if ( empty( $this->externalId ) ) {
+            $this->set_pbid();
+        }
+
+        if ( empty( $this->externalId ) ) {
+            wp_send_json_error( array( 'reason' => 'no_external_id' ) );
+        }
+
+        $transient = get_transient('externalId-'.PYS()->get_user_ip());
+        wp_send_json_success( array('pbid'=> $this->externalId, 'transient' => !empty($transient) ? $transient : false ));
     }
     public function adminSinglePage()
     {
@@ -910,6 +992,21 @@ final class PYS extends Settings implements Plugin {
 
     }
 
+    /**
+     * Register an extra admin page slug so its PYS styles/scripts load and the
+     * single-page wrapper dispatches it. Called after adminMenu() sets the core
+     * list (e.g. by the MCP AdminPage on admin_menu priority 20). Mirrors Pro.
+     * Register an extra admin page slug so its styles/scripts load (used by the
+     * Site Profile export/import page).
+     * @param string $slug Admin page slug (the `?page=` value).
+     * @return void
+     */
+    public function addAdminPageSlug( $slug ) {
+        if ( ! in_array( $slug, $this->adminPagesSlugs ) ) {
+            $this->adminPagesSlugs[] = $slug;
+        }
+    }
+
     public function adminEnqueueScripts() {
         if ( ! wp_style_is( 'pys_notice') ) {
             wp_enqueue_style( 'pys_notice', PYS_FREE_URL . '/dist/styles/notice.min.css', array(), PYS_FREE_VERSION );
@@ -932,7 +1029,9 @@ final class PYS extends Settings implements Plugin {
                                                                                  'bootstrap' ), PYS_FREE_VERSION );
 
             if( (isset($_GET['page']) && $_GET['page'] == "pixelyoursite" && isset($_GET['tab']) && ($_GET['tab'] == 'events')) ||
-                ( $_GET['page'] && (( $_GET['page'] == "pixelyoursite_woo_reports" ) || $_GET['page'] == "pixelyoursite_edd_reports" ))
+                ( isset($_GET['page']) && (( $_GET['page'] == "pixelyoursite_woo_reports" ) || $_GET['page'] == "pixelyoursite_edd_reports" )) ||
+                ( isset($_GET['page']) && (( $_GET['page'] == "pixelyoursite_mcp" ) || $_GET['page'] == "pixelyoursite_mcp_log" )) ||
+                ( isset($_GET['page']) && $_GET['page'] == "pixelyoursite_import_export" )
             ) {
                 wp_enqueue_style( 'pys_confirm_style', PYS_FREE_URL . '/dist/scripts/confirm/jquery-confirm.min.css', array(  ), PYS_FREE_VERSION );
                 wp_enqueue_style( 'pys_confirm_style_theme', PYS_FREE_URL . '/dist/scripts/confirm/bs3.css', array(  ), PYS_FREE_VERSION );

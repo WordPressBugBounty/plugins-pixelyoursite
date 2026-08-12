@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.2.3' );
+define( 'PYS_FREE_VERSION', '11.3.0' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
 define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );
@@ -73,6 +73,27 @@ require_once PYS_FREE_PATH.'/modules/google_gtm/gtm.php';
 require_once PYS_FREE_PATH.'/modules/head_footer/head_footer.php';
 require_once PYS_FREE_PATH.'/includes/enrich/class_enrich_order.php';
 
+// Site Profile export/import feature (core classes; admin/REST/CLI wired later).
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-config.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-guard.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-registry.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-exporter.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-importer.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-inventory.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-import-view.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-admin.php';
+require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-rest-api.php';
+if ( is_admin() ) {
+    \PixelYourSite\SiteProfileAdmin::init();
+}
+
+\PixelYourSite\SiteProfileRestAPI::instance();
+// WP-CLI commands: wp pys profile <export|import|restore>.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+    require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-cli-command.php';
+    \WP_CLI::add_command( 'pys profile', '\PixelYourSite\SiteProfileCliCommand' );
+}
+
 
 require_once PYS_FREE_PATH.'/includes/formEvents/interface-formEvents.php';
 require_once PYS_FREE_PATH.'/includes/formEvents/CF7/class-formEvent-CF7.php';
@@ -91,3 +112,6 @@ add_action( 'init', function() {
     // Central REST API guard (Facebook + add-on endpoints) via rest_pre_dispatch.
     \PixelYourSite\RestAPIGuard::instance();
 }, 9 );
+
+// MCP subsystem — composer PSR-4 autoloaded from includes/mcp/.
+\PixelYourSite\MCP\McpServer::instance();

@@ -1425,7 +1425,7 @@ use PixelYourSite\Facebook\Helpers;
                         <?php renderDummySwitcher(); ?>
                         <h4 class="secondary_heading_type2 switcher-label"><?php esc_html_e( 'Track Profit', 'pys' ); ?></h4>
                     </div>
-                    <<div class="d-flex align-items-center flex-collapse-block">
+                    <div class="d-flex align-items-center flex-collapse-block">
                         <?php renderProBadge(); ?>
                         <?php cardCollapseSettings(); ?>
                     </div>

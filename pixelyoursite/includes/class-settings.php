@@ -46,6 +46,22 @@ abstract class Settings {
     private $defaults_json_path;
     private static ?bool $table_exists = null;
 
+    /**
+     * True once locateOptions() has loaded the defaults for this options group.
+     *
+     * @var bool
+     */
+    private $defaults_located = false;
+
+    /**
+     * True when values were loaded from the database before the defaults were
+     * known. Such a load is incomplete: options missing from the stored row are
+     * not backfilled from the defaults, so it must not be treated as final.
+     *
+     * @var bool
+     */
+    private $loaded_without_defaults = false;
+
     public static function storage_table(): string {
         global $wpdb;
         return $wpdb->prefix . 'pys_options';
@@ -115,7 +131,16 @@ abstract class Settings {
         $this->loadJSON( $defaults, true );
 
         $this->defaults_json_path = $defaults;
+        $this->defaults_located = true;
         self::table_exists();
+
+        // Values read before this point were merged with an empty defaults set,
+        // so any option missing from the stored row resolved to null instead of
+        // its default. Now that the defaults are known, load them again.
+        if ( $this->loaded_without_defaults ) {
+            $this->loaded_without_defaults = false;
+            $this->maybeLoad( true );
+        }
     }
 
     public function resetToDefaults() {
@@ -201,7 +226,9 @@ abstract class Settings {
      */
     private function pys_get_from_storage( $option_key ) {
         global $wpdb;
-        if (!self::$table_exists) {
+        // Resolve the flag on demand: it must not depend on locateOptions()
+        // having already run for some options group in this request.
+        if (!self::table_exists()) {
             return null;
         }
 
@@ -230,7 +257,7 @@ abstract class Settings {
      */
     private function pys_set_in_storage( $option_key, $value, $migrated = 1 ) {
         global $wpdb;
-        if (!self::$table_exists) {
+        if (!self::table_exists()) {
             return null;
         }
         $table = self::storage_table();
@@ -305,6 +332,16 @@ abstract class Settings {
         return $this->values[ $key ];
 
     }
+
+    /**
+     * List the registered option keys for this module (from options_fields.json).
+     *
+     * @return array
+     */
+    public function getOptionKeys(): array {
+        return array_keys( (array) $this->options );
+    }
+
     public function setOption($key, $value){
         $this->maybeLoad();
         if (isset($value) ) {
@@ -321,6 +358,10 @@ abstract class Settings {
         if ( ! $force && ! empty( $this->values ) ) {
             return; // already loaded
         }
+
+        // Remember whether this load happens before the defaults are known, so
+        // locateOptions() can redo it (see locateOptions()).
+        $this->loaded_without_defaults = ! $this->defaults_located;
 
         // 1) Let's try a new table
         $stored = $this->pys_get_from_storage( $this->option_key );

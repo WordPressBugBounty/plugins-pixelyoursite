@@ -261,11 +261,11 @@ class Facebook_REST_API {
             'pixelIds'  => $ids
         );
 
-        if ( ! empty( $referrer_url ) && wp_http_validate_url( $referrer_url ) ) {
+        if ( ! empty( $referrer_url ) && pys_is_valid_public_url( $referrer_url ) ) {
             $payload['referrer_url'] = $referrer_url;
         }
 
-        if ( ! empty( $event_source_url ) && wp_http_validate_url( $event_source_url ) ) {
+        if ( ! empty( $event_source_url ) && pys_is_valid_public_url( $event_source_url ) ) {
             $payload['event_source_url'] = $event_source_url;
         }
 

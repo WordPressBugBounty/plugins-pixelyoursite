@@ -207,6 +207,7 @@ class CustomEvent {
         'bing_custom_event_type' => null,
         'bing_params_enabled' => false,
         'bing_params' => array(),
+        'bing_custom_params' => array(),
 
 		'reddit_pixel_id'              => 'all',
 		'reddit_event_type'            => 'ViewContent',
@@ -570,7 +571,7 @@ class CustomEvent {
         $this->data[ 'pinterest_event_type' ] = isset( $args[ 'pinterest_event_type' ] ) && in_array( $args[ 'pinterest_event_type' ], $pinterest_event_types ) ? sanitize_text_field( $args[ 'pinterest_event_type' ] ) : 'pagevisit';
 
         // custom event type
-        $this->data[ 'pinterest_custom_event_type' ] = $this->pinterest_event_type == 'partner_defined' && !empty( $args[ 'pinterest_custom_event_type' ] ) ? sanitizeKey( $args[ 'pinterest_custom_event_type' ] ) : null;
+        $this->data[ 'pinterest_custom_event_type' ] = ( $this->pinterest_event_type == 'partner_defined' || $this->pinterest_event_type == 'custom' ) && !empty( $args[ 'pinterest_custom_event_type' ] ) ? sanitizeKey( $args[ 'pinterest_custom_event_type' ] ) : null;
 
         // params enabled
         $this->data[ 'pinterest_params_enabled' ] = isset( $args[ 'pinterest_params_enabled' ] ) && $args[ 'pinterest_params_enabled' ] ? true : false;
@@ -624,7 +625,11 @@ class CustomEvent {
         $this->data[ 'bing_enabled' ] = isset( $args[ 'bing_enabled' ] ) && $args[ 'bing_enabled' ] ? true : false;
 
         // pixel id
-        $this->data[ 'bing_pixel_id' ] = !empty( $args[ 'bing_pixel_id' ] ) && in_array( $args[ 'bing_pixel_id' ], Bing()->getAllPixels() ) ? $args[ 'bing_pixel_id' ] : 'all';
+        // getPixelIDs() (present on the Free CORE Bing class too) instead of
+        // getAllPixels() — the core Bing stub lacks getAllPixels(), so calling it fatals
+        // whenever that class is the loaded PixelYourSite\Bing (same collision as Reddit).
+        $bing_pixels = function_exists( '\\PixelYourSite\\Bing' ) ? (array) Bing()->getPixelIDs() : array();
+        $this->data[ 'bing_pixel_id' ] = !empty( $args[ 'bing_pixel_id' ] ) && in_array( $args[ 'bing_pixel_id' ], $bing_pixels ) ? $args[ 'bing_pixel_id' ] : 'all';
 
         // event type
         $this->data[ 'bing_event_type' ] = isset( $args[ 'bing_event_type' ] ) && in_array( $args[ 'bing_event_type' ], $bing_event_types ) ? sanitize_text_field( $args[ 'bing_event_type' ] ) : 'PageVisit';
@@ -635,11 +640,29 @@ class CustomEvent {
 		// params enabled
         $this->data[ 'bing_params_enabled' ] = isset( $args[ 'bing_params_enabled' ] ) && $args[ 'bing_params_enabled' ] ? true : false;
 
-        // bing_params - structured params like Facebook/TikTok
+        // bing_params - standard params, stored flat (name => scalar value) in Free.
+        // The addon view may post a {value, selector, dynamic} object per param
+        // (selector/dynamic are Pro); take the value so the flat store is not blanked.
         $this->data[ 'bing_params' ] = array();
         if ( isset( $args[ 'bing_params' ] ) && is_array( $args[ 'bing_params' ] ) ) {
             foreach ( $args[ 'bing_params' ] as $param_key => $param_value ) {
-                $this->data[ 'bing_params' ][ sanitize_text_field( $param_key ) ] = sanitize_text_field( $param_value );
+                $val = is_array( $param_value ) ? ( $param_value[ 'value' ] ?? '' ) : $param_value;
+                $this->data[ 'bing_params' ][ sanitize_text_field( $param_key ) ] = sanitize_text_field( $val );
+            }
+        }
+
+        // reset old custom params
+        $this->data[ 'bing_custom_params' ] = array();
+
+        // custom params (plain name/value in Free; selector/dynamic are Pro)
+        if ( $this->bing_params_enabled && isset( $args[ 'bing_custom_params' ] ) && is_array( $args[ 'bing_custom_params' ] ) ) {
+            foreach ( $args[ 'bing_custom_params' ] as $custom_param ) {
+                if ( is_array( $custom_param ) && !empty( $custom_param[ 'name' ] ) && !empty( $custom_param[ 'value' ] ) ) {
+                    $this->data[ 'bing_custom_params' ][] = array(
+                        'name'  => sanitize_text_field( $custom_param[ 'name' ] ),
+                        'value' => sanitize_text_field( $custom_param[ 'value' ] ),
+                    );
+                }
             }
         }
 
@@ -747,9 +770,16 @@ class CustomEvent {
     }
 
     public function getPinterestEventType() {
-        return $this->pinterest_event_type == 'partner_defined'
-            ? $this->pinterest_custom_event_type
-            : $this->pinterest_event_type;
+        // Both 'partner_defined' and 'custom' are custom-name types — read the
+        // magic prop into a local first (a bare empty($this->prop) on the __get
+        // magic property always reads empty without __isset).
+        $custom_name = $this->pinterest_custom_event_type;
+
+        if ( ( $this->pinterest_event_type == 'partner_defined' || $this->pinterest_event_type == 'custom' )
+            && ! empty( $custom_name ) ) {
+            return $custom_name;
+        }
+        return $this->pinterest_event_type;
     }
 
     public function isPinterestParamsEnabled() {
@@ -808,9 +838,17 @@ class CustomEvent {
     }
 
     public function getBingEventType() {
-        return $this->bing_event_type == 'custom'
-            ? $this->bing_custom_event_type
-            : $this->bing_event_type;
+        // Stored bing custom type is 'Custom' (capital — the only definitions key);
+        // the old lowercase-only check meant custom NAMES never fired. Read the
+        // magic prop into a local first (empty() on a __get prop without __isset
+        // always reads empty).
+        $custom_name = $this->bing_custom_event_type;
+
+        if ( ( $this->bing_event_type === 'custom' || $this->bing_event_type === 'Custom' )
+            && ! empty( $custom_name ) ) {
+            return $custom_name;
+        }
+        return $this->bing_event_type;
     }
 
     public function isBingParamsEnabled() {
@@ -908,6 +946,10 @@ class CustomEvent {
                         }
                     }
                 }
+
+                // Persist the grouped-action category so the group-aware admin select
+                // can display the chosen action (mirrors Pro).
+                $this->data['ga_ads_event_action_group'] = $args['ga_ads_event_action_group'] ?? '';
 
                 if ( isset( $args['ga_ads_params'] ) ) {
                     foreach ($args['ga_ads_params'] as $key => $val) {
@@ -1125,6 +1167,10 @@ class CustomEvent {
             }
         }
 
+        // Persist the grouped-action category so the group-aware admin select
+        // can display the chosen action (mirrors Pro).
+        $this->data['gtm_event_action_group'] = $args['gtm_event_action_group'] ?? '';
+
         if ( isset( $args['gtm_params'] ) ) {
             foreach ($args['gtm_params'] as $key => $val) {
                 $this->data['gtm_params'][$key] = sanitize_text_field( $val );
@@ -1201,8 +1247,14 @@ class CustomEvent {
 		$this->data[ 'reddit_enabled' ] = isset( $args[ 'reddit_enabled' ] ) && $args[ 'reddit_enabled' ];
 
 		//pixel id
+		// Use getPixelIDs() (present on every Reddit class variant) rather than
+		// getAllPixels() — the Free CORE Reddit class (modules/reddit/reddit.php) only
+		// defines getPixelIDs(), so calling getAllPixels() fatals whenever that class is
+		// the loaded PixelYourSite\Reddit (the addon's getAllPixels() just returns
+		// getPixelIDs() anyway). Prevents a fatal on ANY custom-event save.
+		$reddit_pixels = function_exists( '\\PixelYourSite\\Reddit' ) ? (array) Reddit()->getPixelIDs() : array();
 		$this->data[ 'reddit_pixel_id' ] = !empty( $args[ 'reddit_pixel_id' ] )
-		                                   && in_array( $args[ 'reddit_pixel_id' ], Reddit()->getAllPixels() ) ? $args[ 'reddit_pixel_id' ] : 'all';
+		                                   && in_array( $args[ 'reddit_pixel_id' ], $reddit_pixels ) ? $args[ 'reddit_pixel_id' ] : 'all';
 
 		// event type
 		$this->data[ 'reddit_event_type' ] = isset( $args[ 'reddit_event_type' ] )

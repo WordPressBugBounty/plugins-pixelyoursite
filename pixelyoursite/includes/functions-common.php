@@ -81,15 +81,129 @@ function pys_get_current_page_url( $with_query = true ) {
  *
  * @return string Validated absolute URL, or '' when missing/invalid.
  */
+/**
+ * Is the current request one where nobody is waiting for a response?
+ *
+ * Queue processing runs on WP-Cron, so there we can afford to wait a long time
+ * for a platform to answer. In a normal page or AJAX request a visitor is on the
+ * other end and the timeout has to be a limit, not a hope.
+ *
+ * @return bool
+ */
+function pys_is_background_request() {
+    if ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) {
+        return true;
+    }
+    if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+        return true;
+    }
+    // Set once a response has been handed to the client via
+    // fastcgi_finish_request(): from that point the request is background work.
+    if ( defined( 'PYS_RESPONSE_DETACHED' ) && PYS_RESPONSE_DETACHED ) {
+        return true;
+    }
+
+    return PHP_SAPI === 'cli';
+}
+
+/**
+ * Total transfer timeout, in seconds, for an outgoing server-side event request.
+ *
+ * Deliberately generous: these calls carry conversion data we do not want to
+ * lose, and platform APIs are occasionally slow without being broken. The point
+ * is to have an upper bound at all — several of these requests previously ran
+ * with no limit whatsoever, so a hung connection could hold a checkout request
+ * (or the whole queue batch) for as long as PHP allowed.
+ *
+ * Filter with pys_server_request_timeout to raise or lower it; the second
+ * argument tells you whether this is a background (cron/CLI) request.
+ *
+ * @return int
+ */
+function pys_server_request_timeout() {
+    $background = pys_is_background_request();
+    $timeout    = $background ? 20 : 10;
+
+    $timeout = (int) apply_filters( 'pys_server_request_timeout', $timeout, $background );
+
+    return max( 1, $timeout );
+}
+
+/**
+ * Connection-establishment timeout, in seconds, for the same requests.
+ *
+ * Kept well below the total timeout: failing to open a socket at all is a
+ * different kind of problem from a slow response, and it is the case that hurts
+ * most when DNS or routing is broken.
+ *
+ * @return int
+ */
+function pys_server_connect_timeout() {
+    $background = pys_is_background_request();
+    $timeout    = $background ? 10 : 5;
+
+    $timeout = (int) apply_filters( 'pys_server_connect_timeout', $timeout, $background );
+
+    return max( 1, $timeout );
+}
+
+/**
+ * Validate a URL that we only ever pass along to an ads platform as a string.
+ *
+ * wp_http_validate_url() must NOT be used for this. It is meant for vetting the
+ * target of an outgoing request, so whenever the host differs from home_url() it
+ * calls gethostbyname() to check the address is not private. Our referrer URLs
+ * are external by construction — the frontend only stores a session-entry
+ * referrer when its host differs from the site's — so every validation turned
+ * into a blocking DNS lookup on the critical path of building a server event.
+ * gethostbyname() has no PHP-level timeout: with a slow or unreachable resolver
+ * it blocks for whole seconds (5s per attempt by default), and hosts without a
+ * local caching resolver pay it on every single call.
+ *
+ * We never fetch these URLs, so a syntax check is all that is required.
+ *
+ * @param string $url
+ * @return bool
+ */
+function pys_is_valid_public_url( $url ) {
+    if ( ! is_string( $url ) || $url === '' ) {
+        return false;
+    }
+
+    $parts = wp_parse_url( $url );
+    if ( empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+        return false;
+    }
+    if ( ! in_array( strtolower( $parts['scheme'] ), array( 'http', 'https' ), true ) ) {
+        return false;
+    }
+    if ( isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+        return false;
+    }
+    if ( strpbrk( $parts['host'], ':#?[]' ) !== false ) {
+        return false;
+    }
+
+    return (bool) filter_var( $url, FILTER_VALIDATE_URL );
+}
+
 function pys_get_session_entry_referrer_url() {
+    // Memoized: $_COOKIE cannot change mid-request, and this is called once per
+    // server event built.
+    static $cached = null;
+    if ( $cached !== null ) {
+        return $cached;
+    }
+    $cached = '';
+
     if ( ! empty( $_COOKIE['pys_session_entry_referrer'] ) ) {
         $url = esc_url_raw( wp_unslash( $_COOKIE['pys_session_entry_referrer'] ) );
         $url = pys_strip_url_query_and_fragment( $url );
-        if ( $url && wp_http_validate_url( $url ) ) {
-            return $url;
+        if ( $url && pys_is_valid_public_url( $url ) ) {
+            $cached = $url;
         }
     }
-    return '';
+    return $cached;
 }
 
 /**
@@ -105,14 +219,22 @@ function pys_get_session_entry_referrer_url() {
  * @return string Validated absolute URL, or '' when missing/invalid.
  */
 function pys_snapshot_event_referrer_url() {
+    // Memoized: $_SERVER['HTTP_REFERER'] is fixed for the request, and one
+    // add-to-cart builds an event per pixel.
+    static $cached = null;
+    if ( $cached !== null ) {
+        return $cached;
+    }
+    $cached = '';
+
     if ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
         $url = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
         $url = pys_strip_url_query_and_fragment( $url );
-        if ( $url && wp_http_validate_url( $url ) ) {
-            return $url;
+        if ( $url && pys_is_valid_public_url( $url ) ) {
+            $cached = $url;
         }
     }
-    return '';
+    return $cached;
 }
 
 /**
@@ -151,7 +273,7 @@ function pys_resolve_event_referrer_url( $event ) {
     $url = esc_url_raw( $url );
     $url = pys_strip_url_query_and_fragment( $url );
 
-    if ( $url && wp_http_validate_url( $url ) ) {
+    if ( $url && pys_is_valid_public_url( $url ) ) {
         return $url;
     }
     return '';

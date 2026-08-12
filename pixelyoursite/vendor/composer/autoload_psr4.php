@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'URL\\' => array($vendorDir . '/glenscott/url-normalizer/src/URL'),
+    'PixelYourSite\\MCP\\' => array($baseDir . '/includes/mcp'),
     'Jaybizzle\\CrawlerDetect\\' => array($vendorDir . '/jaybizzle/crawler-detect/src'),
     'Behat\\Transliterator\\' => array($vendorDir . '/behat/transliterator/src/Behat/Transliterator'),
 );

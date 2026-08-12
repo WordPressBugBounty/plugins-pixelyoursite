@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.0
-Stable tag: 11.2.3
+Stable tag: 11.3.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -15,11 +15,14 @@ Add Meta Pixel with Conversion API, Google Analytics (GA4) + Consent Mode, Googl
 
 Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4, and Google Tag Manager into your WordPress site. Plus, use our simple Head and Footer script option to add any custom script you need for advanced tracking and optimization. The Pinterest Tag can be implemented via this [paid add-on](https://www.pixelyoursite.com/pinterest-tag). Similar paid add-ons for the [Bing tag](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on) and for the [Reddit Pixel](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin).
 
+**NEW!** MCP support - Connect Claude, ChatGPT, Gemini, or any other LLM and control the plugin. 
+
 **Free training:** 
 
 We have a YouTube channel called [PixelYourSite](https://www.youtube.com/channel/UCnie2zvwAjTLz9B4rqvAlFQ) where we explain a lot of stuff about the plugin, Meta API, Google Analytics, Google Ads, TikTok and so on. Check this one to lean how to setup Meta Conversion API and a few tips to improve your EMQ score:
 
 [youtube https://www.youtube.com/watch?v=iIbk23Hy_6A]
+
 
 **PixelYourSite will help you:**
 
@@ -387,6 +390,18 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.3.0 =
+
+August 12, 2026
+
+* MCP - Connect your LLM and control the plugin. 
+
+* Export/Import settings, with both manual and programatic support. 
+
+* Fix for pys_get_pbid AJAX endpoint returns 0 pbid cookie not created.
+
+* Fix for a possible load conflict with FunnelKit cart. 
 
 = PixelYourSite 11.2.3 =
 
