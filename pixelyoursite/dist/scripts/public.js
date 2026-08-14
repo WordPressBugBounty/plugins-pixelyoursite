@@ -329,6 +329,12 @@
 
         var gtm_loaded = false;
 
+        // The GTM container's consent state is sent once per page load. Two code
+        // paths reach it (loadGTMScript() and the gtm_just_data_layer branch of
+        // GTM.loadPixel(), which can both run for the same page), and Consent Mode
+        // expects a single transition, not a stream of them.
+        var gtm_consent_state_pushed = false;
+
         let isNewSession = checkSession();
 
         var utmTerms = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
@@ -1263,13 +1269,17 @@
                     };
 
                     if ( options.google_consent_mode ) {
-                        let data = {};
-                        data[ 'analytics_storage' ] = options.gdpr.analytics_storage.enabled ? options.gdpr.analytics_storage.value : 'granted';
-                        data[ 'ad_storage' ] = options.gdpr.ad_storage.enabled ? options.gdpr.ad_storage.value : 'granted';
-                        data[ 'ad_user_data' ] = options.gdpr.ad_user_data.enabled ? options.gdpr.ad_user_data.value : 'granted';
-                        data[ 'ad_personalization' ] = options.gdpr.ad_personalization.enabled ? options.gdpr.ad_personalization.value : 'granted';
+                        let data = this.resolveConsentValues();
 
-                        this.loadDefaultConsent( 'consent', 'default', data );
+                        // Normally this data layer is ours alone and still empty, so a
+                        // `default` is what belongs here. But the GA and GTM scopes
+                        // collapse into one layer when their names resolve to the same
+                        // value (gtm_dataLayer_name left at 'dataLayerPYS', or the GA
+                        // layer set to "Disable name transformation"), and then the GTM
+                        // <head> snippet has already written a strict `denied` default
+                        // here. Repeating `default` would leave GA denied; `update` is
+                        // the documented transition once a default exists.
+                        this.pushConsent( dataLayerName, this.layerHasConsentDefault( dataLayerName ) ? 'update' : 'default', data );
                     }
 
                     Utils.gtagPush('js', new Date());
@@ -1295,6 +1305,18 @@
                     }
                 }
                 return this.dataLayerName || 'dataLayer';
+            },
+
+            /**
+             * Name of the GTM container's data layer. Mirrors GTM::pys_wp_header_top()
+             * in modules/google_gtm/gtm.php — the two must agree, or the <head> consent
+             * default and the footer consent update land in different layers. `??`
+             * alone is not enough: the option can be saved as an empty string, and
+             * window[''] is a silent dead end.
+             */
+            resolveGtmDataLayerName: function () {
+                var name = options.hasOwnProperty( 'gtm' ) ? options.gtm.gtm_dataLayer_name : '';
+                return ( typeof name === 'string' && name.length ) ? name : 'dataLayer';
             },
 
             /**
@@ -1330,8 +1352,70 @@
                 return typeof target === 'string' && target !== '';
             },
 
+            /**
+             * Back-compat alias of the old GA-scope consent sender. Exposed through
+             * window.pys.Utils, so custom client code may call it. New code uses
+             * pushConsent() with an explicit data layer name.
+             */
             loadDefaultConsent: function() {
                 this.gtagPush.apply( this, arguments );
+            },
+
+            /**
+             * Sends one Consent Mode command ('default' or 'update') to a named data
+             * layer. The single place that writes consent commands.
+             *
+             * The IIFE is not decoration: gtag() pushes its own `arguments` object,
+             * and gtag.js / GTM read the command by index off that object. Pushing a
+             * plain array works today but is not what the tag emits, so we reproduce
+             * the exact shape — same reason gtm.php builds its <head> command this way.
+             */
+            pushConsent: function ( layerName, command, values ) {
+                if ( !layerName ) {
+                    return;
+                }
+                window[ layerName ] = window[ layerName ] || [];
+                ( function () {
+                    window[ layerName ].push( arguments );
+                } )( 'consent', command, values );
+            },
+
+            /**
+             * Whether a Consent Mode `default` has already been written to this data
+             * layer — by our own <head> snippet, by a consent plugin, or by a third
+             * party (Site Kit, a theme). Decides `default` vs `update`: Consent Mode
+             * documents exactly one `default` per layer, and a repeated one is not a
+             * defined transition. Consent Magic reads the layer the same way
+             * (cs-public.js, CS_Consent_Mode.setDefaultConsent).
+             */
+            layerHasConsentDefault: function ( layerName ) {
+                var layer = window[ layerName ];
+                if ( !layer || typeof layer.length !== 'number' ) {
+                    return false;
+                }
+                for ( var i = 0; i < layer.length; i++ ) {
+                    var item = layer[ i ];
+                    // Entries pushed by other integrations are plain objects; indexing
+                    // them just yields undefined.
+                    if ( item && item[ 0 ] === 'consent' && item[ 1 ] === 'default' ) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+
+            /**
+             * The four Consent Mode signals as PYS currently resolves them. `enabled`
+             * is false when consent mode is off for that signal, in which case Google's
+             * absence of a value means granted anyway — say so explicitly.
+             */
+            resolveConsentValues: function () {
+                return {
+                    'analytics_storage':  options.gdpr.analytics_storage.enabled  ? options.gdpr.analytics_storage.value  : 'granted',
+                    'ad_storage':         options.gdpr.ad_storage.enabled         ? options.gdpr.ad_storage.value         : 'granted',
+                    'ad_user_data':       options.gdpr.ad_user_data.enabled       ? options.gdpr.ad_user_data.value       : 'granted',
+                    'ad_personalization': options.gdpr.ad_personalization.enabled ? options.gdpr.ad_personalization.value : 'granted',
+                };
             },
 
             loadGTMScript: function (id = '') {
@@ -1340,17 +1424,16 @@
                 const loader = options.gtm.gtm_container_identifier ?? 'gtm';
                 const gtm_auth = options.gtm.gtm_auth ?? '';
                 const gtm_preview = options.gtm.gtm_preview ?? '';
-                const datalayer_name = options.gtm.gtm_dataLayer_name ?? 'dataLayer';
+                const datalayer_name = this.resolveGtmDataLayerName();
 
                 window[ datalayer_name ] = window[ datalayer_name ] || [];
                 window.gtag = window.gtag || function gtag() {
                     window[ datalayer_name ].push( arguments );
                 };
 
-                // Push consent defaults synchronously before the GTM script tag is inserted.
-                // When PYS loads the GTM snippet itself (non-dataLayer-only mode), this ensures
-                // defaults are in the dataLayer before GTM processes any events.
-                this.pushGTMConsentDefaults( datalayer_name );
+                // Send the consent state synchronously before the GTM script tag is
+                // inserted, so it is in the dataLayer before GTM processes any events.
+                this.pushGTMConsentState( datalayer_name );
 
                 (function(w, d, s, l, i) {
                     w[l] = w[l] || [];
@@ -1384,25 +1467,60 @@
 
             },
 
+            /**
+             * Back-compat aliases. Both are reachable as window.pys.Utils.* and may be
+             * called by custom client code, so they keep working; internally everything
+             * goes through pushConsent() / pushGTMConsentState() with an explicit layer
+             * name instead of the implicit this.GTMdataLayerName state.
+             */
             loadDefaultGTMConsent: function() {
+                window[ this.GTMdataLayerName ] = window[ this.GTMdataLayerName ] || [];
                 window[ this.GTMdataLayerName ].push( arguments );
             },
-
-            // Extracted helper: push GTM consent defaults to the dataLayer.
-            // Called from loadGTMScript (when PYS loads the snippet) and from
-            // GTM.loadPixel when gtm_just_data_layer is enabled, so defaults are
-            // always present regardless of which code path loads the GTM container.
             pushGTMConsentDefaults: function( datalayer_name ) {
-                if ( !options.google_consent_mode ) {
+                this.pushGTMConsentState( datalayer_name );
+            },
+
+            /**
+             * Sends the GTM container's consent state, once per page load.
+             *
+             * Called from loadGTMScript() (PYS loads the container itself) and from
+             * GTM.loadPixel() when gtm_just_data_layer is on, so the state is sent
+             * whichever path runs — and only once when both do.
+             *
+             * Emits `update`, not a second `default`, whenever a default already sits
+             * in the layer. modules/google_gtm/gtm.php writes a strict all-denied
+             * default with wait_for_update:500 in <head>, before the container boots;
+             * that is correct Consent Mode practice, and it is what makes PYS's own
+             * prior-consent gate work — this function runs downstream of
+             * Utils.consentGiven('analytics'), so nothing is granted until consent
+             * actually exists. What was missing is the other half of the contract:
+             * the update that resolves the wait_for_update window. A repeated
+             * `default` is not a defined transition and left GTM-managed tags denied.
+             */
+            pushGTMConsentState: function( datalayer_name ) {
+                if ( !options.google_consent_mode || gtm_consent_state_pushed ) {
                     return;
                 }
-                let data = {};
-                data[ 'analytics_storage' ]  = options.gdpr.analytics_storage.enabled  ? options.gdpr.analytics_storage.value  : 'granted';
-                data[ 'ad_storage' ]         = options.gdpr.ad_storage.enabled         ? options.gdpr.ad_storage.value         : 'granted';
-                data[ 'ad_user_data' ]       = options.gdpr.ad_user_data.enabled       ? options.gdpr.ad_user_data.value       : 'granted';
-                data[ 'ad_personalization' ] = options.gdpr.ad_personalization.enabled ? options.gdpr.ad_personalization.value : 'granted';
+
+                // A consent management plugin owns the transition: it issues its own
+                // update from the user's live choice, while ours carries whatever the
+                // cookies said when the page was rendered. Consent Magic diffs against
+                // the last consent values in the layer, so a late push from us either
+                // suppresses its update or overwrites the choice the user just made.
+                // The <head> default already carries the CMP's resolved values.
+                if ( options.consent_mode_cmp_active ) {
+                    return;
+                }
+
+                gtm_consent_state_pushed = true;
+                // Kept in sync for the loadDefaultGTMConsent() back-compat alias.
                 this.GTMdataLayerName = datalayer_name;
-                this.loadDefaultGTMConsent( 'consent', 'default', data );
+                this.pushConsent(
+                    datalayer_name,
+                    this.layerHasConsentDefault( datalayer_name ) ? 'update' : 'default',
+                    this.resolveConsentValues()
+                );
             },
 
             /**
@@ -3096,7 +3214,7 @@
                     }
                 });
 
-                eventData.manualDataLayer = options.gtm.gtm_dataLayer_name ?? 'dataLayer';
+                eventData.manualDataLayer = Utils.resolveGtmDataLayerName();
 
                 eventData.event = name;
 
@@ -3203,7 +3321,7 @@
                 if (initialized || !this.isEnabled() || !Utils.consentGiven('analytics')) {
                     return;
                 }
-                datalayer_name = options.gtm.gtm_dataLayer_name ?? 'dataLayer';
+                datalayer_name = Utils.resolveGtmDataLayerName();
 
                 for (var i = 0; i < options.gtm.trackingIds.length; i++) {
                     var trackingId = options.gtm.trackingIds[i];
@@ -3216,10 +3334,12 @@
                 if(options.gtm.gtm_just_data_layer) {
                     console.warn && console.warn("[PYS] Google Tag Manager container code placement set to OFF !!!");
                     console.warn && console.warn("[PYS] Data layer codes are active but GTM container must be loaded using custom coding !!!");
-                    // Push consent defaults even when GTM script loading is handled externally.
-                    // Fixes the case where gtm_just_data_layer=true with tracking IDs configured,
-                    // which previously skipped loadGTMScript() entirely and never pushed defaults.
-                    Utils.pushGTMConsentDefaults( datalayer_name );
+                    // Send the consent state even when GTM script loading is handled
+                    // externally: gtm_just_data_layer with tracking IDs configured skips
+                    // loadGTMScript() entirely. When trackingIds is empty, loadGTMScript()
+                    // below runs too and would reach this again — pushGTMConsentState()
+                    // is idempotent per page load, so the container still sees one command.
+                    Utils.pushGTMConsentState( datalayer_name );
                     if(options.gtm.trackingIds.length == 0){
                         Utils.loadGTMScript();
                     }

@@ -78,6 +78,10 @@ class McpServer {
 
 		$this->run_adapter();
 
+		// Other plugins bundle the un-prefixed mcp-adapter and hook typed
+		// callbacks onto the shared `mcp_adapter_init` action
+		AdapterHookGuard::register();
+
 		// WooCommerce bundles its own (un-prefixed) copy of mcp-adapter. php-scoper
 		// prefixes classes but NOT hook-name strings, so both copies share the
 		// global `mcp_adapter_init` action — the adapter's default factory then

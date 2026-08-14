@@ -74,7 +74,14 @@ class GTM extends Settings implements Pixel {
     public function pys_wp_header_top( $echo = true ) {
 
         $has_html5_support    = current_theme_supports( 'html5' );
-        $gtm_dataLayer_name = $this->getOption( 'gtm_dataLayer_name' ) ?? 'dataLayer';
+        // Must match Utils.resolveGtmDataLayerName() in dist/scripts/public.js, or the
+        // consent default written below and the consent update sent from the footer end
+        // up in different data layers. `??` alone is not enough: the option can be saved
+        // as an empty string, and window[""] is a silent dead end.
+        $gtm_dataLayer_name = $this->getOption( 'gtm_dataLayer_name' );
+        if ( ! is_string( $gtm_dataLayer_name ) || $gtm_dataLayer_name === '' ) {
+            $gtm_dataLayer_name = 'dataLayer';
+        }
         // the data layer initialization has to use 'var' instead of 'let' since 'let' can break related browser extension and 3rd party script.
         $_gtm_top_content = '
 <!-- Google Tag Manager by PYS -->
@@ -89,15 +96,28 @@ class GTM extends Settings implements Pixel {
             $_gtm_top_content .= esc_js( $gtm_dataLayer_name ).'.push('.json_encode($element).');';
         }
 
-        // Push consent defaults early in <head> so any custom GTM snippet already
-        // finds them in the dataLayer before GTM initialises (fixes gcd=...l... issue
+        // Push the consent default early in <head> so any custom GTM snippet already
+        // finds it in the dataLayer before GTM initialises (fixes gcd=...l... issue
         // and ensures gtm_just_data_layer mode works correctly with consent mode).
-        $is_consent_mode = PYS()->getOption( 'google_consent_mode' )
-            || has_filter( 'cm_google_consent_mode' )
-            || has_filter( 'pys_analytics_storage_mode' )
-            || has_filter( 'pys_ad_storage_mode' )
-            || has_filter( 'pys_ad_user_data_mode' )
-            || has_filter( 'pys_ad_personalization_mode' );
+        //
+        // The default below is deliberately strict — all signals denied, plus
+        // wait_for_update — and it is only half of the Consent Mode contract: the
+        // update that resolves it comes from Utils.pushGTMConsentState() in the
+        // footer. That half only ships when this pixel is configured(): outputData()
+        // skips getPixelOptions() otherwise, so options.gtm never reaches the page
+        // and no update can follow. Emitting a permanent denied in that case is worse
+        // than emitting nothing, so the whole consent block is gated on it too.
+        //
+        // configured() is evaluated here rather than at init, where the hook is
+        // registered: wp_head runs late enough for every pys_pixel_disabled filter
+        // to be in place.
+        $is_consent_mode = ( PYS()->getOption( 'google_consent_mode' )
+                || has_filter( 'cm_google_consent_mode' )
+                || has_filter( 'pys_analytics_storage_mode' )
+                || has_filter( 'pys_ad_storage_mode' )
+                || has_filter( 'pys_ad_user_data_mode' )
+                || has_filter( 'pys_ad_personalization_mode' ) )
+            && $this->configured();
 
         if ( $is_consent_mode ) {
             /**
@@ -154,6 +174,9 @@ class GTM extends Settings implements Pixel {
                 'ad_storage'         => $consent_values['ad_storage']['value'],
                 'ad_user_data'       => $consent_values['ad_user_data']['value'],
                 'ad_personalization' => $consent_values['ad_personalization']['value'],
+                // Holds tags until the consent state is known. What resolves it:
+                // Utils.pushGTMConsentState() (footer) when PYS owns consent, or the
+                // consent plugin's own update when one is installed.
                 'wait_for_update'    => 500,
             );
 
@@ -178,8 +201,27 @@ class GTM extends Settings implements Pixel {
             //
             // Pushing the arguments object directly is exactly what gtag() does, so
             // gtag.js / GTM read the command identically.
+            //
+            // 3. The command is emitted at most once per data layer. This script can
+            //    run twice: Consent Magic strips it from <head> and re-injects a clone
+            //    into <body> when it unblocks scripts, so without the guard the layer
+            //    ends up with two defaults — and if the re-injection lands after the
+            //    CMP's own update, the second one is a stale default overwriting a
+            //    live choice. The same guard also yields to a default already written
+            //    by anything else (Site Kit, a theme, another CMP), which is the rule
+            //    Consent Mode actually documents: one default per layer, then updates.
+            //    Utils.layerHasConsentDefault() in public.js applies it on the JS side.
+            //
+            // ES5 only — this runs inline in <head> before anything is loaded — and it
+            // must contain no "<" and no "&": this whole string is passed through
+            // wp_kses() below, which treats everything from a "<" to the next ">" as a
+            // tag, finds it disallowed and HTML-escapes the entire remainder of the
+            // script. Hence the countdown loop instead of `i<l.length` and the nested
+            // ifs instead of `&&`.
             $_gtm_top_content .= '
-	(function(){var c=function(){window["' . esc_js( $gtm_dataLayer_name ) . '"].push(arguments);};
+	(function(){var l=window["' . esc_js( $gtm_dataLayer_name ) . '"],i;
+	for(i=l.length;i--;){if(l[i]){if(l[i][0]==="consent"){if(l[i][1]==="default"){return;}}}}
+	var c=function(){l.push(arguments);};
 	c("consent","default",' . wp_json_encode( $consent_default ) . ');})();';
         }
 

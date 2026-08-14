@@ -136,7 +136,12 @@ class EventsManager {
 			"send_external_id"                 => PYS()->getOption( 'send_external_id' ),
 			"external_id_expire"               => PYS()->getOption( 'external_id_expire' ),
             "track_cookie_for_subdomains"      => PYS()->getOption( 'track_cookie_for_subdomains' ),
-			"google_consent_mode"              => $google_consent_mode
+			"google_consent_mode"              => $google_consent_mode,
+			// A consent management plugin populates cm_google_consent_mode and issues
+			// its own Consent Mode update from the visitor's live choice. Utils
+			// .pushGTMConsentState() checks this and stays out of the way: our update
+			// would carry the state as of page render and could overwrite theirs.
+			"consent_mode_cmp_active"          => has_filter( 'cm_google_consent_mode' )
 		);
 
 		$options[ 'gdpr' ] = array(

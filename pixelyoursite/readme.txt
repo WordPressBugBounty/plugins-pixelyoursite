@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, G
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.0
-Stable tag: 11.3.0
+Stable tag: 11.3.0.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -390,6 +390,12 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.3.0.1 =
+
+August 14, 2026
+
+* Fixing a conflict with the Elementor Angie plugin and other plugins with a similar use of the mcp-adapter.
 
 = PixelYourSite 11.3.0 =
 
