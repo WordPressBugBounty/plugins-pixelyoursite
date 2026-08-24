@@ -303,6 +303,18 @@ use PixelYourSite\Facebook\Helpers;
     $videos = array(
 
          array(
+            'url'   => 'https://www.youtube.com/watch?v=0KzzVeVVvxU',
+            'title' => 'Run WooCommerce tracking audit with Claude',
+            'time'  => '4:36',
+        ),
+
+         array(
+            'url'   => 'https://www.youtube.com/watch?v=-CC4pSV94SE',
+            'title' => 'Fix Catalog Ad Matching Problems with Claude',
+            'time'  => '4:59',
+        ),
+
+         array(
             'url'   => 'https://www.youtube.com/watch?v=Oce_yJSpLXk',
             'title' => 'How to Track WooCommerce Profit in Meta, Google Ads, and GA4',
             'time'  => '8:45',
@@ -331,9 +343,9 @@ use PixelYourSite\Facebook\Helpers;
             'time'  => '4:43',
         ),
         array(
-            'url'   => 'https://www.youtube.com/watch?v=4VpVf9llfkU',
-            'title' => 'WooCommerce First-Party Reports: Track UTMs, Traffic Source, Landing Page',
-            'time'  => '13:15',
+            'url'   => 'https://www.youtube.com/watch?v=rlnwEw3mKaU',
+            'title' => 'Ask Claude Which Ads & Products Perform Best in WooCommerce',
+            'time'  => '2:00',
         ),
         array(
             'url'   => 'https://www.youtube.com/watch?v=ydqyp-iW9Ko',

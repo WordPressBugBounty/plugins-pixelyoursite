@@ -314,7 +314,7 @@ function getWooCustomAudiencesOptimizationParams( $post_id ) {
 
 }
 
-function getWooSingleAddToCartParams( $_product_id, $qty = 1 ) {
+function getWooSingleAddToCartParams( $_product_id, $qty = 1, $price_id = null ) {
 
 	$params = array();
     $product = wc_get_product($_product_id);
@@ -343,7 +343,11 @@ function getWooSingleAddToCartParams( $_product_id, $qty = 1 ) {
 		$value_option = PixelYourSite\PYS()->getOption( 'woo_add_to_cart_value_option' );
 		$global_value = PixelYourSite\PYS()->getOption( 'woo_add_to_cart_value_global', 0 );
 
-		$params['value']    = PixelYourSite\getWooEventValue( $value_option, $global_value,100, $_product_id,$qty );
+		// Value by the selected variation, so "treat variable as simple" reports the price the
+		// customer actually chose instead of the cheapest variation of the parent.
+		$value_product_id = ! empty( $price_id ) ? $price_id : $_product_id;
+
+		$params['value']    = PixelYourSite\getWooEventValue( $value_option, $global_value,100, $value_product_id,$qty );
         $params['currency'] = get_woocommerce_currency();
 
 	}

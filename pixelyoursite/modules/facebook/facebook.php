@@ -540,9 +540,12 @@ class Facebook extends Settings implements Pixel {
 			return false;
 		}
         $product_id = $args['productId'];
+        // Price lookup id: the selected variation, so "treat variable as simple" keeps the parent
+        // as content_id but the value is the one the customer actually chose (not the cheapest variation).
+        $price_id = !empty($args['priceId']) ? $args['priceId'] : $product_id;
         $quantity = $args['quantity'];
 
-		$params = Helpers\getWooSingleAddToCartParams( $product_id, $quantity );
+		$params = Helpers\getWooSingleAddToCartParams( $product_id, $quantity, $price_id );
         $data = array(
             'params' => $params,
         );
@@ -600,7 +603,12 @@ class Facebook extends Settings implements Pixel {
 		$params = array_merge( $params, Helpers\getWooCustomAudiencesOptimizationParams( $product_id ) );
 
 		$params['num_items'] = $cart_item['quantity'];
-		$params['product_price'] = getWooProductPriceToDisplay( $product_id );
+		// Price from the cart line (the selected variation and its discounts), not the catalog.
+		$line_price = isset( $cart_item['line_subtotal'] ) ? $cart_item['line_subtotal'] : 0;
+		if ( 'incl' === get_option( 'woocommerce_tax_display_cart' ) ) {
+			$line_price += isset( $cart_item['line_subtotal_tax'] ) ? $cart_item['line_subtotal_tax'] : 0;
+		}
+		$params['product_price'] = $cart_item['quantity'] > 0 ? pys_round( $line_price / $cart_item['quantity'] ) : pys_round( $line_price );
 
 		$params['contents'] =  array(
 			array(

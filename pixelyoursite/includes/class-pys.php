@@ -1025,6 +1025,16 @@ final class PYS extends Settings implements Plugin {
 		        'popper' );
 
             wp_enqueue_style( 'pys_css', PYS_FREE_URL . '/dist/styles/admin.min.css', array( 'select2_css' ), PYS_FREE_VERSION );
+
+            /*
+             * We ship Font Awesome 4. When another plugin loads Font Awesome 5/6
+             * in wp-admin (e.g. Addify's all.min.css), its `.fa` rule overrides
+             * our `font-family` and FA4-only glyphs such as `fa-trash-o` render
+             * wrong or blank. Force our icons back to the FA4 face, scoped to the
+             * PYS admin wrapper (#pys) so we win the cascade whatever the load order.
+             */
+            wp_add_inline_style( 'pys_css', '#pys .fa{font-family:"FontAwesome" !important;font-weight:normal !important;font-style:normal !important;}' );
+
             wp_enqueue_script( 'pys_js', PYS_FREE_URL . '/dist/scripts/admin.js', array( 'jquery', 'select2_js', 'popper', 'tippy',
                                                                                  'bootstrap' ), PYS_FREE_VERSION );
 

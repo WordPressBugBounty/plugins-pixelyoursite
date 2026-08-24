@@ -72,18 +72,18 @@ function adminGetFixedNotices() {
                     'button_url' => 'https://www.youtube.com/watch?v=uXTpgFu2V-E'
                 ],
                 [
-                    'slug'  => 'free_block_1_message_2_v4',
-                    'title' => 'Fix SAFARI Google Ads Tracking Problem!',
-                    'message' => 'Safari removes click identifiers, breaking Google tracking. We have a solution.',
-                    'button_text' => 'Learn more',
-                    'button_url' => 'https://www.pixelyoursite.com/safari-click-id-removal-fix-google-ads',
+                    'slug'  => 'free_block_1_message_2_v5',
+                    'title' => 'Connect Claude to PixelYourSite',
+                    'message' => 'Run audits, improve EMQ, check Catalog mathing, fire events and more.',
+                    'button_text' => 'Watch video',
+                    'button_url' => 'https://www.youtube.com/watch?v=HfvTdvvexOY',
                 ],
                 [
                     'slug'  => 'free_block_1_message_3_v2',
                     'title' => 'Meta EMQ Score',
                     'message' => 'What is EMQ and how you can improve it.',
                     'button_text' => 'Learn more',
-                    'button_url' => 'https://www.pixelyoursite.com/facebook-event-match-quality-score',
+                    'button_url' => 'https://www.pixelyoursite.com/strategy/emq',
                 ]
             ],
             'optoutEnabel' => true,
@@ -150,11 +150,11 @@ function adminGetFixedNotices() {
                     'button_url' => 'https://www.youtube.com/watch?v=HM98mGZshvc',
                 ],
                 [
-                    'slug'  => 'free_block_3_message_2_v1',
-                    'title' => 'What WooCommerce products your ads sold',
-                    'message' => 'Meta does not show you what products your ads sold, but there is an easy way to find out.',
+                    'slug'  => 'free_block_3_message_2_v2',
+                    'title' => 'Improve EMQ with Claude',
+                    'message' => 'EMQ tells you how well tracking is working. Improve it with Claude.',
                     'button_text' => 'Watch video',
-                    'button_url' => 'https://www.youtube.com/watch?v=b-eYdx9QK0Q',
+                    'button_url' => 'https://www.youtube.com/watch?v=HSrmlNgqdUs',
                 ],
 
                 [
@@ -189,11 +189,11 @@ function adminGetFixedNotices() {
                     'button_url' => 'https://www.pixelyoursite.com/how-to-use-the-reddit-pixel-add-on',
                 ],
                 [
-                    'slug'  => 'free_block_4_message_2_v2',
-                    'title' => 'Fix Google Ads Conversion Tracking',
-                    'message' => 'Send your data to Google Ads with Conversion Exporter.',
+                    'slug'  => 'free_block_4_message_2_v3',
+                    'title' => 'Run Claude Audit for your pixels',
+                    'message' => 'Tell Claude to run an audit before starting your campaigns. It can find hidden issues in your pixels.',
                     'button_text' => 'Watch video',
-                    'button_url' => 'https://www.youtube.com/watch?v=Jm8dFTOLjJE',
+                    'button_url' => 'https://www.youtube.com/watch?v=0KzzVeVVvxU',
                 ],
                 [
                     'slug'  => 'free_block_4_message_3_v2',

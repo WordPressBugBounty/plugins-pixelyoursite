@@ -969,6 +969,9 @@ class GTM extends Settings implements Pixel {
         }
         $customProductPrice = -1;
         $product_id = $args->args['productId'];
+        // Price lookup id: the selected variation, so "treat variable as simple" keeps the parent
+        // as item_id but the price is the one the customer actually chose (not the cheapest variation).
+        $price_id = !empty($args->args['priceId']) ? $args->args['priceId'] : $product_id;
         $quantity = $args->args['quantity'];
 
         $product = wc_get_product( $product_id );
@@ -990,7 +993,7 @@ class GTM extends Settings implements Pixel {
                 continue;
             }
             $content_id = Helpers\getWooProductContentId($child_id);
-            $price = getWooProductPriceToDisplay( $child_id, $quantity );
+            $price = getWooProductPriceToDisplay( $child_id == $product_id ? $price_id : $child_id, $quantity );
             $name = GTM()->getOption('woo_variations_use_parent_name') && $childProduct->is_type('variation') ? $childProduct->get_title() : $childProduct->get_name();
 
 
@@ -1027,7 +1030,7 @@ class GTM extends Settings implements Pixel {
             $value_option = PYS()->getOption( 'woo_add_to_cart_value_option' );
             $global_value = PYS()->getOption( 'woo_add_to_cart_value_global', 0 );
 
-            $params['value']    = getWooEventValue( $value_option, $global_value,100, $product_id,$quantity );
+            $params['value']    = getWooEventValue( $value_option, $global_value,100, $price_id,$quantity );
         }
 
         $data = array(
@@ -1096,6 +1099,13 @@ class GTM extends Settings implements Pixel {
             $categories = $this->getCategoryArrayWoo($product_id);
         }
 
+        // Price from the cart line (the selected variation and its discounts), not the catalog.
+        $line_price = isset( $cart_item['line_subtotal'] ) ? $cart_item['line_subtotal'] : 0;
+        if ( 'incl' === get_option( 'woocommerce_tax_display_cart' ) ) {
+            $line_price += isset( $cart_item['line_subtotal_tax'] ) ? $cart_item['line_subtotal_tax'] : 0;
+        }
+        $unit_price = $cart_item['quantity'] > 0 ? pys_round( $line_price / $cart_item['quantity'] ) : pys_round( $line_price );
+
         $data = [
             'name' => "remove_from_cart"
         ];
@@ -1107,7 +1117,7 @@ class GTM extends Settings implements Pixel {
                     'item_id'       => $product_id,
                     'item_name'     => $name,
                     'quantity' => $cart_item['quantity'],
-                    'price'    => getWooProductPriceToDisplay( $product_id, $cart_item['quantity'] ),
+                    'price'    => $unit_price,
                     'variant'  => $variation_name,
                 ),
             )];
@@ -1300,11 +1310,19 @@ class GTM extends Settings implements Pixel {
                 $categories = $this->getCategoryArrayWoo($product_id);
             }
 
+            // Price from the cart line (the selected variation and its discounts), not the catalog,
+            // so "treat variable as simple" no longer reports the cheapest variation of the parent.
+            $line_price = $cart_item['line_subtotal'];
+            if ( 'incl' === get_option( 'woocommerce_tax_display_cart' ) ) {
+                $line_price += $cart_item['line_subtotal_tax'];
+            }
+            $unit_price = $cart_item['quantity'] > 0 ? pys_round( $line_price / $cart_item['quantity'] ) : pys_round( $line_price );
+
             $item = array(
                 'item_id'       => $content_id,
                 'item_name'     => $name,
                 'quantity' => $cart_item['quantity'],
-                'price'    => getWooProductPriceToDisplay( $product_id ),
+                'price'    => $unit_price,
                 'variant'  => $variation_name,
             );
 

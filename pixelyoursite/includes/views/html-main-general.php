@@ -487,15 +487,21 @@ if ( ! defined( 'ABSPATH' ) ) {
     $videos = array(
 
       array(
-          'url'   => 'https://www.youtube.com/watch?v=rmkZZcLxP2I',
-          'title' => 'How to install the Reddit Pixel',
-          'time'  => '4:19',
+          'url'   => 'https://www.youtube.com/watch?v=HfvTdvvexOY',
+          'title' => 'Connect Claude to PixelYourSite',
+          'time'  => '6:30',
       ),
 
       array(
-          'url'   => 'https://www.youtube.com/watch?v=Jm8dFTOLjJE',
-          'title' => 'WooCommerce Google Ads Conversion Import',
-          'time'  => '9:19',
+          'url'   => 'https://www.youtube.com/watch?v=HSrmlNgqdUs',
+          'title' => 'Improve Meta EMQ with Claude',
+          'time'  => '7:39',
+      ),
+
+      array(
+          'url'   => 'https://www.youtube.com/watch?v=rmkZZcLxP2I',
+          'title' => 'How to install the Reddit Pixel',
+          'time'  => '4:19',
       ),
 
       array(
@@ -522,11 +528,6 @@ if ( ! defined( 'ABSPATH' ) ) {
             'url'   => 'https://www.youtube.com/watch?v=kWozitdarSA',
             'title' => 'How to use Custom Events for Meta Ads',
             'time'  => '7:49',
-        ),
-        array(
-            'url'   => 'https://www.youtube.com/watch?v=7BNHWbLbbdg',
-            'title' => 'Meta Limited Data Use - Privacy Options for USA States - WordPress',
-            'time'  => '6:17',
         ),
         array(
             'url'   => 'https://www.youtube.com/watch?v=bEK3qaaRvNg',

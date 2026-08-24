@@ -89,15 +89,6 @@ class AdapterHookGuard {
 
 				self::$detached[] = array( $callback, (int) $priority, $accepted_args );
 				remove_action( self::HOOK, $callback, (int) $priority );
-
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( sprintf(
-						'PYS MCP: skipped incompatible %s callback %s for %s.',
-						self::HOOK,
-						self::describe_callback( $callback ),
-						is_object( $adapter ) ? get_class( $adapter ) : gettype( $adapter )
-					) );
-				}
 			}
 		}
 	}

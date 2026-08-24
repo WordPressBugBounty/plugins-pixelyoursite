@@ -126,8 +126,13 @@ class AjaxHookEventManager {
             }
 
 
+            // $_product_id drives the content/item id (parent when "treat variable as simple" is on).
+            // priceId always points at the selected variation so the item price reflects what the
+            // customer actually picked, instead of the cheapest variation of the parent.
+            $price_id = ( ! empty( $variation_id ) && $variation_id > 0 ) ? $variation_id : $product_id;
+
             $event = new SingleEvent('woo_add_to_cart_on_button_click',EventTypes::$STATIC,'woo');
-            $event->args = ['productId' => $_product_id,'quantity' => $quantity];
+            $event->args = ['productId' => $_product_id,'priceId' => $price_id,'quantity' => $quantity];
             $event->addPayload(['eventID' => $sharedEventId]);
             $events = $pixel->generateEvents( $event );
 

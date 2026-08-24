@@ -73,6 +73,7 @@ final class RequestGuard {
 		add_filter( 'rest_pre_dispatch', array( $this, 'gateRequest' ), 10, 3 );
 		add_filter( 'mcp_adapter_pre_tool_call', array( $this, 'gateToolCall' ), 10, 4 );
 		add_filter( 'mcp_adapter_tool_call_result', array( $this, 'recordToolResult' ), 10, 5 );
+		add_filter( 'rest_post_dispatch', array( $this, 'addAuthHeaders' ), 10, 3 );
 	}
 
 	// ---------------------------------------------------------- rest_pre_dispatch
@@ -116,6 +117,50 @@ final class RequestGuard {
 		}
 
 		return $result;
+	}
+
+	// ---------------------------------------------------------- rest_post_dispatch
+
+	/**
+	 * Add a `WWW-Authenticate` header to auth-failure responses on the MCP route.
+	 *
+	 * Without it an MCP client (claude.ai custom connector, Claude Desktop, …)
+	 * receives a bare 401/403 and cannot tell whether to show a token-entry form
+	 * or give up. The header declares this server as static-Bearer.
+	 *
+	 * @param mixed            $response The response object.
+	 * @param \WP_REST_Server  $server   WP REST server.
+	 * @param \WP_REST_Request $request  The incoming request.
+	 * @return mixed Untouched `$response`, or the response with headers added.
+	 */
+	public function addAuthHeaders( $response, $server, $request ) {
+		if ( !( $response instanceof \WP_REST_Response ) ) {
+			return $response;
+		}
+		if ( !$this->isMcpRoute( $request ) ) {
+			return $response;
+		}
+
+		$status = $response->get_status();
+		if ( 401 !== $status && 403 !== $status ) {
+			return $response;
+		}
+
+		$authHeader = ( is_object( $request ) && method_exists( $request, 'get_header' ) )
+			? (string) $request->get_header( 'authorization' )
+			: '';
+		$hasBearer  = '' !== $authHeader && (bool) preg_match( '/^\s*Bearer\s+\S+/i', $authHeader );
+
+		if ( $hasBearer ) {
+			$response->header( 'WWW-Authenticate', 'Bearer realm="PixelYourSite MCP", error="invalid_token"' );
+		} else {
+			$response->set_status( 401 );
+			$response->header( 'WWW-Authenticate', 'Bearer realm="PixelYourSite MCP"' );
+		}
+
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, private' );
+
+		return $response;
 	}
 
 	// ----------------------------------------------------- mcp_adapter_pre_tool_call

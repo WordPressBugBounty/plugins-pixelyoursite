@@ -57,7 +57,7 @@ $statusIcon = static function ( $ok ) {
 
             <h4 class="secondary_heading mb-8"><?php esc_html_e( 'What your AI assistant can do with access', 'pys' ); ?></h4>
             <ul class="mb-24">
-                <li><?php esc_html_e( 'Read: audit tracking health, read pixel and event configuration', 'pys' ); ?></li>
+                <li><?php esc_html_e( 'Read: audit tracking health, read pixel and event configuration, check Facebook and Pinterest CAPI status', 'pys' ); ?></li>
                 <li><?php esc_html_e( 'Write: toggle WooCommerce and EDD events, content ID settings, automatic events, create and manage custom events', 'pys' ); ?></li>
                 <li><?php esc_html_e( 'Write operations always require your explicit confirmation before proceeding', 'pys' ); ?></li>
             </ul>
@@ -151,7 +151,8 @@ $statusIcon = static function ( $ok ) {
             <h4 class="secondary_heading_type2"><?php esc_html_e( 'MCP Server URL', 'pys' ); ?></h4>
         </div>
         <div class="card-body">
-            <p class="text-gray mb-16"><?php esc_html_e( 'The endpoint your MCP client connects to. Paste this URL — together with a token above — into any MCP client that accepts a server URL (Claude Desktop custom connector, claude.ai connectors, or your own integration). The ready-made Claude Desktop config and curl snippet below already include it.', 'pys' ); ?></p>
+            <p class="text-gray mb-16"><?php esc_html_e( 'The endpoint your MCP client connects to. Paste this URL — together with a token above — into any MCP client that accepts a server URL. The setup steps below already include it.', 'pys' ); ?></p>
+            <p class="text-gray mb-16"><?php esc_html_e( 'This site needs to be reachable on the public internet for cloud-based clients like claude.ai or Perplexity to connect — a local-only or firewalled site will not work with those. Production sites should also use HTTPS.', 'pys' ); ?></p>
             <div class="example-block">
                 <pre class="copy_text"><?php echo esc_html( $endpointUrl ); ?><div class="copy-icon" data-toggle="pys-popover"
                         data-tippy-trigger="click" data-tippy-placement="bottom"
@@ -159,81 +160,220 @@ $statusIcon = static function ( $ok ) {
             </div>
         </div>
     </div>
-    <!-- ====================================================== CONNECTION SNIPPETS -->
-    <div class="card card-style6 card-static">
+    <!-- ====================================================== CONNECT YOUR AI CLIENT -->
+    <div class="card card-style6">
         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-            <h4 class="secondary_heading_type2"><?php _e('Claude Desktop config', 'pys');?></h4>
+            <div class="d-flex align-items-center">
+                <h4 class="secondary_heading_type2"><?php esc_html_e( 'Connect your AI client', 'pys' ); ?></h4>
+            </div>
         </div>
-        <div class="card-body">
-            <p class="mb-24">
-                Add this to your <code>claude_desktop_config.json</code>, then fully
-                restart Claude Desktop from the system tray. If you just created a token
-                above, it is already filled into the snippet below — otherwise replace
-                <code>YOUR_TOKEN_HERE</code> with your token. Config file location:
-            </p>
-            <ul class="mb-24">
-                <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
-                <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
-                <li><strong>Linux:</strong> <code>~/.config/Claude/claude_desktop_config.json</code></li>
-            </ul>
-			<?php
-			$endpointForJson = $endpointUrl;
-			$isHttp          = 0 === strpos( $endpointForJson, 'http://' );
 
-			// Args shared across every OS — only the launcher differs.
-			$sharedArgs  = "        \"-y\", \"mcp-remote\",\n";
-			$sharedArgs .= "        \"" . $endpointForJson . "\",\n";
-			if ( $isHttp ) {
-				$sharedArgs .= "        \"--allow-http\",\n";
-			}
-			$sharedArgs .= "        \"--header\", \"Authorization: Bearer YOUR_TOKEN_HERE\"\n";
+        <div class="card-body" style="display: block;">
+            <div class="gap-24">
+                <!-- Claude (claude.ai / Desktop app / Cowork / mobile) via custom connector -->
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                        <h4 class="secondary_heading_type2"><?php _e( 'Claude (claude.ai, Desktop app, Cowork, mobile)', 'pys' ); ?></h4>
+			            <?php cardCollapseSettings(); ?>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-gray mb-16"><?php esc_html_e( 'One setup covers claude.ai, the Claude Desktop app, Claude Cowork, and the Claude mobile apps — connectors run through Anthropic\'s cloud, not your device.', 'pys' ); ?></p>
+                        <p class="text-gray mb-16"><?php esc_html_e( 'Note: fixed-token authentication via request headers is currently in beta on Claude\'s side. It works reliably, but the setup screen may change.', 'pys' ); ?></p>
+                        <ol class="mb-16">
+                            <li><?php esc_html_e( 'Settings → Connectors → "+" → Add custom connector', 'pys' ); ?></li>
+                            <li><?php esc_html_e( 'Type: Remote', 'pys' ); ?></li>
+                            <li><?php esc_html_e( 'Name: pixelyoursite (or anything you like)', 'pys' ); ?></li>
+                            <li><?php esc_html_e( 'Paste the MCP Server URL from above', 'pys' ); ?></li>
+                            <li><?php esc_html_e( 'Advanced settings → Headers helper → add a header named Authorization with value:', 'pys' ); ?></li>
+                        </ol>
 
-			//Windows snippet
-			$snippetWin = "  \"mcpServers\": {\n";
-			$snippetWin .= "    \"pys-prod\": {\n";
-			$snippetWin .= "      \"command\": \"cmd\",\n";
-			$snippetWin .= "      \"args\": [\n";
-			$snippetWin .= "        \"/c\", \"npx\",\n";
-			$snippetWin .= $sharedArgs;
-			$snippetWin .= "      ]\n";
-			$snippetWin .= "    }\n";
-			$snippetWin .= "  }\n";
+                        <div class="example-block mb-16">
+                <pre class="copy_text pys-mcp-token-snippet">Bearer YOUR_TOKEN_HERE<div class="copy-icon" data-toggle="pys-popover"
+                                                                                                       data-tippy-trigger="click" data-tippy-placement="bottom"
+                                                                                                       data-popover_id="copied-popover"></div></pre>
+                        </div>
+                        <ol start="6" class="mb-16">
+                            <li><?php esc_html_e( 'Click Add', 'pys' ); ?></li>
+                            <li><?php esc_html_e( 'In any chat: "+" → Connectors → toggle it on', 'pys' ); ?></li>
+                        </ol>
+                        <p class="text-gray"><?php esc_html_e( 'Team/Enterprise accounts: an Owner adds it once under Organization settings → Connectors → Add → Custom → Web. Members then connect from Customize → Connectors.', 'pys' ); ?></p>
+                    </div>
+                </div>
 
-			// macOS / Linux call npx directly.
-			$snippetUnix = "  \"mcpServers\": {\n";
-			$snippetUnix .= "    \"pys-prod\": {\n";
-			$snippetUnix .= "      \"command\": \"npx\",\n";
-			$snippetUnix .= "      \"args\": [\n";
-			$snippetUnix .= $sharedArgs;
-			$snippetUnix .= "      ]\n";
-			$snippetUnix .= "    }\n";
-			$snippetUnix .= "  }\n";
-			?>
+                <!-- Claude Desktop config file (alternative) -->
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                        <h4 class="secondary_heading_type2"><?php _e( 'Claude Desktop (config file — alternative)', 'pys' ); ?></h4>
+			            <?php cardCollapseSettings(); ?>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-16">
+				            <?php esc_html_e( 'Use this only if the custom connector above doesn\'t fit your setup. Add this to your claude_desktop_config.json, then fully restart Claude Desktop from the system tray. If you just created a token above, it is already filled into the snippet below — otherwise replace YOUR_TOKEN_HERE with your token.', 'pys' ); ?>
+                        </p>
+                        <ul class="mb-16">
+                            <li><strong><?php _e( 'Windows:', 'pys' ); ?></strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
+                            <li><strong><?php _e( 'macOS:', 'pys' ); ?></strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+                            <li><strong><?php _e( 'Linux:', 'pys' ); ?></strong> <code>~/.config/Claude/claude_desktop_config.json</code></li>
+                        </ul>
+			            <?php
+			            $endpointForJson = $endpointUrl;
+			            $isHttp          = 0 === strpos( $endpointForJson, 'http://' );
 
-            <h5 class="mb-8"><?php _e( 'Windows', 'pys' ); ?></h5>
-            <div class="example-block mb-24">
+			            $sharedArgs  = "        \"-y\", \"mcp-remote\",\n";
+			            $sharedArgs .= "        \"" . $endpointForJson . "\",\n";
+			            if ( $isHttp ) {
+				            $sharedArgs .= "        \"--allow-http\",\n";
+			            }
+			            $sharedArgs .= "        \"--header\", \"Authorization: Bearer YOUR_TOKEN_HERE\"\n";
+
+			            $snippetWin = "  \"mcpServers\": {\n";
+			            $snippetWin .= "    \"pys-free\": {\n";
+			            $snippetWin .= "      \"command\": \"cmd\",\n";
+			            $snippetWin .= "      \"args\": [\n";
+			            $snippetWin .= "        \"/c\", \"npx\",\n";
+			            $snippetWin .= $sharedArgs;
+			            $snippetWin .= "      ]\n";
+			            $snippetWin .= "    }\n";
+			            $snippetWin .= "  }\n";
+
+			            $snippetUnix = "  \"mcpServers\": {\n";
+			            $snippetUnix .= "    \"pys-free\": {\n";
+			            $snippetUnix .= "      \"command\": \"npx\",\n";
+			            $snippetUnix .= "      \"args\": [\n";
+			            $snippetUnix .= $sharedArgs;
+			            $snippetUnix .= "      ]\n";
+			            $snippetUnix .= "    }\n";
+			            $snippetUnix .= "  }\n";
+			            ?>
+
+                        <h5 class="mb-8"><?php _e( 'Windows', 'pys' ); ?></h5>
+                        <div class="example-block mb-24">
                 <pre class="copy_text pys-mcp-token-snippet"><?php echo esc_html( $snippetWin ); ?>
                     <div class="copy-icon" data-toggle="pys-popover"
                          data-tippy-trigger="click" data-tippy-placement="bottom"
                          data-popover_id="copied-popover"></div></pre>
-            </div>
+                        </div>
 
-            <h5 class="mb-8"><?php _e( 'macOS / Linux', 'pys' ); ?></h5>
-            <div class="example-block mb-24">
+                        <h5 class="mb-8"><?php _e( 'macOS / Linux', 'pys' ); ?></h5>
+                        <div class="example-block mb-24">
                 <pre class="copy_text pys-mcp-token-snippet"><?php echo esc_html( $snippetUnix ); ?>
                     <div class="copy-icon" data-toggle="pys-popover"
                          data-tippy-trigger="click" data-tippy-placement="bottom"
                          data-popover_id="copied-popover"></div></pre>
-            </div>
+                        </div>
 
-			<?php if ( $isHttp ) : ?>
-                <p class="mb-24">
-                    <code>--allow-http</code> is required because the endpoint is plain HTTP (local OpenServer). Production sites should be HTTPS — drop the flag once a real cert is in place.
-                </p>
-			<?php endif; ?>
-            <p>
-                If <code>npx</code> isn't found, install <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> (it ships with npx). On macOS/Linux a GUI-launched Claude Desktop may not inherit your shell <code>PATH</code> — use the full path to npx (find it with <code>which npx</code>) if you hit a <code>spawn npx ENOENT</code> error.
-            </p>
+			            <?php if ( $isHttp ) : ?>
+                            <p class="mb-16">
+                                <code>--allow-http</code> <?php esc_html_e( 'is required because the endpoint is plain HTTP (local dev environment). Production sites should be HTTPS — drop the flag once a real cert is in place.', 'pys' ); ?>
+                            </p>
+			            <?php endif; ?>
+                        <p>
+				            <?php esc_html_e( 'If npx isn\'t found, install', 'pys' ); ?> <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> <?php esc_html_e( '(it ships with npx). On macOS/Linux a GUI-launched Claude Desktop may not inherit your shell PATH — use the full path to npx (find it with which npx) if you hit a spawn npx ENOENT error.', 'pys' ); ?>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Claude Code -->
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                        <h4 class="secondary_heading_type2"><?php _e( 'Claude Code', 'pys' ); ?></h4>
+			            <?php cardCollapseSettings(); ?>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-8"><?php esc_html_e( 'Run this in your terminal:', 'pys' ); ?></h5>
+			            <?php
+			            $claudeCodeCmd = 'claude mcp add --transport http pys-free ' . $endpointUrl . ' --header "Authorization: Bearer YOUR_TOKEN_HERE"';
+			            ?>
+                        <div class="example-block">
+                <pre class="copy_text pys-mcp-token-snippet"><?php echo esc_html( $claudeCodeCmd ); ?><div class="copy-icon" data-toggle="pys-popover"
+                                                                                                           data-tippy-trigger="click" data-tippy-placement="bottom"
+                                                                                                           data-popover_id="copied-popover"></div></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cursor -->
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                        <h4 class="secondary_heading_type2"><?php _e( 'Cursor', 'pys' ); ?></h4>
+			            <?php cardCollapseSettings(); ?>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-8"><?php esc_html_e( 'Settings → Tools and Integrations → New MCP Server → transport type HTTP → paste the URL below, then add a header named Authorization with the value below:', 'pys' ); ?></h5>
+                        <div class="example-block mb-16">
+                <pre class="copy_text"><?php echo esc_html( $endpointUrl ); ?><div class="copy-icon" data-toggle="pys-popover"
+                                                                                   data-tippy-trigger="click" data-tippy-placement="bottom"
+                                                                                   data-popover_id="copied-popover"></div></pre>
+                        </div>
+                        <div class="example-block">
+                <pre class="copy_text pys-mcp-token-snippet">Bearer YOUR_TOKEN_HERE<div class="copy-icon" data-toggle="pys-popover"
+                                                                                                       data-tippy-trigger="click" data-tippy-placement="bottom"
+                                                                                                       data-popover_id="copied-popover"></div></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Windsurf -->
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                        <h4 class="secondary_heading_type2"><?php _e( 'Windsurf', 'pys' ); ?></h4>
+			            <?php cardCollapseSettings(); ?>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-8"><?php esc_html_e( 'Cascade panel → hammer/wrench icon → View raw config → add this server entry:', 'pys' ); ?></h5>
+			            <?php
+			            $windsurfJson  = "{\n";
+			            $windsurfJson .= "  \"mcpServers\": {\n";
+			            $windsurfJson .= "    \"pixelyoursite\": {\n";
+			            $windsurfJson .= "      \"serverUrl\": \"" . $endpointUrl . "\",\n";
+			            $windsurfJson .= "      \"headers\": {\n";
+			            $windsurfJson .= "        \"Authorization\": \"Bearer YOUR_TOKEN_HERE\"\n";
+			            $windsurfJson .= "      }\n";
+			            $windsurfJson .= "    }\n";
+			            $windsurfJson .= "  }\n";
+			            $windsurfJson .= "}";
+			            ?>
+                        <div class="example-block">
+                <pre class="copy_text pys-mcp-token-snippet"><?php echo esc_html( $windsurfJson ); ?><div class="copy-icon" data-toggle="pys-popover"
+                                                                                                          data-tippy-trigger="click" data-tippy-placement="bottom"
+                                                                                                          data-popover_id="copied-popover"></div></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VS Code + GitHub Copilot -->
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                        <h4 class="secondary_heading_type2"><?php _e( 'VS Code + GitHub Copilot', 'pys' ); ?></h4>
+			            <?php cardCollapseSettings(); ?>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-8"><?php esc_html_e( 'Command Palette → MCP: Add Server → HTTP → paste the URL below, then add a header named Authorization with the value below:', 'pys' ); ?></h5>
+                        <div class="example-block mb-16">
+                <pre class="copy_text"><?php echo esc_html( $endpointUrl ); ?><div class="copy-icon" data-toggle="pys-popover"
+                                                                                   data-tippy-trigger="click" data-tippy-placement="bottom"
+                                                                                   data-popover_id="copied-popover"></div></pre>
+                        </div>
+                        <div class="example-block">
+                <pre class="copy_text pys-mcp-token-snippet">Bearer YOUR_TOKEN_HERE<div class="copy-icon" data-toggle="pys-popover"
+                                                                                                       data-tippy-trigger="click" data-tippy-placement="bottom"
+                                                                                                       data-popover_id="copied-popover"></div></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Not yet supported -->
+                <div class="card card-style6">
+                    <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                        <h4 class="secondary_heading_type2"><?php esc_html_e( 'Not currently supported', 'pys' ); ?></h4>
+	                    <?php cardCollapseSettings(); ?>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-gray mb-8"><strong>ChatGPT:</strong> <?php esc_html_e( 'Developer Mode connectors only support sign-in (OAuth) or no authentication — there\'s no field for a fixed token, so this can\'t connect today.', 'pys' ); ?></p>
+                        <p class="text-gray"><strong><?php esc_html_e( 'Gemini app (gemini.google.com):', 'pys' ); ?></strong> <?php esc_html_e( 'custom connections can be added by URL, but the setup is built around sign-in credentials rather than a fixed token, and access is limited to certain accounts and countries. Not recommended yet — Gemini CLI (a separate developer tool) does work with a header, if you need Google\'s model specifically.', 'pys' ); ?></p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -250,9 +390,7 @@ $statusIcon = static function ( $ok ) {
                         <h4 class="switcher-label secondary_heading ml-12 mb-0"><?php _e( 'Enable read-only mode', 'pys' ); ?></h4>
                     </div>
                     <p class="text-gray mt-4">
-                        Enable read-only mode to allow auditing without allowing changes: every
-                        <code>set_*</code> tool returns <code>Read-only mode is enabled.</code> instead of
-                        writing, while read tools continue to work normally.
+                        <?php _e( "Enable read-only mode to allow auditing without allowing changes: every <code>set_*</code> tool returns <code>Read-only mode is enabled.</code> instead of writing, while read tools continue to work normally.<br>This toggle applies to <strong>every connected client at once</strong> — it is not per-token, so turning it on blocks writes for all your AI assistants together, not just one.", "pys" ); ?>
                     </p>
                 </div>
             </div>
@@ -263,7 +401,7 @@ $statusIcon = static function ( $ok ) {
     <div class="card card-style6 card-static">
         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
             <h4 class="secondary_heading_type2"><?php _e('Connection test', 'pys');?></h4>
-            <button type="button" class="btn btn-primary btn-primary-type2 loadable" id="pys-mcp-test-btn">Run checks</button>
+            <button type="button" class="btn btn-primary btn-primary-type2 loadable" id="pys-mcp-test-btn"><?php esc_html_e( "Run checks", "pys" ); ?></button>
         </div>
         <div class="card-body">
             <ul id="pys-mcp-check-list" class="pys-mcp-checks">
@@ -293,7 +431,7 @@ $statusIcon = static function ( $ok ) {
         </div>
         <div class="card-body">
             <div class="mb-24">
-                Run this from a terminal to confirm the endpoint accepts your Bearer token. Expected output: <code>200 OK</code> with a <code>Mcp-Session-Id</code> header.
+                <?php _e( "Run this from a terminal to confirm the endpoint accepts your Bearer token. Expected output: <code>200 OK</code> with a <code>Mcp-Session-Id</code> header.", "pys" ); ?>
             </div>
 
             <?php
@@ -313,29 +451,73 @@ $statusIcon = static function ( $ok ) {
         </div>
     </div>
 
+    <!-- =========================================================== TROUBLESHOOTING -->
+    <div class="card card-style6">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e( 'Troubleshooting', 'pys' ); ?></h4>
+			<?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <table class="pys-mcp-activity">
+                <thead>
+                <tr>
+                    <th><?php _e( 'What you see', 'pys' ); ?></th>
+                    <th><?php _e( 'What to do', 'pys' ); ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><?php _e( '"Couldn\'t reach the MCP server"', 'pys' ); ?></td>
+                    <td><?php _e( 'Confirm your site is publicly reachable and the header/token was saved correctly.', 'pys' ); ?></td>
+                </tr>
+                <tr>
+                    <td><?php _e( '401 / token rejected', 'pys' ); ?></td>
+                    <td><?php _e( 'Generate a new token above and re-enter it in your client.', 'pys' ); ?></td>
+                </tr>
+                <tr>
+                    <td><code>spawn npx ENOENT</code></td>
+                    <td><?php _e( 'Node.js isn\'t installed or isn\'t on your PATH. Install Node.js or use the full path to npx (find it with which npx).', 'pys' ); ?></td>
+                </tr>
+                <tr>
+                    <td><?php _e( 'No response at all', 'pys' ); ?></td>
+                    <td><?php _e( 'Confirm wp-json is reachable from outside your network — a firewall or local-only setup will block remote clients.', 'pys' ); ?></td>
+                </tr>
+                <tr>
+                    <td><?php _e( 'REST route check fails above', 'pys' ); ?></td>
+                    <td><?php _e( 'A security plugin may be blocking the REST API. Temporarily disable REST API restrictions and re-run the check.', 'pys' ); ?></td>
+                </tr>
+                <tr>
+                    <td><?php _e( 'Assistant mentions a rate limit or "loop detected" error', 'pys' ); ?></td>
+                    <td><?php _e( 'The server is protecting itself from too many rapid or repeated calls. Wait a moment and ask again — no action needed on your end.', 'pys' ); ?></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- =========================================================== RECENT ACTIVITY -->
     <div class="card card-style6 card-static">
         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
             <h4 class="secondary_heading_type2"><?php _e('Recent activity', 'pys');?></h4>
             <div class="d-flex align-items-center" style="gap: 8px;">
                 <a class="btn-small btn-gray secondary_heading" href="<?php echo esc_url( (string) ( $viewModel['log_page_url'] ?? '' ) ); ?>"><?php _e( 'View full log', 'pys' ); ?></a>
-                <button type="button" class="btn-small btn-gray btn-small-icon secondary_heading loadable" id="pys-mcp-clear-log-btn"><i class="icon-delete"></i>Clear log</button>
+                <button type="button" class="btn-small btn-gray btn-small-icon secondary_heading loadable" id="pys-mcp-clear-log-btn"><i class="icon-delete"></i><?php esc_html_e( "Clear log", "pys" ); ?></button>
             </div>
         </div>
         <div class="card-body">
             <div id="pys-mcp-activity-wrap">
 		        <?php if ( empty( $recentActivity ) ) : ?>
-                    <p>No write-tool calls recorded yet.</p>
+                    <p><?php esc_html_e( "No write-tool calls recorded yet.", "pys" ); ?></p>
 		        <?php else : ?>
                     <table class="pys-mcp-activity">
                         <thead>
                         <tr>
                             <th class="pys-mcp-activity__status-col"></th>
-                            <th>When</th>
-                            <th>Tool</th>
-                            <th>Token</th>
-                            <th>Note</th>
-                            <th>IP</th>
+                            <th><?php esc_html_e( "When", "pys" ); ?></th>
+                            <th><?php esc_html_e( "Tool", "pys" ); ?></th>
+                            <th><?php esc_html_e( "Token", "pys" ); ?></th>
+                            <th><?php esc_html_e( "Note", "pys" ); ?></th>
+                            <th><?php esc_html_e( "IP", "pys" ); ?></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -618,7 +800,7 @@ $statusIcon = static function ( $ok ) {
 						flash($btn, 'danger', 'Failed to clear log.');
 						return;
 					}
-					$('#pys-mcp-activity-wrap').html('<p>No write-tool calls recorded yet.</p>');
+					$('#pys-mcp-activity-wrap').html('<p>' + <?php echo wp_json_encode( __( "No write-tool calls recorded yet.", "pys" ) ); ?> + '</p>');
 					flash($btn, 'success', 'Deleted ' + (res.data.deleted || 0) + ' entries.');
 				})
 				.fail(function () {

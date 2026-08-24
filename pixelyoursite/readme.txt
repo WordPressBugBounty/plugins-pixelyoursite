@@ -3,8 +3,8 @@ Contributors: PixelYourSite
 Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, Google Consent Mode V2
 Requires at least: 3.0.1
 Requires PHP: 5.4
-Tested up to: 7.0
-Stable tag: 11.3.0.1
+Tested up to: 7.1
+Stable tag: 11.3.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -15,7 +15,7 @@ Add Meta Pixel with Conversion API, Google Analytics (GA4) + Consent Mode, Googl
 
 Easily integrate Meta Pixel with full Conversion API support, Google Analytics 4, and Google Tag Manager into your WordPress site. Plus, use our simple Head and Footer script option to add any custom script you need for advanced tracking and optimization. The Pinterest Tag can be implemented via this [paid add-on](https://www.pixelyoursite.com/pinterest-tag). Similar paid add-ons for the [Bing tag](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on) and for the [Reddit Pixel](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin).
 
-**NEW!** MCP support - Connect Claude, ChatGPT, Gemini, or any other LLM and control the plugin. 
+**NEW!** MCP support - Connect Claude, or any other supported LLM and control the plugin. Watch [this short video](https://www.youtube.com/watch?v=HfvTdvvexOY) to learn how to connect Claude, [or this one](https://www.youtube.com/watch?v=0KzzVeVVvxU) for a fast WooCommerce audit.
 
 **Free training:** 
 
@@ -390,6 +390,20 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.3.1 =
+
+August 24, 2026
+
+* Fixing small issues related to the MCP server.
+
+* Fixing a small consent related issue. 
+
+* Fixing an issue with item prices for WooCommerce products if variable products are treated like simple products. 
+
+* Fixing an issue on multisite resulting in missing delete icon. 
+
+* WordPress 7.1 compatibility check. 
 
 = PixelYourSite 11.3.0.1 =
 

@@ -157,6 +157,16 @@ if ( ! defined( 'ABSPATH' ) ) {
     <?php
     $videos = array(
         array(
+            'url'   => 'https://www.youtube.com/watch?v=2RNwboDKXuI',
+            'title' => 'Fix ID tracking issues with Claude',
+            'time'  => '4:06',
+        ),
+        array(
+            'url'   => 'https://www.youtube.com/watch?v=rlnwEw3mKaU',
+            'title' => 'Ask Claude Which Ads & Products Perform Best in WooCommerce',
+            'time'  => '2:00',
+        ),
+        array(
             'url'   => 'https://www.youtube.com/watch?v=-bN5D_HJyuA',
             'title' => 'Enhanced Conversions for Google Ads with PixelYourSite',
             'time'  => '9:14',
