@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EventsManager {
     private static $_instance;
     public $facebookServerEvents = array();
+    public $openaiServerEvents = array();
     private $pinterestServerEvents = array();
 	public $doingAMP = false;
     private $standardParams = array();
@@ -42,7 +43,7 @@ class EventsManager {
 
     }
     function add_data_attribute_to_script( $tag, $handle, $src ) {
-        $array_scripts = array('js-cookie-pys', 'jquery-bind-first', 'js-tld', 'pys');
+        $array_scripts = array('js-cookie-pys', 'jquery-bind-first', 'js-tld', 'pys', 'js-sha256');
 
         // Add defer attribute to all plugin scripts for better performance
         $defer_scripts = array(
@@ -76,22 +77,24 @@ class EventsManager {
         wp_register_script( 'jquery-bind-first', PYS_FREE_URL . '/dist/scripts/jquery.bind-first-0.2.3.min.js', array( 'jquery' ), '0.2.3', true);
 
         wp_register_script( 'js-cookie-pys', PYS_FREE_URL . '/dist/scripts/js.cookie-2.1.3.min.js', array(), '2.1.3', true );
+        wp_register_script( 'js-sha256', PYS_FREE_URL . '/dist/scripts/sha256.js', array(), '0.11.0', true );
         wp_register_script( 'js-tld', PYS_FREE_URL . '/dist/scripts/tld.min.js', array( 'jquery' ), '2.3.1', true );
 
         // Enqueue core scripts
         wp_enqueue_script( 'jquery-bind-first' );
         wp_enqueue_script( 'js-cookie-pys' );
+        wp_enqueue_script( 'js-sha256' );
         wp_enqueue_script( 'js-tld' );
 
         // Load main plugin script (compressed or uncompressed)
         if ( PYS()->getOption( 'compress_front_js' )){
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.min.js',
-                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
+                array( 'jquery', 'js-sha256', 'js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
         }
         else
         {
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.js',
-                array( 'jquery','js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
+                array( 'jquery', 'js-sha256', 'js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
         }
 
 
@@ -153,6 +156,7 @@ class EventsManager {
 			'pinterest_disabled_by_api'  => apply_filters( 'pys_disable_pinterest_by_gdpr', false ),
 			'bing_disabled_by_api'       => apply_filters( 'pys_disable_bing_by_gdpr', false ),
 			'reddit_disabled_by_api'     => apply_filters( 'pys_disable_reddit_by_gdpr', false ),
+			'openai_disabled_by_api'     => apply_filters( 'pys_disable_openai_by_gdpr', false ),
 
 			'externalID_disabled_by_api' => apply_filters( 'pys_disable_externalID_by_gdpr', false ),
 
@@ -161,6 +165,7 @@ class EventsManager {
 			'google_ads_prior_consent_enabled' => PYS()->getOption( 'gdpr_google_ads_prior_consent_enabled' ),
 			'pinterest_prior_consent_enabled'  => PYS()->getOption( 'gdpr_pinterest_prior_consent_enabled' ),
 			'bing_prior_consent_enabled'       => PYS()->getOption( 'gdpr_bing_prior_consent_enabled' ),
+			'openai_prior_consent_enabled'     => PYS()->getOption( 'gdpr_openai_prior_consent_enabled' ),
 
 
 			'cookiebot_integration_enabled'          => isCookiebotPluginActivated() && PYS()->getOption( 'gdpr_cookiebot_integration_enabled' ),
@@ -170,6 +175,7 @@ class EventsManager {
 			'cookiebot_google_ads_consent_category'  => PYS()->getOption( 'gdpr_cookiebot_google_ads_consent_category' ),
 			'cookiebot_pinterest_consent_category'   => PYS()->getOption( 'gdpr_cookiebot_pinterest_consent_category' ),
 			'cookiebot_bing_consent_category'        => PYS()->getOption( 'gdpr_cookiebot_bing_consent_category' ),
+			'cookiebot_openai_consent_category'      => PYS()->getOption( 'gdpr_cookiebot_openai_consent_category' ),
 			'consent_magic_integration_enabled'      => isConsentMagicPluginActivated() && PYS()->getOption( 'consent_magic_integration_enabled' ),
 			'real_cookie_banner_integration_enabled' => isRealCookieBannerPluginActivated() && PYS()->getOption( 'gdpr_real_cookie_banner_integration_enabled' ),
 			'cookie_notice_integration_enabled'      => isCookieNoticePluginActivated() && PYS()->getOption( 'gdpr_cookie_notice_integration_enabled' ),
@@ -246,6 +252,7 @@ class EventsManager {
             unset( $options['gdpr']['pinterest_disabled_by_api'] );
             unset( $options['gdpr']['bing_disabled_by_api'] );
             unset( $options['gdpr']['reddit_disabled_by_api'] );
+            unset( $options['gdpr']['openai_disabled_by_api'] );
             unset( $options['gdpr']['externalID_disabled_by_api'] );
             unset( $options['cookie'] );
             $options['dynamicDataUrl'] = rest_url( 'pys/v1/dynamic-options' );
@@ -288,7 +295,8 @@ class EventsManager {
         if(!apply_filters( 'pys_disable_by_gdpr', false)) {
             foreach (PYS()->getRegisteredPixels() as $pixel) {
                 /** @var Pixel|Settings $pixel */
-                if (!apply_filters('pys_disable_' . $pixel->getSlug() . '_by_gdpr', false)) {
+                if (!apply_filters('pys_disable_' . $pixel->getSlug() . '_by_gdpr', false)
+                    || Consent()->firesInRestrictedMode($pixel->getSlug())) {
                     $pixel->outputNoScriptEvents();
                 }
             }
@@ -304,6 +312,7 @@ class EventsManager {
 
         $this->standardParams = getStandardParams();
         $this->facebookServerEvents = array();
+        $this->openaiServerEvents = array();
 
 
         /**
@@ -359,7 +368,7 @@ class EventsManager {
                 && Facebook()->enabled()
                 && Facebook()->isServerApiEnabled()
                 && !PYS()->isCachePreload()
-                && Consent()->checkConsent( 'facebook' )
+                && Consent()->mayFire( 'facebook' )
             ) {
                 FacebookServer()->sendEventsAsync( $this->facebookServerEvents );
                 $this->facebookServerEvents = array();
@@ -370,10 +379,20 @@ class EventsManager {
                 &&  Pinterest()->enabled()
                 && Pinterest()->isServerApiEnabled()
                 && !PYS()->isCachePreload()
-                && Consent()->checkConsent( 'pinterest' )
+                && Consent()->mayFire( 'pinterest' )
             ) {
                 PinterestServer()->sendEventsAsync( $this->pinterestServerEvents );
                 $this->pinterestServerEvents = array();
+            }
+
+            if ( count($this->openaiServerEvents) > 0
+                && OpenAI()->enabled()
+                && OpenAI()->isServerApiEnabled()
+                && !PYS()->isCachePreload()
+                && Consent()->mayFire( 'openai' )
+            ) {
+                OpenAIServer()->sendEventsAsync( $this->openaiServerEvents );
+                $this->openaiServerEvents = array();
             }
         }
 
@@ -478,6 +497,9 @@ class EventsManager {
             }
             if(isPinterestActive() && $pixel->getSlug() === "pinterest" && Pinterest()->enabled()) {
                 $this->pinterestServerEvents[] = $event;
+            }
+            if($pixel->getSlug() === "openai" && OpenAI()->enabled()) {
+                $this->openaiServerEvents[] = $event;
             }
         }
 

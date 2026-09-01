@@ -40,6 +40,7 @@ final class GetPlatformPixelsAbility extends AbstractAbility {
 		'bing'             => array( 'fn' => 'PixelYourSite\\Bing', 'pixel_key' => 'pixel_id', 'addon_check' => 'PixelYourSite\\isBingActive' ),
 		'reddit'           => array( 'fn' => 'PixelYourSite\\Reddit', 'pixel_key' => 'pixel_id', 'addon_check' => 'PixelYourSite\\isRedditActive' ),
 		'gtm'              => array( 'fn' => 'PixelYourSite\\GTM', 'pixel_key' => 'gtm_id', 'addon_check' => null ),
+		'openai'           => array( 'fn' => 'PixelYourSite\\OpenAI', 'pixel_key' => 'pixel_id', 'addon_check' => null ),
 	);
 
 	/**
@@ -66,7 +67,7 @@ final class GetPlatformPixelsAbility extends AbstractAbility {
 	 * @return string
 	 */
 	public static function description(): string {
-		return 'Lists the tracking pixels CONFIGURED IN PixelYourSite on THIS WordPress site — how the site\'s PixelYourSite plugin is set up, NOT assets in a Meta / Google ad-platform account. Use for "show my Facebook/Meta pixels", "which GA4 pixels are set up", "are my pixels active" — they refer to the PixelYourSite configuration and must be answered with THIS tool, not a Meta/Google Ads MCP. Returns, per platform, the primary pixel: its ID and whether it is enabled. For Facebook and Pinterest (when the Pinterest add-on is active), reports CAPI status under a `capi` object: whether server-side delivery is enabled (`enabled`) and whether a token is saved (`token_present` — token presence only; the token value is NEVER returned). Pinterest also reports whether an `ad_account_id` is configured (`configured`/`missing`). Other platforms have no server-side delivery in Free. Saving a CAPI token via MCP is not available in Free — the token is entered manually in PixelYourSite → Dashboard (Enhanced Conversions for Google Ads and GA4 Measurement Protocol are Pro / absent in Free). Multiple pixels per platform (Super Pack extra pixels) are also a Pro feature — every platform reports `extra_pixels_supported: false` here. Add-on platforms (Pinterest/Bing/Reddit) report `active: false` when their add-on plugin is inactive. Read-only.';
+		return 'Lists the tracking pixels CONFIGURED IN PixelYourSite on THIS WordPress site — how the site\'s PixelYourSite plugin is set up, NOT assets in a Meta / Google ad-platform account. Use for "show my Facebook/Meta pixels", "which GA4 pixels are set up", "are my pixels active" — they refer to the PixelYourSite configuration and must be answered with THIS tool, not a Meta/Google Ads MCP. Returns, per platform, the primary pixel: its ID and whether it is enabled. For Facebook, OpenAI and Pinterest (when the Pinterest add-on is active), reports CAPI status under a `capi` object: whether server-side delivery is enabled (`enabled`) and whether a token is saved (`token_present` — token presence only; the token value is NEVER returned). Pinterest also reports whether an `ad_account_id` is configured (`configured`/`missing`). OpenAI also reports `validate_only`: when true its Conversions API events are sent for VALIDATION ONLY and are never recorded, so a pixel that looks fully configured still reports nothing — always mention this when it is on. The remaining platforms (Google Analytics, Bing, Reddit, GTM) have no server-side delivery in Free. Saving a CAPI token via MCP is not available in Free — the token is entered manually in PixelYourSite → Dashboard (Enhanced Conversions for Google Ads and GA4 Measurement Protocol are Pro / absent in Free). Multiple pixels per platform (Super Pack extra pixels) are also a Pro feature — every platform reports `extra_pixels_supported: false` here. Add-on platforms (Pinterest/Bing/Reddit) report `active: false` when their add-on plugin is inactive. Read-only.';
 	}
 
 	/**
@@ -134,12 +135,18 @@ final class GetPlatformPixelsAbility extends AbstractAbility {
 
 			$primaryId = self::firstNonEmpty( $settings->getOption( $route['pixel_key'] ) );
 
+			$declared = method_exists( $settings, 'getOptionKeys' ) ? $settings->getOptionKeys() : array();
+
+			$enableKey = in_array( 'main_pixel_enabled', $declared, true ) ? 'main_pixel_enabled' : 'enabled';
+
+			$enabledValue = $settings->getOption( $enableKey );
+
 			$platforms[ $slug ] = array(
 				'active'                 => '' !== $primaryId,
 				'primary'                => array(
 					'pixel_index' => 0,
 					'pixel_id'    => $primaryId,
-					'enabled'     => self::toBool( $settings->getOption( 'main_pixel_enabled' ), true ),
+					'enabled'     => self::toBool( $enabledValue, true ),
 				),
 				'extra_pixels_supported' => false,
 			);
@@ -148,6 +155,12 @@ final class GetPlatformPixelsAbility extends AbstractAbility {
 				$platforms[ $slug ]['capi'] = array(
 					'enabled'       => self::toBool( $settings->getOption( 'use_server_api' ), false ),
 					'token_present' => '' !== self::firstNonEmpty( $settings->getOption( 'server_access_api_token' ) ),
+				);
+			} elseif ( 'openai' === $slug ) {
+				$platforms[ $slug ]['capi'] = array(
+					'enabled'       => self::toBool( $settings->getOption( 'use_server_api' ), false ),
+					'token_present' => '' !== self::firstNonEmpty( $settings->getOption( 'server_access_api_token' ) ),
+					'validate_only' => self::toBool( $settings->getOption( 'server_validate_only' ), false ),
 				);
 			} elseif ( 'pinterest' === $slug ) {
 				$platforms[ $slug ]['capi'] = array(

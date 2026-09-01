@@ -267,7 +267,7 @@
         <li>Purchase: when a transaction is completed</li>
     </ul>
     <p><strong>IMPORTANT:</strong> in order to run Dynamic Product ads you need a Product Catalog. You can create one
-        using our <a href="https://www.pixelyoursite.com/product-catalog-facebook?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-info-popup" target="_blank">dedicated
+        using our <a href="https://www.pixelyoursite.com/plugins/product-catalog-feed-for-woocommerce" target="_blank">dedicated
         Product Catalog Feed plugin</a>.</p>
 </div>
 
@@ -376,22 +376,6 @@
 		event has for your business.</p>
 </div>
 
-<div id="pys-woo_initiate_checkout_event_value_1" style="display: none; visibility: hidden">
-    <p>To enable Checkout Behavior reports on Google Analytics, you need to configure the funnel steps. Inside your Google Analytics, go on Settings > Ecommerce Settings.</p>
-    <p>Make sure you have "Enable Ecommerce" and "Enable Enhanced Ecommerce Reporting" turned ON.</p>
-    <p>Under "Checkout labeling" create 5 funnel steps:</p>
-    <ul>
-        <li>Initiate Checkout</li>
-        <li>First Name</li>
-        <li>Last Name</li>
-        <li>Email</li>
-        <li>Click Place Order</li>
-    </ul>
-    <p>You can find this report under Conversions > Ecommerce > Checkout Behaviour.</p>
-    <p>For more details,</p>
-    <p>visit our <a href="https://www.pixelyoursite.com/documentation/checkout-behaviour-analysis" target="_blank" class="link">help page</a> </p>
-</div>
-
 <div id="pys-woo_add_to_cart_event_value" style="display: none; visibility: hidden">
 	<p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
 	event has for your business.</p>
@@ -430,7 +414,7 @@
 		<li>Purchase: when a transaction is completed</li>
 	</ul>
 	<p><strong>IMPORTANT:</strong> in order to run Dynamic Product ads you need a Product Catalog. You can create one
-		using our <a href="https://www.pixelyoursite.com/easy-digital-downloads-product-catalog"
+		using our <a href="https://www.pixelyoursite.com/plugins/easy-digital-downloads-product-catalog-feed"
 		target="_blank" class="link">dedicated
 	Product Catalog Feed plugin</a>.</p>
 </div>
@@ -613,7 +597,7 @@
 
 <div id="pys-aw_merchant_id" style="display: none; visibility: hidden">
     <p>This is your Google Merchant Center account ID.</p>
-    <p>To find it, log in to your Google Merchant Center account at <a href="https://merchants.google.com" target="_blank" class="link">https://merchants.google.com</a>.</p>
+    <p>To find it, log in to your Google Merchant Center account at <a href="https://business.google.com/en-all/merchant-center/" target="_blank" class="link">https://business.google.com/en-all/merchant-center/</a>.</p>
     <p>Look in the top-right corner of the page — your <b>10-digit Merchant ID is displayed there</b>.</p>
 </div>
 <div id="pys-aw_feed_country" style="display: none; visibility: hidden">

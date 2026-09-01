@@ -1,5 +1,6 @@
 {
   "enabled": true,
+  "meta_enabled_capi": true,
   "pixel_id": "",
   "advanced_matching_enabled": false,
   "remove_metadata": true,

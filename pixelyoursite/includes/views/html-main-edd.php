@@ -53,6 +53,15 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <h4 class="switcher-label secondary_heading"><?php _e( 'TikTok backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
                         </div>
                     </div>
+                    <?php if ( OpenAI()->enabled() ) : ?>
+                        <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center flex-with-badge">
+                                <?php renderDummySwitcher( false); ?>
+                                <h4 class="switcher-label secondary_heading"><?php _e( 'OpenAI backup and renewals Purchase tracking via API', 'pys' ); ?></h4>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if ( Pinterest()->enabled() ) : ?>
                         <div class="d-flex align-items-center">
                             <div class="d-flex align-items-center flex-with-badge">
@@ -148,7 +157,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between gap-24">
                 <p style="text-align: center;"><?php _e('Use our dedicated plugin to create auto-updating feeds for Facebook Product Catalogs.', 'pys');?></p>
-                <a class="link" href="https://www.pixelyoursite.com/easy-digital-downloads-product-catalog?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-catalog-edd"
+                <a class="link" href="https://www.pixelyoursite.com/plugins/easy-digital-downloads-product-catalog-feed"
                    target="_blank"><?php _e('Click to get Easy Digital Downloads Product Catalog Feed', 'pys');?></a>
             </div>
         </div>
@@ -501,6 +510,56 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </div>
 	            <?php endif; ?>
 
+
+                <?php if ( OpenAI()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">OpenAI ID settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">Item ID</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_select_input( 'edd_content_id', array(
+                                        'download_id'  => 'Download ID',
+                                        'download_sku' => 'Download SKU',
+                                    ) ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php OpenAI()->render_switcher_input( 'edd_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">For downloads with price variations use the parent product ID for each variation</h4>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">Item ID prefix</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_text_input( 'edd_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">Item ID suffix</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_text_input( 'edd_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <?php if ( GTM()->enabled() ) : ?>
 
                     <div class="card card-style6">
@@ -657,7 +716,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <h4 class="switcher-label secondary_heading">Enable the purchase event on Google
                                         Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
                         </div>
@@ -684,6 +743,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
                         <?php endif; ?>
 
+
+                        <?php if ( OpenAI()->enabled() ) : ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'edd_purchase_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the order_created event on OpenAI</h4>
+                            </div>
+                        <?php endif; ?>
 	                    <?php if(Reddit()->enabled()) : ?>
                             <div class="d-flex align-items-center">
                                 <?php Reddit()->render_switcher_input('edd_purchase_enabled'); ?>
@@ -740,6 +806,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <?php
                             renderEddSubscriptionsPlatformSwitcher( Facebook() );
                             renderEddSubscriptionsPlatformSwitcher( GA() );
+
+                            if ( OpenAI()->enabled() ) {
+                                renderEddSubscriptionsPlatformSwitcher( OpenAI() );
+                            }
 
                             if ( Pinterest()->enabled() ) {
                                 renderEddSubscriptionsPlatformSwitcher( Pinterest() );
@@ -825,7 +895,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <h4 class="switcher-label secondary_heading">Enable the begin_checkout event on Google
                                         Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
 
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
@@ -847,6 +917,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <div class="d-flex align-items-center">
                                 <?php Bing()->render_switcher_input( 'edd_initiate_checkout_enabled' ); ?>
                                 <h4 class="switcher-label secondary_heading">Enable the InitiateCheckout on Bing</h4>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ( OpenAI()->enabled() ) :
+                            $configured = true; ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'edd_initiate_checkout_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the checkout_started event on OpenAI</h4>
                             </div>
                         <?php endif; ?>
 
@@ -901,7 +979,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <?php renderDummySwitcher(); ?>
                                     <h4 class="switcher-label secondary_heading">Enable the add_to_cart event on Google Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
 
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
@@ -924,6 +1002,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
                         <?php endif; ?>
 
+
+                        <?php if ( OpenAI()->enabled() ) :
+                            $configured = true; ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'edd_add_to_cart_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the items_added event on OpenAI</h4>
+                            </div>
+                        <?php endif; ?>
 	                    <?php if ( Reddit()->enabled() ) : $configured = true; ?>
                             <div class="d-flex align-items-center">
 			                    <?php Reddit()->render_switcher_input( 'edd_add_to_cart_enabled' ); ?>
@@ -979,7 +1065,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <?php renderDummySwitcher(); ?>
                                     <h4 class="switcher-label secondary_heading">Enable the view_item event on Google Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
                         </div>
 
@@ -1005,6 +1091,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </div>
                         <?php endif; ?>
 
+
+                        <?php if ( OpenAI()->enabled() ) :
+                            $configured = true; ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'edd_view_content_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the contents_viewed event on OpenAI</h4>
+                            </div>
+                        <?php endif; ?>
 	                    <?php if ( Reddit()->enabled() ) :
 		                    $configured = true; ?>
                             <div class="d-flex align-items-center">
@@ -1062,7 +1156,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <?php renderDummySwitcher(); ?>
                                     <h4 class="switcher-label secondary_heading">Enable the view_item_list event on Google Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
 
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>

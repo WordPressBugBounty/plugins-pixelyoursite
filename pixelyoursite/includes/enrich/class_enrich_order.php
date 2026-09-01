@@ -43,7 +43,7 @@ class EnrichOrder {
         echo '<div id="edd-payment-notes" class="postbox">
     <h3 class="hndle"><span>PixelYourSite</span></h3>';
         echo "<div style='margin:20px'>
-                <p>With the paid plugin, you can see more data on the Easy Digital Downloads Reports page. <a target='_blank' href='https://www.pixelyoursite.com/easy-digital-downloads-first-party-reports/?utm_source=free-plugin-edd-order&utm_medium=free-plugin-edd-order&utm_campaign=free-plugin-edd-order&utm_content=free-plugin-edd-order&utm_term=free-plugin-edd-order'>Click here for details.</a></p>
+                <p>With the paid plugin, you can see more data on the Easy Digital Downloads Reports page. <a target='_blank' href='https://www.pixelyoursite.com/strategy/edd-first-party-reports'>Click here for details.</a></p>
                 <p>You can ". (PYS()->getOption('edd_enabled_display_data_to_orders') ? 'hide' : 'show') ." Report data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=edd")."' target='_blank'>Easy Digital Downloads page</a>. </p>
                 <p>You can stop storing this data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=edd")."' target='_blank'>Easy Digital Downloads page</a></p>
                 </div>";
@@ -69,7 +69,7 @@ class EnrichOrder {
             $orderId = null; // Or another default value.
         }
         echo "<div style='margin:20px 10px'>
-                <p>With the paid plugin, you can see more data on the WooCommerce Reports page. <a href='https://www.pixelyoursite.com/woocommerce-first-party-reports?utm_source=free-plugin&utm_medium=order-page&utm_campaign=reports-order-page&utm_content=woocommerce-reports-client-page&utm_term=order-page-reports' target='_blank'>Click here for details</a></p>
+                <p>With the paid plugin, you can see more data on the WooCommerce Reports page. <a href='https://www.pixelyoursite.com/strategy/woocommerce-first-party-reports' target='_blank'>Click here for details</a></p>
                 <p>You can ". (PYS()->getOption('woo_enabled_display_data_to_orders') ? 'hide' : 'show') ." Report data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=woo")."' target='_blank'>WooCommerce page</a>. </p>
                 <p>You can stop storing this data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=woo")."' target='_blank'>WooCommerce page</a>.</p>
                 </div>";
@@ -159,7 +159,7 @@ class EnrichOrder {
             $orderId = $order->get_id();
             echo "<h2 style='text-align: center'>". __('PixelYourSite','pys')."</h2>";
             echo "Your clients don't see this information! We send it to you in this \"New Order\" email. If you want to remove this data from the \"New Order\" email, open <a href='".admin_url("admin.php?page=pixelyoursite&tab=woo")."' target='_blank'>PixelYourSite's WooCommerce page</a>, disable \"Send reports data to the New Order email\" and save.
-            <br/>With PixelYourSite Professional, you can view and download this data from the plugin's own reports page. Find out how WooCommerce Reports work and how to visualize and download your data: <a href='https://www.pixelyoursite.com/woocommerce-first-party-reports?utm_source=free-plugin&utm_medium=order-email&utm_campaign=order-email-link&utm_content=woocommerce-reports&utm_term=woocommerce-reports-email-link' target='_blank'>Click here for details</a>.<br/>";
+            <br/>With PixelYourSite Professional, you can view and download this data from the plugin's own reports page. Find out how WooCommerce Reports work and how to visualize and download your data: <a href='https://www.pixelyoursite.com/strategy/woocommerce-first-party-reports' target='_blank'>Click here for details</a>.<br/>";
             include 'views/html-order-meta-box.php';
         }
     }

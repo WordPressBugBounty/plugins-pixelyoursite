@@ -83,7 +83,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <p >With PixelYourSite Professional you can find out what ads generate your Easy Digital Downloads orders using UTMs, discover your traffic sources and landing pages.</p>
                                 <div class="d-flex align-items-center justify-content-center gap-16">
                                     <h3 class="text-center">Get detailed info about products sold by each campaign, ad set, or ad</h3>
-                                    <a href="https://www.pixelyoursite.com/easy-digital-downloads-first-party-reports/?utm_source=free-plugin-reports-page-edd&utm_medium=free-plugin-reports-page-edd&utm_campaign=free-plugin-reports-edd&utm_content=free-plugin-reports-page-edd&utm_term=free-plugin-reports-page-edd"
+                                    <a href="https://www.pixelyoursite.com/strategy/edd-first-party-reports"
                                        target="_blank" class="btn btn-block btn-sm btn-save orange_button">Click to find more</a>
                                 </div>
                             </div>

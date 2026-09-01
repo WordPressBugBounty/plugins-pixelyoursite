@@ -268,7 +268,7 @@ $statusIcon = static function ( $ok ) {
                             </p>
 			            <?php endif; ?>
                         <p>
-				            <?php esc_html_e( 'If npx isn\'t found, install', 'pys' ); ?> <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> <?php esc_html_e( '(it ships with npx). On macOS/Linux a GUI-launched Claude Desktop may not inherit your shell PATH — use the full path to npx (find it with which npx) if you hit a spawn npx ENOENT error.', 'pys' ); ?>
+				            <?php esc_html_e( 'If npx isn\'t found, install', 'pys' ); ?> <a href="https://nodejs.org/en" target="_blank" rel="noopener">Node.js</a> <?php esc_html_e( '(it ships with npx). On macOS/Linux a GUI-launched Claude Desktop may not inherit your shell PATH — use the full path to npx (find it with which npx) if you hit a spawn npx ENOENT error.', 'pys' ); ?>
                         </p>
                     </div>
                 </div>

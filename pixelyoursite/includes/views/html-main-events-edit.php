@@ -1285,7 +1285,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
                 <div class="event_trigger pro-feature-container mb-16" data-trigger_id="-1" style="display: none;">
                     <div class="event_trigger_wrapper mb-16">
                         <p>This is a PRO trigger. <a class="link"
-                                    href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-pro-trigger"
+                                    href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional"
                                     target="_blank">Upgrade to get all the benefits</a>.</p>
                     </div>
                     <div class="event_trigger_wrapper">
@@ -1758,7 +1758,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
             </div>
             <div class="custom-event-pixel-status">
 
-                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
 
 
                 <label class="card-header-label" for="ads_custom_event_switch">
@@ -1857,7 +1857,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
                 <h4 class="font-semibold main-switcher">TikTok </h4>
             </div>
             <div class="custom-event-pixel-status">
-                <?php renderProBadge('https://www.pixelyoursite.com/tiktok-tag-pixelyoursite/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                <?php renderProBadge('https://www.pixelyoursite.com/tiktok-tag-pixelyoursite?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
 
                 <label class="card-header-label" for="ads_custom_event_switch">
                     <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
@@ -2218,7 +2218,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
                 <span class="event-parameter-list">[mepr-ecommerce-tracking]Message with %%variables%% in here[/mepr-ecommerce-tracking]</span>
             </p>
             <p class="mb-20">Available parameters are described <a
-                        href="https://docs.memberpress.com/article/112-available-shortcodes" target="_blank" class="link">here</a>.
+                        href="https://memberpress.com/docs/available-shortcodes/" target="_blank" class="link">here</a>.
             </p>
 
             <p>All variables must have the prefix "mp_".</p>

@@ -62,7 +62,16 @@ final class PYS extends Settings implements Plugin {
 	    // initialize settings
 	    parent::__construct( 'core' );
     
-        add_action( 'admin_init', array( $this, 'updatePlugin' ), 0 );
+        /**
+         * Update checks must be registered outside of the admin context as well.
+         * Hooked on 'admin_init' they never ran under WP-CLI ("wp plugin list",
+         * "wp plugin update") nor during WordPress background auto-updates (wp-cron),
+         * so our add-ons looked like they had no updates available there.
+         *
+         * Priority 10 on 'init': self::init() runs at priority 9 and fires
+         * 'pys_register_plugins', so $registeredPlugins is filled by then.
+         */
+        add_action( 'init', array( $this, 'updatePlugin' ), 10 );
 	    add_action( 'admin_init', 'PixelYourSite\manageAdminPermissions' );
 
 	    // Priority 9 used to keep things same as on PRO version
@@ -169,7 +178,8 @@ final class PYS extends Settings implements Plugin {
         if (current_user_can( 'manage_pys' ) ) {
 
             $loggers = [
-                'meta' => [$this->logger, 'downloadLogFile'],
+                'general' => [$this->logger, 'downloadLogFile'],
+                'meta'    => [$this->logger, 'downloadLogFile'],
             ];
 
             $clearLoggers = [
@@ -687,6 +697,7 @@ final class PYS extends Settings implements Plugin {
                 'pinterest_disabled_by_api'  => apply_filters( 'pys_disable_pinterest_by_gdpr', false ),
                 'bing_disabled_by_api'       => apply_filters( 'pys_disable_bing_by_gdpr', false ),
                 'reddit_disabled_by_api'     => apply_filters( 'pys_disable_reddit_by_gdpr', false ),
+                'openai_disabled_by_api'     => apply_filters( 'pys_disable_openai_by_gdpr', false ),
                 'externalID_disabled_by_api' => apply_filters( 'pys_disable_externalID_by_gdpr', false ),
                 'analytics_storage_value'    => $pys_analytics_storage_mode
                     ? ( apply_filters( 'pys_analytics_storage_mode', true ) ? 'granted' : 'denied' ) : null,
@@ -917,6 +928,7 @@ final class PYS extends Settings implements Plugin {
                 'analytics_disabled_by_api' => apply_filters( 'pys_disable_analytics_by_gdpr', false ),
                 'pinterest_disabled_by_api' => apply_filters( 'pys_disable_pinterest_by_gdpr', false ),
                 'bing_disabled_by_api' => apply_filters( 'pys_disable_bing_by_gdpr', false ),
+                'openai_disabled_by_api' => apply_filters( 'pys_disable_openai_by_gdpr', false ),
                 'reddit_disabled_by_api' => apply_filters( 'pys_disable_reddit_by_gdpr', false ),
                 'externalID_disabled_by_api' => apply_filters( 'pys_disable_externalID_by_gdpr', false ),
                 'disabled_all_cookie'       => apply_filters( 'pys_disable_all_cookie', false ),
@@ -1087,8 +1099,46 @@ final class PYS extends Settings implements Plugin {
     }
 
 
+    /**
+     * Should the update checker be registered for the current request?
+     *
+     * Front-end requests are skipped on purpose: nothing there reads the
+     * update_plugins transient, and building the updater may trigger a
+     * blocking request to our licensing API on a visitor's page load.
+     *
+     * @return bool
+     */
+    private function shouldCheckPluginUpdates() {
+
+        // wp-admin, including admin-ajax.php
+        if ( is_admin() ) {
+            return true;
+        }
+
+        // WordPress background auto-updates (wp_doing_cron() is WP 4.8+)
+        if ( function_exists( 'wp_doing_cron' ) ) {
+            if ( wp_doing_cron() ) {
+                return true;
+            }
+        } elseif ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+            return true;
+        }
+
+        // "wp plugin list", "wp plugin update", etc.
+        if ( defined( 'WP_CLI' ) && WP_CLI ) {
+            return true;
+        }
+
+        return false;
+
+    }
+
     public function updatePlugin() {
-    
+
+        if ( ! $this->shouldCheckPluginUpdates() ) {
+            return;
+        }
+
         foreach ( $this->registeredPlugins as $slug => $plugin ) {
         
             if ( $slug == 'head_footer' ) {

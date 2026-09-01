@@ -74,7 +74,7 @@ function adminGetFixedNotices() {
                 [
                     'slug'  => 'free_block_1_message_2_v5',
                     'title' => 'Connect Claude to PixelYourSite',
-                    'message' => 'Run audits, improve EMQ, check Catalog mathing, fire events and more.',
+                    'message' => 'Run audits, improve EMQ, check Catalog matching, fire events and more.',
                     'button_text' => 'Watch video',
                     'button_url' => 'https://www.youtube.com/watch?v=HfvTdvvexOY',
                 ],
@@ -103,7 +103,7 @@ function adminGetFixedNotices() {
 
                 [
                   'slug'  => 'free_block_2_message_3_v3',
-                  'message' => 'Tracking only revenue when running ads can be misleading. Profit gives you a better understanding of how your ads actually perform. Learn how to send WooCommerce profit to Meta or Google Analytics and and increase your spent on profitable ads.',
+                  'message' => 'Tracking only revenue when running ads can be misleading. Profit gives you a better understanding of how your ads actually perform. Learn how to send WooCommerce profit to Meta or Google Analytics and increase your spend on profitable ads.',
                   'title' => 'Track WooCommerce PROFIT for Meta, Google Ads, and GA4',
                   'button_text' => 'Watch video',
                   'button_url' => 'https://www.youtube.com/watch?v=Oce_yJSpLXk',
@@ -111,7 +111,7 @@ function adminGetFixedNotices() {
 
                 [
                     'slug'  => 'free_block_2_message_1_v1',
-                    'message' => 'Learn how to create Custom Conversions on Meta using your pixel events. Use them to optimize your ads and track your ads results.',
+                    'message' => 'Learn how to create Custom Conversions on Meta using your pixel events. Use them to optimize your ads and track your ad results.',
                     'title' => 'Meta Custom Conversions using Events',
                     'button_text' => 'Watch video',
                     'button_url' => 'https://www.youtube.com/watch?v=w97FATUy7ok'
@@ -162,7 +162,7 @@ function adminGetFixedNotices() {
                     'title' => 'Google Automated Discounts',
                     'message' => 'How to set up GAD for WooCommerce inside Google Merchant.',
                     'button_text' => 'Learn more',
-                    'button_url' => 'https://www.pixelyoursite.com/google-automated-discounts-for-woocommerce',
+                    'button_url' => 'https://www.pixelyoursite.com/strategy/gad',
                 ],
             ],
             'optoutEnabel' => true,
@@ -186,7 +186,7 @@ function adminGetFixedNotices() {
                     'title' => 'Reddit Pixel',
                     'message' => 'Learn how you can configure the Reddit Pixel with our dedicated add-on.',
                     'button_text' => 'Read More',
-                    'button_url' => 'https://www.pixelyoursite.com/how-to-use-the-reddit-pixel-add-on',
+                    'button_url' => 'https://www.pixelyoursite.com/docs/reddit-settings-setup',
                 ],
                 [
                     'slug'  => 'free_block_4_message_2_v3',
@@ -196,11 +196,11 @@ function adminGetFixedNotices() {
                     'button_url' => 'https://www.youtube.com/watch?v=0KzzVeVVvxU',
                 ],
                 [
-                    'slug'  => 'free_block_4_message_3_v2',
-                    'title' => 'Track ANYTHING without coding!',
-                    'message' => 'This is how the Event Setup Tool works.',
-                    'button_text' => 'Learn More',
-                    'button_url' => 'https://www.pixelyoursite.com/docs/event-setup-tool-guide',
+                    'slug'  => 'free_block_4_message_3_v3',
+                    'title' => 'OpenAI Pixel & API',
+                    'message' => 'How to install the OpenAI Pixel, enable API, configure conversions, and test everything.',
+                    'button_text' => 'Watch video',
+                    'button_url' => 'https://www.youtube.com/watch?v=m2KWGlW-8cQ',
                 ],
 
 

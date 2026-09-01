@@ -436,7 +436,7 @@ function adminRenderLicenseExpirationNotice( $plugin ) {
         <p><strong>Your <?php echo $plugin->getPluginName(); ?> license key is expired</strong>, so you no longer get any updates. Don't miss our
             latest improvements and make sure that everything works smoothly.</p>
         <p>If you renewed your license but you still see this message, click on the "<a href="<?php echo esc_url( buildAdminUrl( 'pixelyoursite_licenses' ) ); ?>">Reactivate License</a>" button.</p>
-        <p class="mb-0"><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php echo esc_attr(
+        <p class="mb-0"><a href="https://www.pixelyoursite.com/checkout-2?edd_license_key=<?php echo esc_attr(
                 $license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license now</strong></a></p>
     </div>
 
@@ -916,7 +916,7 @@ function renderProBadge( $url = null,$label = "PRO Feature" ) {
 
 function renderEventSetupToolBadge( $label = 'Event Setup Tool' ) {
 
-    $url = 'https://www.pixelyoursite.com/docs/event-setup-tool-guide/?utm_source=pys-free-plugin&utm_medium=EST-badge&utm_campaign=EST-badge';
+    $url = 'https://www.pixelyoursite.com/docs/event-setup-tool-guide?utm_source=pys-free-plugin&utm_medium=EST-badge&utm_campaign=EST-badge';
 
     echo '&nbsp;<a href="' . esc_url( $url ) . '" target="_blank" class="badge badge-pill badge-pro">'
         . esc_html( $label ) . ' <i class="fa fa-external-link" aria-hidden="true"></i></a>';

@@ -53,6 +53,12 @@ class SiteProfileModuleRegistry {
 				'group'    => 'pixel',
 				'is_addon' => false
 			),
+			'openai'      => array(
+				'label'    => 'OpenAI',
+				'accessor' => 'PixelYourSite\OpenAI',
+				'group'    => 'pixel',
+				'is_addon' => false
+			),
 			'head_footer' => array( 'label'    => 'Head & Footer',
 			                        'accessor' => 'PixelYourSite\\HeadFooter',
 			                        'group'    => 'plugin',
@@ -102,6 +108,12 @@ class SiteProfileModuleRegistry {
                 'id_field'      => 'gtm_id',
                 'token_fields'  => array(),
                 'per_id_fields' => array( 'main_pixel', 'server_container_url' ),
+                'per_id_pattern' => null,
+            ),
+            'openai'     => array(
+                'id_field'      => 'pixel_id',
+                'token_fields'  => array( 'server_access_api_token' ),
+                'per_id_fields' => array(),
                 'per_id_pattern' => null,
             ),
             'bing'       => array(

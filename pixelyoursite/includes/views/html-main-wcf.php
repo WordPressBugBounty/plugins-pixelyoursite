@@ -33,7 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             <div class="card-body">
                 <div class="gap-24">
                     <p>From here you can control the events and parameters fired by PixelYourSite Professional on CartFlows pages and actions.</p>
-                    <p class="text-gray">To learn more <a class="link" href="https://www.pixelyoursite.com/cartflows-and-pixelyoursite" target="_blank">go to this dedicated page and watch the video</a></p>
+                    <p class="text-gray">To learn more <a class="link" href="https://www.pixelyoursite.com/strategy/cartflows" target="_blank">go to this dedicated page and watch the video</a></p>
 
                     <div class="d-flex align-items-center pro-feature-container">
                         <div class="d-flex align-items-center flex-with-badge">

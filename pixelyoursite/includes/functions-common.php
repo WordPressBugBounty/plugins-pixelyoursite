@@ -1848,6 +1848,7 @@ function getDynamicUserDataKeys() {
         'tiktok'    => array( 'advanced_matching' ),
         'pinterest' => array( 'advancedMatching' ),
         'reddit'    => array( 'advanced_matching' ),
+        'openai'    => array( 'advanced_matching' ),
     ) );
 }
 

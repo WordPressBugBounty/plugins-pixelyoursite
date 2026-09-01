@@ -25,7 +25,7 @@ use PixelYourSite\GA\Helpers;
                     </div>
                     <p class="text-gray">
                         <?php _e('How to enable Google Consent Mode V2', 'pys');?>
-                        <a class="link" href="https://www.pixelyoursite.com/google-consent-mode-v2-wordpress?utm_source=plugin&utm_medium=pro&utm_campaign=google-consent" target="_blank"><?php _e('click here', 'pys');?></a>
+                        <a class="link" href="https://www.pixelyoursite.com/strategy/google-consent-mode-v2" target="_blank"><?php _e('click here', 'pys');?></a>
                     </p>
                 </div>
                 <div class="line"></div>

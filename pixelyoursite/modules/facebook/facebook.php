@@ -86,13 +86,22 @@ class Facebook extends Settings implements Pixel {
 	}
 
 	public function getPixelOptions() {
+		$serverApiEnabled      = $this->isServerApiEnabled() && count( $this->getApiToken() ) > 0;
+		$metaEnabledCapiPixels = $this->getMetaEnabledCapiPixelIds();
+
 		return array(
 			'pixelIds'                   => $this->getPixelIDs(),
 			'advancedMatching'           => $this->getOption( 'advanced_matching_enabled' ) ? Helpers\getAdvancedMatchingParams() : array(),
 			'advancedMatchingEnabled'    => $this->getOption( 'advanced_matching_enabled' ),
 			'removeMetadata'             => $this->getOption( 'remove_metadata' ),
 			'wooVariableAsSimple'        => $this->getOption( 'woo_variable_as_simple' ),
-			'serverApiEnabled'           => $this->isServerApiEnabled() && count( $this->getApiToken() ) > 0,
+			'serverApiEnabled'           => $serverApiEnabled,
+			'metaEnabledCapiPixels'      => $metaEnabledCapiPixels,
+			// Meta dedupes the API events it generates for Meta-Enabled CAPI
+			// against the browser event by eventID, so the id must travel with
+			// the browser event whenever either API path is active — not only
+			// for the token-based Conversion API.
+			'sendEventId'                => $serverApiEnabled || count( $metaEnabledCapiPixels ) > 0,
 			'send_external_id'           => $this->getOption( 'send_external_id' ),
 			'enabled_medical'            => $this->getOption( 'enabled_medical' ),
 			'do_not_track_medical_param' => $this->getOption( 'do_not_track_medical_param' ),
@@ -1160,6 +1169,30 @@ class Facebook extends Settings implements Pixel {
      */
     public function isServerApiEnabled() {
         return $this->getOption("use_server_api");
+    }
+
+    /**
+     * Meta-Enabled Conversion API: Meta itself turns the browser pixel events
+     * into API events on a secondary destination. Works alongside the browser
+     * pixel and the token-based Conversion API, it replaces neither.
+     *
+     * @return bool
+     */
+    public function isMetaEnabledCapiEnabled() {
+        return (bool) $this->getOption( 'meta_enabled_capi' );
+    }
+
+    /**
+     * Pixel IDs opted into Meta-Enabled Conversion API on the current page.
+     *
+     * @return array
+     */
+    public function getMetaEnabledCapiPixelIds() {
+        if ( ! $this->isMetaEnabledCapiEnabled() ) {
+            return array();
+        }
+
+        return $this->getPixelIDs();
     }
 
     function output_meta_tag() {

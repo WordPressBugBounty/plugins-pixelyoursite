@@ -48,7 +48,8 @@ add_filter('pys_disable_by_gdpr',function ($status) {
         <div class="card-body">
             <div class="flex-column-24gap">
                 <div class="double-line-height">
-                    <p>{pixel} - facebook, google_ads, ga, tiktok, pinterest, bing</p>
+                    <p>{pixel} - facebook, ga, gtm, pinterest, bing, reddit, openai</p>
+                    <p>The Google pixels share one name: pys_disable_analytics_by_gdpr stops GA and GTM everywhere, while pys_disable_ga_by_gdpr and pys_disable_gtm_by_gdpr reach only the no-script tags.</p>
                     <p>Disable some pixel events, can by used for custom gdpr</p>
                     <p>Param: bool $status</p>
                 </div>
@@ -418,7 +419,7 @@ add_filter('pys_pixel_disabled',function ($isActive,$pixelSlug) {
         <div class="card-body">
             <div class="flex-column-24gap">
                 <div class="double-line-height">
-                    <p> {pixel} - facebook, google_ads, ga, tiktok, pinterest, bing</p>
+                    <p> {pixel} - facebook, ga, gtm, pinterest, bing, openai</p>
                     <p>Param: array $ids</p>
                 </div>
                 <div class="example-block">
@@ -508,6 +509,96 @@ add_filter('pys_facebook_ids',function ($ids) {
 
 
 
+
+    <div class="card card-style3 hook-card">
+        <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+            <div class="disable-card align-items-center">
+                <h4 class="secondary_heading_type2">pys_openai_advanced_matching - Add or edit OpenAI advanced matching params</h4>
+            </div>
+            <?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <div class="flex-column-24gap">
+                <div class="double-line-height">
+                    <p>Used by the JavaScript Pixel and the Conversions API alike, so a change here reaches both channels.</p>
+                    <p>OpenAI accepts only these keys: email_sha256, external_id_sha256, country, city, zip_code. There are no phone or name fields, and one unknown key makes the whole Conversions API request fail.</p>
+                    <p>Param: array $params</p>
+                </div>
+                <div class="example-block">
+                    <label>Example:</label>
+                    <pre class="copy_text">
+add_filter('pys_openai_advanced_matching',function ($params) {
+    if(get_current_user_id() == 0) {
+        unset($params['email_sha256']);
+    }
+    return $params;
+});<div class="copy-icon" data-toggle="pys-popover"
+        data-tippy-trigger="click" data-tippy-placement="bottom"
+        data-popover_id="copied-popover"></div></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-style3 hook-card">
+        <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+            <div class="disable-card align-items-center">
+                <h4 class="secondary_heading_type2">pys_openai_server_user_data - Add or edit the OpenAI Conversions API user object</h4>
+            </div>
+            <?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <div class="flex-column-24gap">
+                <div class="double-line-height">
+                    <p>Server events only. Fields: obref, email_sha256, external_id_sha256, country, city, zip_code, ip_address, user_agent.</p>
+                    <p>Hashes must be lowercase 64-character hex. Geo, IP and user agent travel raw; raw emails, raw external ids and phone numbers in any form are rejected by OpenAI.</p>
+                    <p>Params: object $userData, int|null $wooOrder, int|null $eddOrder</p>
+                </div>
+                <div class="example-block">
+                    <label>Example:</label>
+                    <pre class="copy_text">
+add_filter('pys_openai_server_user_data',function ($userData, $wooOrder, $eddOrder) {
+    if(get_current_user_id() == 0) {
+        unset($userData->email_sha256);
+    }
+    return $userData;
+}, 10, 3);<div class="copy-icon" data-toggle="pys-popover"
+        data-tippy-trigger="click" data-tippy-placement="bottom"
+        data-popover_id="copied-popover"></div></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-style3 hook-card">
+        <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+            <div class="disable-card align-items-center">
+                <h4 class="secondary_heading_type2">pys_openai_currency_exponent - How many minor units one major unit has</h4>
+            </div>
+            <?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <div class="flex-column-24gap">
+                <div class="double-line-height">
+                    <p>OpenAI takes every amount as an integer number of minor units, so 10.00 USD travels as 1000. The exponent comes from the currency itself (ISO 4217): 0 for JPY, KRW and the other zero-decimal currencies, 3 for BHD, KWD and the rest of the three-decimal ones, 2 for everything else.</p>
+                    <p>Deliberately not taken from the shop's price-decimals setting, which is a display preference. Use this filter only for a currency the list does not cover - returning the wrong exponent multiplies or divides every reported value by ten.</p>
+                    <p>Params: int $exponent, string $currency</p>
+                </div>
+                <div class="example-block">
+                    <label>Example:</label>
+                    <pre class="copy_text">
+add_filter('pys_openai_currency_exponent',function ($exponent, $currency) {
+    if($currency == 'XYZ') {
+        return 0;
+    }
+    return $exponent;
+}, 10, 2);<div class="copy-icon" data-toggle="pys-popover"
+        data-tippy-trigger="click" data-tippy-placement="bottom"
+        data-popover_id="copied-popover"></div></pre>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="card card-style3 hook-card">
         <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">

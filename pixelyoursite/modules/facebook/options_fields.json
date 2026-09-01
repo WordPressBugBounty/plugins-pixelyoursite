@@ -1,5 +1,6 @@
 {
   "enabled": "checkbox",
+  "meta_enabled_capi": "checkbox",
   "pixel_id": "array",
   "advanced_matching_enabled": "checkbox",
   "remove_metadata": "checkbox",

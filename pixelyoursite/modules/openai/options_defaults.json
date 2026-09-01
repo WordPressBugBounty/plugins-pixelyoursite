@@ -1,0 +1,31 @@
+{
+  "enabled": true,
+  "pixel_id": "",
+  "advanced_matching_enabled": true,
+  "debug_enabled": false,
+
+  "use_server_api": false,
+  "server_access_api_token": "",
+  "server_validate_only": false,
+
+  "woo_variable_as_simple": false,
+  "woo_content_id": "product_id",
+  "woo_content_id_prefix": "",
+  "woo_content_id_suffix": "",
+  "woo_wpml_unified_id": false,
+
+  "woo_view_content_enabled": true,
+  "woo_add_to_cart_enabled": true,
+  "woo_initiate_checkout_enabled": true,
+  "woo_purchase_enabled": true,
+
+  "edd_variable_as_simple": false,
+  "edd_content_id": "download_id",
+  "edd_content_id_prefix": "",
+  "edd_content_id_suffix": "",
+
+  "edd_view_content_enabled": true,
+  "edd_add_to_cart_enabled": true,
+  "edd_initiate_checkout_enabled": true,
+  "edd_purchase_enabled": true
+}

@@ -421,7 +421,7 @@ wp-content/plugins/pixelyoursite/dist/jquery.bind-first-0.2.3.min.js
     <div class="panel card card-style6 card-static">
         <div class="card-body text-center gap-24">
             <p class="mb-0">Track more key actions with the PRO version:</p>
-            <p><a class="btn btn-sm btn-primary" href="https://www.pixelyoursite.com/facebook-pixel-plugin/buy-pixelyoursite-pro?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-upgrade-blue"
+            <p><a class="btn btn-sm btn-primary" href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional"
                   target="_blank">UPGRADE</a></p></p>
         </div>
     </div>

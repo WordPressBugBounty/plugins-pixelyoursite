@@ -82,7 +82,7 @@ if ( !defined( 'ABSPATH' ) ) {
 
                 </div>
                 <div class="mt-24">
-                    <a href="https://www.pixelyoursite.com/plugins/consentmagic/?utm_source=pixelyoursite-pro&utm_medium=pixelyoursite-pro&utm_campaign=pixelyoursite-pro&utm_content=pixelyoursite-pro&utm_term=pixelyoursite-pro"
+                    <a href="https://www.pixelyoursite.com/plugins/consentmagic?utm_source=pixelyoursite-pro&utm_medium=pixelyoursite-pro&utm_campaign=pixelyoursite-pro&utm_content=pixelyoursite-pro&utm_term=pixelyoursite-pro"
                        target="_blank" class="btn btn-sm btn-primary btn-primary-type2 learn-more-btn">
                         Lean more about Consent Magic
                     </a>
@@ -178,7 +178,7 @@ if ( !defined( 'ABSPATH' ) ) {
                             <p>This is a complete premium solution that also offers a free plan for websites with under 100 pages.
                                 For implementation, we suggest you follow their documentation.</p>
                             <p>
-                                <span class="mb-8">Website: <a href="https://cookiebot.com" class="link" target="_blank">https://cookiebot.com</a></span>
+                                <span class="mb-8">Website: <a href="https://www.cookiebot.com/" class="link" target="_blank">https://www.cookiebot.com/</a></span>
                                 <span>Plugin: <a href="https://wordpress.org/plugins/cookiebot/" class="link" target="_blank">https://wordpress.org/plugins/cookiebot/</a></span>
                             </p>
                         </div>

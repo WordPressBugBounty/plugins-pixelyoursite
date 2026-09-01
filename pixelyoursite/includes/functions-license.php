@@ -127,7 +127,7 @@ function renderLicenseControls( $plugin, $license_status ) {
                         on <?php echo date( get_option( 'date_format' ), $license_expires ); ?></strong>. Make sure
                     you keep everything updated and in order.</p>
                 <p>If you renewed your license but you still see this message, click on the "Reactivate License" button.</p>
-                <p><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php echo esc_attr(
+                <p><a href="https://www.pixelyoursite.com/checkout-2?edd_license_key=<?php echo esc_attr(
                     $license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license</strong></a></p>
             </div>
 		<?php
@@ -139,7 +139,7 @@ function renderLicenseControls( $plugin, $license_status ) {
                 <p><strong>Your license key is expired</strong>, so you no longer get any updates. Don't miss our
                     latest improvements and make sure that everything works smoothly.</p>
                 <p>If you renewed your license but you still see this message, click on the "Reactivate License" button.</p>
-                <p><a href="https://www.pixelyoursite.com/checkout/?edd_license_key=<?php echo esc_attr(
+                <p><a href="https://www.pixelyoursite.com/checkout-2?edd_license_key=<?php echo esc_attr(
                     $license_key ); ?>&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank"><strong>Click here to renew your license now</strong></a></p>
             </div>
 		<?php
@@ -218,7 +218,7 @@ function set_data_license($plugin, $license_data)
                 case 'expired':                 // license has expired
                     $admin_notice = array(
                         'class' => 'danger',
-                        'msg'   => 'Your License has expired. <a href="http://www.pixelyoursite.com/checkout/?edd_license_key=' . urlencode( $license_key ) . '&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank">Renew it now.</a>'
+                        'msg'   => 'Your License has expired. <a href="https://www.pixelyoursite.com/checkout-2?edd_license_key=' . urlencode( $license_key ) . '&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank">Renew it now.</a>'
                     );
                     break;
 
@@ -505,7 +505,7 @@ function updateLicense( $plugin ) {
                     case 'expired':                 // license has expired
                         $admin_notice = array(
                             'class' => 'danger',
-                            'msg' => 'Your License has expired. <a href="http://www.pixelyoursite.com/checkout/?edd_license_key=' . urlencode($license_key) . '&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank">Renew it now.</a>'
+                            'msg' => 'Your License has expired. <a href="https://www.pixelyoursite.com/checkout-2?edd_license_key=' . urlencode($license_key) . '&utm_campaign=admin&utm_source=licenses&utm_medium=renew" target="_blank">Renew it now.</a>'
                         );
                         break;
 

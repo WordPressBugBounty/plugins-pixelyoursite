@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.3.1' );
+define( 'PYS_FREE_VERSION', '11.4.0' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
 define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );
@@ -70,6 +70,9 @@ require_once PYS_FREE_PATH.'/includes/class-rest-api-guard.php';
 require_once PYS_FREE_PATH.'/modules/google_analytics/ga.php';
 require_once PYS_FREE_PATH.'/modules/google_tags/gatags.php';
 require_once PYS_FREE_PATH.'/modules/google_gtm/gtm.php';
+require_once PYS_FREE_PATH.'/modules/openai/openai.php';
+require_once PYS_FREE_PATH.'/modules/openai/openai-server.php';
+require_once PYS_FREE_PATH.'/modules/openai/class-openai-rest-api.php';
 require_once PYS_FREE_PATH.'/modules/head_footer/head_footer.php';
 require_once PYS_FREE_PATH.'/includes/enrich/class_enrich_order.php';
 
@@ -109,6 +112,7 @@ PixelYourSite\PYS();
 
 add_action( 'init', function() {
     \PixelYourSite\Facebook_REST_API();
+    \PixelYourSite\OpenAI_REST_API();
     // Central REST API guard (Facebook + add-on endpoints) via rest_pre_dispatch.
     \PixelYourSite\RestAPIGuard::instance();
 }, 9 );

@@ -79,6 +79,7 @@ final class EventToggleMap {
 		'bing'             => array( 'view_content', 'view_category', 'add_to_cart', 'initiate_checkout', 'purchase' ),
 		'reddit'           => array( 'view_content', 'add_to_cart', 'purchase' ),
 		'gtm'              => array( 'view_content', 'add_to_cart', 'initiate_checkout', 'purchase' ),
+		'openai'           => array( 'view_content', 'add_to_cart', 'initiate_checkout', 'purchase' ),
 	);
 
 	/**
@@ -93,6 +94,7 @@ final class EventToggleMap {
 		'bing'             => array( 'view_content', 'view_category', 'add_to_cart', 'initiate_checkout' ),
 		'reddit'           => array( 'view_content', 'add_to_cart' ),
 		'gtm'              => array( 'view_content', 'view_category', 'add_to_cart', 'initiate_checkout', 'purchase', 'remove_from_cart' ),
+		'openai'           => array( 'view_content', 'add_to_cart', 'initiate_checkout', 'purchase' ),
 	);
 
 	/**
@@ -129,6 +131,7 @@ final class EventToggleMap {
 		'bing',
 		'reddit',
 		'gtm',
+		'openai',
 		'all',
 	);
 
@@ -180,8 +183,12 @@ final class EventToggleMap {
 	 * @return bool
 	 */
 	public static function automaticRegisters( $settings, string $event ): bool {
-		return is_object( $settings ) && method_exists( $settings, 'getOption' )
-		       && null !== $settings->getOption( self::key( 'automatic', $event ) );
+
+		if ( !is_object( $settings ) || !method_exists( $settings, 'getOptionKeys' ) ) {
+			return false;
+		}
+
+		return in_array( self::key( 'automatic', $event ), $settings->getOptionKeys(), true );
 	}
 
 	/**

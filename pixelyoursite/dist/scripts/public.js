@@ -361,6 +361,8 @@
         }
         function loadPixels() {
 
+            Utils.refreshAddonPixels();
+
             if (!options.gdpr.all_disabled_by_api) {
 
                 if (!options.gdpr.facebook_disabled_by_api) {
@@ -381,6 +383,10 @@
 
                 if (!options.gdpr.bing_disabled_by_api) {
                     Bing.loadPixel();
+                }
+
+                if (!options.gdpr.openai_disabled_by_api) {
+                    OpenAI.loadPixel();
                 }
 
 	            if (!options.gdpr.reddit_disabled_by_api) {
@@ -579,6 +585,8 @@
             utmTerms : utmTerms,
             utmId : utmId,
             fireEventForAllPixel:function(functionName,events){
+                Utils.refreshAddonPixels();
+
                 if (events.hasOwnProperty(Facebook.tag()))
                     Facebook[functionName](events[Facebook.tag()]);
                 if (events.hasOwnProperty(Analytics.tag()))
@@ -592,6 +600,22 @@
 
                 if (events.hasOwnProperty(GTM.tag()))
                     GTM[functionName](events[GTM.tag()]);
+            },
+
+            /**
+             * Re-read the pixels that live in separate plugins.
+             */
+            refreshAddonPixels: function () {
+                Pinterest = Utils.setupPinterestObject();
+                Bing = Utils.setupBingObject();
+                Reddit = Utils.setupRedditObject();
+            },
+
+            /**
+             * Is one of ConsentMagic's switches actually on?
+             */
+            csModeEnabled: function ( value ) {
+                return Number( value ) === 1;
             },
 
             setupPinterestObject: function () {
@@ -621,6 +645,10 @@
             },
 
             manageCookies: function () {
+
+                if ( typeof options.cookie === 'undefined' ) {
+                    return;
+                }
 
                 if (options.gdpr.cookiebot_integration_enabled && typeof Cookiebot !== 'undefined') {
                     if (Cookiebot.consented === false && !Cookiebot.consent['marketing'] && !Cookiebot.consent['statistics']) {
@@ -818,6 +846,13 @@
                 }
             },
             /**
+             * Is this Meta pixel opted into Meta-Enabled Conversion API?
+             */
+            isMetaEnabledCapiPixel: function (pixelId) {
+                var pixels = options.facebook && options.facebook.metaEnabledCapiPixels;
+                return Array.isArray(pixels) && pixels.indexOf(pixelId) !== -1;
+            },
+            /**
              * Generate unique ID
              */
             generateUniqueId : function (event) {
@@ -853,6 +888,11 @@
                 if (data.action === 'pys_api_event' && data.pixel === 'facebook' && window.pysFacebookRest) {
                     // Use Facebook REST API
                     this.sendRestAPIRequest(data, 'facebook');
+                    return;
+                }
+
+                if (data.action === 'pys_openai_api_event' && window.pysOpenAIRest) {
+                    this.sendRestAPIRequest(data, 'openai');
                     return;
                 }
 
@@ -903,6 +943,9 @@
                 switch (platform) {
                     case 'facebook':
                         restApiUrl = window.pysFacebookRest ? window.pysFacebookRest.restApiUrl : '/wp-json/pys-facebook/v1/event';
+                        break;
+                    case 'openai':
+                        restApiUrl = window.pysOpenAIRest ? window.pysOpenAIRest.restApiUrl : '/wp-json/pys-openai/v1/event';
                         break;
                     default:
                         console.error('PYS: Unknown platform for REST API:', platform);
@@ -1201,6 +1244,8 @@
 
             fireStaticEvents: function (pixel) {
 
+                Utils.refreshAddonPixels();
+
                 if (options.staticEvents.hasOwnProperty(pixel)) {
 
                     $.each(options.staticEvents[pixel], function (eventName, events) {
@@ -1225,6 +1270,8 @@
                                     fired = GTM.fireEvent(eventData.name, eventData);
                                 } else if ('reddit' === pixel) {
 	                                fired = Reddit.fireEvent(eventData.name, eventData);
+                                } else if ('openai' === pixel) {
+                                    fired = OpenAI.fireEvent(eventData.name, eventData);
                                 }
 
                                 // prevent event double event firing
@@ -1549,6 +1596,7 @@
                                 options.gdpr.pinterest_disabled_by_api = res.data.pinterest_disabled_by_api;
                                 options.gdpr.bing_disabled_by_api = res.data.bing_disabled_by_api;
 	                            options.gdpr.reddit_disabled_by_api = res.data.reddit_disabled_by_api;
+                                options.gdpr.openai_disabled_by_api = res.data.openai_disabled_by_api;
 
                                 options.cookie.externalID_disabled_by_api = res.data.externalID_disabled_by_api;
                                 options.cookie.disabled_all_cookie = res.data.disabled_all_cookie;
@@ -1580,12 +1628,13 @@
 
                     let test_prefix = CS_Data.test_prefix;
                     if (
-                        ( ( typeof CS_Data.cs_google_consent_mode_enabled !== "undefined" && CS_Data.cs_google_consent_mode_enabled == 1 ) && ( pixel == 'analytics' || pixel == 'google_ads' ) )
-                        || ( typeof CS_Data.cs_meta_ldu_mode !== "undefined" && CS_Data.cs_meta_ldu_mode && pixel == 'facebook' )
-                        || ( typeof CS_Data.cs_reddit_ldu_mode !== "undefined" && CS_Data.cs_reddit_ldu_mode && pixel == 'reddit' )
-                        || ( typeof CS_Data.cs_bing_consent_mode !== "undefined" && CS_Data.cs_bing_consent_mode.ad_storage.enabled && pixel == 'bing' )
+                        ( Utils.csModeEnabled( CS_Data.cs_google_consent_mode_enabled ) && ( pixel == 'analytics' || pixel == 'google_ads' ) )
+                        || ( Utils.csModeEnabled( CS_Data.cs_meta_ldu_mode ) && pixel == 'facebook' )
+                        || ( Utils.csModeEnabled( CS_Data.cs_reddit_ldu_mode ) && pixel == 'reddit' )
+                        || ( Utils.csModeEnabled( CS_Data.cs_bing_consent_mode?.ad_storage?.enabled ) && pixel == 'bing' )
                     ) {
-                        if ( CS_Data.cs_cache_enabled == 0 || ( CS_Data.cs_cache_enabled == 1 && window.CS_Cache && window.CS_Cache.check_status ) ) {
+                        if ( Number( CS_Data.cs_cache_enabled ) === 0
+                            || ( Utils.csModeEnabled( CS_Data.cs_cache_enabled ) && window.CS_Cache && window.CS_Cache.check_status ) ) {
                             return true;
                         } else {
                             return false;
@@ -1605,6 +1654,8 @@
                     } else if( pixel == 'tiktok' && ( CS_Data.cs_script_cat.tiktok == 0 || CS_Data.cs_script_cat.tiktok == CS_Data.cs_necessary_cat_id ) ) {
                         return true;
 		            } else if( pixel == 'reddit' && ( CS_Data.cs_script_cat?.reddit == 0 || CS_Data.cs_script_cat?.reddit == CS_Data.cs_necessary_cat_id ) ) {
+		                return true;
+		            } else if( pixel == 'openai' && ( CS_Data.cs_script_cat?.openai == 0 || CS_Data.cs_script_cat?.openai == CS_Data.cs_necessary_cat_id ) ) {
 		                return true;
 		            }
 
@@ -1631,6 +1682,8 @@
                                 return cs_cookie_val == 'yes';
                             } else if ( categoryCookie === CS_Data.cs_script_cat?.reddit && pixel == 'reddit' ) {
 	                            return cs_cookie_val == 'yes';
+                            } else if ( categoryCookie === CS_Data.cs_script_cat?.openai && pixel == 'openai' ) {
+                                return cs_cookie_val == 'yes';
                             }
                         }
                     }
@@ -1772,11 +1825,11 @@
                                 categoryCookie = Number(categoryCookie.replace(/\D+/g,""));
                                 let cs_cookie_val = Cookies.get('cs_enabled_cookie_term'+test_prefix+'_'+categoryCookie);
                                 if(cs_cookie_val == 'yes') {
-                                    if ( ( categoryCookie === CS_Data.cs_script_cat.facebook ) || ( typeof CS_Data.cs_meta_ldu_mode !== "undefined" && CS_Data.cs_meta_ldu_mode ) ) {
+                                    if ( ( categoryCookie === CS_Data.cs_script_cat.facebook ) || Utils.csModeEnabled( CS_Data.cs_meta_ldu_mode ) ) {
                                         Facebook.loadPixel();
                                     }
 
-                                    if ( categoryCookie === CS_Data.cs_script_cat.bing || ( typeof CS_Data.cs_bing_consent_mode !== "undefined" && CS_Data.cs_bing_consent_mode.ad_storage.enabled ) ) {
+                                    if ( categoryCookie === CS_Data.cs_script_cat.bing || Utils.csModeEnabled( CS_Data.cs_bing_consent_mode?.ad_storage?.enabled ) ) {
                                         Bing.loadPixel();
                                     }
 
@@ -1789,16 +1842,16 @@
                                         Pinterest.loadPixel();
                                     }
 
-	                                if ( ( categoryCookie === CS_Data.cs_script_cat.reddit ) || ( typeof CS_Data.cs_reddit_ldu_mode !== "undefined" && CS_Data.cs_reddit_ldu_mode ) ) {
+	                                if ( ( categoryCookie === CS_Data.cs_script_cat.reddit ) || Utils.csModeEnabled( CS_Data.cs_reddit_ldu_mode ) ) {
 		                                Reddit.loadPixel();
 	                                }
                                 } else {
-                                    if ( ( categoryCookie === CS_Data.cs_script_cat.facebook ) && ( typeof CS_Data.cs_meta_ldu_mode == "undefined" || !CS_Data.cs_meta_ldu_mode ) ) {
+                                    if ( ( categoryCookie === CS_Data.cs_script_cat.facebook ) && ! Utils.csModeEnabled( CS_Data.cs_meta_ldu_mode ) ) {
                                         Facebook.disable();
                                         consent.facebook = false;
                                     }
 
-                                    if ( categoryCookie === CS_Data.cs_script_cat.bing && ( typeof CS_Data.cs_bing_consent_mode == "undefined" || !CS_Data.cs_bing_consent_mode.ad_storage.enabled ) ) {
+                                    if ( categoryCookie === CS_Data.cs_script_cat.bing && ! Utils.csModeEnabled( CS_Data.cs_bing_consent_mode?.ad_storage?.enabled ) ) {
                                         Bing.disable();
                                         consent.bing = false;
                                     }
@@ -1813,10 +1866,15 @@
                                         consent.pinterest = false;
                                     }
 
-	                                if ( ( categoryCookie === CS_Data.cs_script_cat.reddit ) && ( typeof CS_Data.cs_reddit_ldu_mode == "undefined" || !CS_Data.cs_reddit_ldu_mode ) ) {
+	                                if ( ( categoryCookie === CS_Data.cs_script_cat.reddit ) && ! Utils.csModeEnabled( CS_Data.cs_reddit_ldu_mode ) ) {
 		                                Reddit.disable();
 		                                consent.reddit = false;
 	                                }
+
+                                    if ( categoryCookie === CS_Data.cs_script_cat?.openai ) {
+                                        OpenAI.disable();
+                                        consent.openai = false;
+                                    }
                                 }
                                 if (Cookies.get('cs_enabled_advanced_matching') == 'yes') {
                                     Facebook.loadPixel();
@@ -1860,12 +1918,12 @@
 
                                 Utils.setupGDPRData( consent );
                             } else if ( button_action === 'disable_all' ) {
-                                if ( typeof CS_Data.cs_meta_ldu_mode == "undefined" || CS_Data.cs_meta_ldu_mode == 0 ) {
+                                if ( ! Utils.csModeEnabled( CS_Data.cs_meta_ldu_mode ) ) {
                                     Facebook.disable();
                                     consent.facebook = false;
                                 }
 
-                                if ( typeof CS_Data.cs_bing_consent_mode == "undefined" || CS_Data.cs_bing_consent_mode.ad_storage.enabled == 0 ) {
+                                if ( ! Utils.csModeEnabled( CS_Data.cs_bing_consent_mode?.ad_storage?.enabled ) ) {
                                     Bing.disable();
                                     consent.bing = false;
                                 }
@@ -1876,13 +1934,15 @@
                                     consent.gtm = false;
                                 }
 
-	                            if ( typeof CS_Data.cs_reddit_ldu_mode == "undefined" || CS_Data.cs_reddit_ldu_mode == 0 ) {
+	                            if ( ! Utils.csModeEnabled( CS_Data.cs_reddit_ldu_mode ) ) {
 		                            Reddit.disable();
 		                            consent.reddit = false;
 	                            }
 
                                 Pinterest.disable();
                                 consent.pinterest = false;
+                                OpenAI.disable();
+                                consent.openai = false;
                                 Utils.setupGDPRData( consent );
                             } else if ( button_action === 'cs_confirm' ) {
                                 consent_actions();
@@ -2282,11 +2342,25 @@
          */
         function sendFbServerEvent(allData,name,params) {
             let eventId = null;
-            if(options.facebook.serverApiEnabled) {
+            // sendEventId is true when the token-based Conversion API is on OR
+            // when Meta-Enabled CAPI is on: in both cases Meta receives a second,
+            // API-side copy of this event and dedupes it by eventID.
+            // Only the token-based API needs an actual request from us, so the
+            // hook/AJAX branches below stay gated on serverApiEnabled.
+            if(options.facebook.sendEventId) {
 
-                if(allData.e_id === "woo_remove_from_cart") {// server event will sended from hook
+                var isAtcFromHook = options.woo
+                    && options.woo.addToCartCatchMethod === "add_cart_hook";
+
+                if(options.facebook.serverApiEnabled && allData.e_id === "woo_remove_from_cart") {// server event will sended from hook
                     Facebook.updateEventId(allData.name);
                     allData.eventID = Facebook.getEventId(allData.name);
+                } else if(options.facebook.serverApiEnabled && allData.e_id === "woo_add_to_cart_on_button_click" && isAtcFromHook) {
+                    // Server event was already sent from the PHP hook
+                    // (trackWooAddToCartEvent -> FacebookServer()->sendEventsNow).
+                    // Keep the shared eventID PHP put on the event so the browser
+                    // pixel dedupes against that server copy — do NOT re-send here,
+                    // and do NOT regenerate the eventID.
                 } else {
                     // send event from server if they was bloc by gdpr or need send with delay
                     allData.eventID = Utils.generateUniqueId(allData);
@@ -2298,7 +2372,7 @@
                         params._fbc = Cookies.get('_fbc');
                     }
 
-                    if( options.ajaxForServerEvent || isApiDisabled ){
+                    if( options.facebook.serverApiEnabled && ( options.ajaxForServerEvent || isApiDisabled ) ){
                         var json = {
                             action: 'pys_api_event',
                             pixel: 'facebook',
@@ -2480,6 +2554,12 @@
 
                     if ( +options.facebook.meta_ldu === 1  ) {
                         fbq( 'dataProcessingOptions', [ 'LDU' ], 0, 0 );
+                    }
+
+                    // Meta-Enabled Conversion API: let Meta build its own API
+                    // events out of this pixel's data. Must run right before init.
+                    if (Utils.isMetaEnabledCapiPixel(pixelId)) {
+                        fbq('optinMetaEnabledCapi', pixelId);
                     }
 
                     if (options.gdpr.consent_magic_integration_enabled && typeof CS_Data !== "undefined") {
@@ -3542,6 +3622,394 @@
 
     }(options);
 
+
+    var OpenAI = function (options) {
+
+        let initialized = false,
+            sentIdentity = null,
+            identityWaitTimer = null,
+            identityWaitExpired = false;
+
+        /**
+         * Send the server copy of an event.
+         *
+         */
+        function sendOpenAIServerEvent(name, allData, data, eventId) {
+
+            if (!options.hasOwnProperty('openai') || !options.openai.serverApiEnabled) {
+                return;
+            }
+
+            let isApiDisabled = options.gdpr.all_disabled_by_api ||
+                options.gdpr.openai_disabled_by_api ||
+                options.gdpr.cookiebot_integration_enabled ||
+                options.gdpr.consent_magic_integration_enabled ||
+                options.gdpr.cookie_notice_integration_enabled ||
+                options.gdpr.cookie_law_info_integration_enabled;
+
+            if (!(options.ajaxForServerEvent || isApiDisabled)) {
+                return;
+            }
+
+            let isStatic = allData.type === 'static' || allData.type === undefined,
+                delay = allData.delay || 0;
+
+            // PHP never collects a dynamic event, and it collects only delay == 0.
+            let phpSkipped = !isStatic || delay > 0;
+
+            // A static event is PHP's, unless the site is set to send static
+            // events over AJAX — which is exactly when PHP steps aside.
+            if (!phpSkipped
+                && !options.ajaxForServerStaticEvent
+                && !(allData.hasOwnProperty('ajaxFire') && allData.ajaxFire)) {
+                return;
+            }
+
+            let json = {
+                action: 'pys_openai_api_event',
+                pixel: 'openai',
+                event: name,
+                event_slug: allData.e_id || '',
+                ids: allData.pixelIds || options.openai.pixelIds,
+                data: {data: data},
+                url: window.location.href,
+                eventID: eventId,
+                ajax_event: options.ajax_event
+            };
+
+            if (allData.hasOwnProperty('woo_order')) {
+                json['woo_order'] = allData.woo_order;
+            }
+
+            if (allData.hasOwnProperty('edd_order')) {
+                json['edd_order'] = allData.edd_order;
+            }
+
+            if (allData.hasOwnProperty('order_key') && allData.order_key) {
+                json['order_key'] = allData.order_key;
+            }
+
+            let wait = name === 'page_viewed' ? 500 : 0;
+
+            setTimeout(function () {
+                Utils.sendServerAjaxRequest(options.ajaxUrl, json);
+            }, wait);
+        }
+
+        function fireEvent(name, allData) {
+
+            if (typeof window.pys_event_data_filter === "function" && window.pys_disable_event_filter(name, 'openai')) {
+                return;
+            }
+
+            if (typeof window.oaiq !== 'function') {
+                return;
+            }
+
+            let ids = (allData && allData.pixelIds && allData.pixelIds.length)
+                ? allData.pixelIds
+                : options.openai.pixelIds;
+
+            if (!ids || ids.length === 0) {
+                return;
+            }
+
+            let data = (allData.params && allData.params.data) ? Utils.clone(allData.params.data) : {};
+
+            let eventOptions = {},
+                eventId = Utils.generateUniqueId(allData);
+
+            if (eventId) {
+                eventOptions.event_id = eventId;
+            }
+
+	        if (options.debug) {
+                console.log('[OpenAI] ' + name, data, eventOptions, 'pixel_ids', ids);
+            }
+
+            sendOpenAIServerEvent(name, allData, data, eventId);
+
+            ids.forEach(function (pixelId) {
+                oaiq('measureSingle', pixelId, name, data, eventOptions);
+            });
+
+            let customEvent = new CustomEvent('openai_event_sent', {
+                detail: {
+                    eventName: name,
+                    data: data,
+                    options: eventOptions,
+                    pixel_ids: ids
+                }
+            });
+            window.dispatchEvent(customEvent);
+        }
+
+        /**
+         * True while the visitor's identity is still in flight.
+         */
+        function identityPending() {
+            return ! identityWaitExpired
+                && ! options.dynamicDataApplied
+                && !! options.dynamicDataUrl;
+        }
+
+        /**
+         * The identity to hand the SDK, built from whatever is known right now.
+         */
+        function buildAdvancedMatchingUser() {
+
+            let user = {};
+
+            if (options.openai.hasOwnProperty('advanced_matching')) {
+                Utils.copyProperties(options.openai.advanced_matching, user);
+            }
+
+            let externalIdAllowed = options.send_external_id
+                && ! ( options.gdpr && options.gdpr.externalID_disabled_by_api )
+                && ! ( options.cookie
+                    && ( options.cookie.disabled_all_cookie
+                        || options.cookie.externalID_disabled_by_api ) );
+
+            if (!user.hasOwnProperty('external_id_sha256')
+                && externalIdAllowed
+                && typeof sha256 === 'function'
+                && Cookies.get('pbid')) {
+                user.external_id_sha256 = sha256(Cookies.get('pbid'));
+            }
+
+            return user;
+        }
+
+        /**
+         * Public API
+         */
+        return {
+            tag: function () {
+                return "openai";
+            },
+            isEnabled: function () {
+                return options.hasOwnProperty('openai');
+            },
+            disable: function () {
+                initialized = false;
+
+                if (typeof window.oaiq === 'function') {
+                    oaiq('consent', false);
+                }
+            },
+
+            loadPixel: function () {
+
+                if (initialized || !this.isEnabled() || !Utils.consentGiven('openai')) {
+                    return;
+                }
+
+                let ids = options.openai.pixelIds;
+
+                if (!ids || ids.length === 0) {
+                    return;
+                }
+
+                if (identityPending()) {
+
+                    if (identityWaitTimer === null) {
+                        identityWaitTimer = setTimeout(function () {
+                            identityWaitExpired = true;
+
+                            if (window.pys && window.pys.OpenAI) {
+                                window.pys.OpenAI.loadPixel();
+                            }
+                        }, 3000);
+                    }
+
+                    return;
+                }
+
+                if (identityWaitTimer !== null) {
+                    clearTimeout(identityWaitTimer);
+                    identityWaitTimer = null;
+                }
+
+                !function (w, d, s, u) {
+                    if (w.oaiq) return;
+                    var q = function () {
+                        q.q.push(arguments);
+                    };
+                    q.q = [];
+                    w.oaiq = q;
+                    var js = d.createElement(s);
+                    js.async = true;
+                    js.src = u;
+                    var f = d.getElementsByTagName(s)[0];
+                    f.parentNode.insertBefore(js, f);
+                }(window, document, 'script', 'https://bzrcdn.openai.com/sdk/oaiq.min.js');
+
+                let user = buildAdvancedMatchingUser();
+
+                if (Object.keys(user).length > 0) {
+                    sentIdentity = JSON.stringify(user);
+                }
+
+                ids.forEach(function (pixelId) {
+                    let initOptions = {
+                        pixelId: pixelId
+                    };
+
+                    if (options.openai.debug) {
+                        initOptions.debug = true;
+                    }
+
+                    if (Object.keys(user).length > 0) {
+                        initOptions.user = user;
+                    }
+
+                    oaiq('init', initOptions);
+                });
+
+                oaiq('consent', true);
+
+                initialized = true;
+
+                Utils.fireStaticEvents('openai');
+            },
+
+            /**
+             * Hand the SDK an identity that arrived after the pixel was already initialised.
+             */
+            refreshAdvancedMatching: function () {
+
+                if (!initialized || !this.isEnabled() || typeof window.oaiq !== 'function') {
+                    return;
+                }
+
+                let user = buildAdvancedMatchingUser();
+
+                if (Object.keys(user).length === 0) {
+                    return;
+                }
+
+                let identity = JSON.stringify(user);
+
+                if (identity === sentIdentity) {
+                    return;
+                }
+
+                sentIdentity = identity;
+
+                let ids = options.openai.pixelIds || [];
+
+                ids.forEach(function (pixelId) {
+                    oaiq('init', {pixelId: pixelId, user: user});
+                });
+            },
+
+            fireEvent: function (name, data) {
+
+                if (!initialized || !this.isEnabled()) {
+                    return false;
+                }
+
+                fireEvent(name, data);
+
+                return true;
+            },
+
+            /**
+             * Add to cart from a listing button. The event is registered once with
+             * a placeholder payload; the real one is substituted here from the
+             * per-product data the server printed.
+             */
+            onWooAddToCartOnButtonEvent: function (product_id) {
+
+                if (!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag())) {
+                    return;
+                }
+                if (!window.pysWooProductData || !window.pysWooProductData.hasOwnProperty(product_id)) {
+                    return;
+                }
+                if (!window.pysWooProductData[product_id].hasOwnProperty(this.tag())) {
+                    return;
+                }
+
+                let productData = window.pysWooProductData[product_id][this.tag()];
+                let event = Utils.clone(options.dynamicEvents.woo_add_to_cart_on_button_click[this.tag()]);
+
+                Utils.copyProperties(productData['params'], event.params);
+
+                if (productData.hasOwnProperty('pixelIds')) {
+                    event.pixelIds = productData['pixelIds'];
+                }
+
+                this.fireEvent(event.name, event);
+            },
+
+            /**
+             * Add to cart from a single product page, where the visitor picks the
+             * quantity.
+             */
+            onWooAddToCartOnSingleEvent: function (product_id, qty, product_type, is_external, $form) {
+
+                if (!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag())) {
+                    return;
+                }
+                if (!window.pysWooProductData || !window.pysWooProductData.hasOwnProperty(product_id)) {
+                    return;
+                }
+                if (!window.pysWooProductData[product_id].hasOwnProperty(this.tag())) {
+                    return;
+                }
+
+                let event = Utils.clone(options.dynamicEvents.woo_add_to_cart_on_button_click[this.tag()]);
+
+                Utils.copyProperties(window.pysWooProductData[product_id][this.tag()]['params'], event.params);
+
+                if (qty && event.params && event.params.data && Array.isArray(event.params.data.contents)) {
+                    event.params.data.contents.forEach(function (item) {
+                        item.quantity = qty;
+                    });
+                }
+
+                this.fireEvent(event.name, event);
+            },
+
+            /**
+             * Add to cart from an EDD button. Downloads with price variations are
+             * keyed as "<download_id>_<price_index>".
+             */
+            onEddAddToCartOnButtonEvent: function (download_id, price_index, qty) {
+
+                if (!options.dynamicEvents.edd_add_to_cart_on_button_click.hasOwnProperty(this.tag())) {
+                    return;
+                }
+                if (!window.pysEddProductData || !window.pysEddProductData.hasOwnProperty(download_id)) {
+                    return;
+                }
+
+                let index = price_index ? download_id + '_' + price_index : download_id;
+
+                if (!window.pysEddProductData[download_id].hasOwnProperty(index)) {
+                    return;
+                }
+                if (!window.pysEddProductData[download_id][index].hasOwnProperty(this.tag())) {
+                    return;
+                }
+
+                let event = Utils.clone(options.dynamicEvents.edd_add_to_cart_on_button_click[this.tag()]);
+
+                Utils.copyProperties(window.pysEddProductData[download_id][index][this.tag()].params, event.params);
+
+                if (qty && event.params && event.params.data && Array.isArray(event.params.data.contents)) {
+                    event.params.data.contents.forEach(function (item) {
+                        item.quantity = qty;
+                    });
+                }
+
+                this.fireEvent(event.name, event);
+            },
+        };
+
+    }(options);
+
     var getPixelBySlag = function getPixelBySlag(slug) {
         switch (slug) {
             case "facebook": return window.pys.Facebook;
@@ -3550,6 +4018,7 @@
             case "bing": return window.pys.Bing;
             case "pinterest": return window.pys.Pinterest;
 	        case "reddit": return window.pys.Reddit;
+	        case "openai": return window.pys.OpenAI;
         }
     }
 
@@ -3557,6 +4026,7 @@
     window.pys.Facebook = Facebook;
     window.pys.Analytics = Analytics;
     window.pys.GTM = GTM;
+    window.pys.OpenAI = OpenAI;
     window.pys.Utils = Utils;
     window.pys.getPixelBySlag = getPixelBySlag;
 
@@ -3833,6 +4303,7 @@
                             Pinterest.onWooAddToCartOnButtonEvent(product_id);
                             Bing.onWooAddToCartOnButtonEvent(product_id);
 	                        Reddit.onWooAddToCartOnButtonEvent(product_id);
+                            OpenAI.onWooAddToCartOnButtonEvent(product_id);
                         }
                     }
                 });
@@ -3906,6 +4377,7 @@
                     Pinterest.onWooAddToCartOnSingleEvent(product_id, qty, product_type, false, $form);
                     Bing.onWooAddToCartOnSingleEvent(product_id, qty, product_type, false, $form);
 	                Reddit.onWooAddToCartOnSingleEvent(product_id, qty, product_type, false, $form);
+                    OpenAI.onWooAddToCartOnSingleEvent(product_id, qty, product_type, false, $form);
 
                 });
 
@@ -4022,6 +4494,7 @@
                         Pinterest.onEddAddToCartOnButtonEvent(download_id, price_index, q);
                         Bing.onEddAddToCartOnButtonEvent(download_id, price_index, q);
 	                    Reddit.onEddAddToCartOnButtonEvent(download_id, price_index, q);
+                        OpenAI.onEddAddToCartOnButtonEvent(download_id, price_index, q);
                     });
 
                 });
@@ -4240,10 +4713,18 @@
                         }
                     }
 
+                    options.dynamicDataApplied = true;
+
+                    if ( window.pys && window.pys.OpenAI
+                        && typeof window.pys.OpenAI.refreshAdvancedMatching === 'function' ) {
+                        window.pys.OpenAI.refreshAdvancedMatching();
+                    }
+
                     pysNormalInit();
                 } )
                 .catch( function(err) {
                     if ( options.debug ) console.warn( '[PYS] dynamic-options fetch failed:', err );
+                    options.dynamicDataApplied = true;
                     pysNormalInit();
                 } );
         } else {

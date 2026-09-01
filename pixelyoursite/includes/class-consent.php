@@ -20,6 +20,7 @@ class Consent {
 		'pinterest'  => true,
 		'gtm'        => true,
 		'reddit'     => true,
+		'openai'     => true,
 	);
 
 	public static function instance(): Consent {
@@ -33,17 +34,20 @@ class Consent {
 
 	public function __construct() {
 		$this->checkConsentPlugin();
-
-		if ( $this->consentPlugin ) {
-			$this->loadConsent();
-		}
 	}
 
+	/**
+	 * Consent is resolved on first use, never at construction time.
+	 *
+	 * @return void
+	 */
 	private function loadConsent() {
 
 		if ( $this->consentLoaded ) {
 			return;
 		}
+
+		$has_cookie = false;
 
 		if ( isset( $_COOKIE[ $this->consentKey ] ) && !empty( $_COOKIE[ $this->consentKey ] ) ) {
 
@@ -51,6 +55,7 @@ class Consent {
 
 			if ( !empty( $consent ) ) {
 				$this->consentData = $consent;
+				$has_cookie        = true;
 			} else {
 				$this->disableAllPixels();
 			}
@@ -59,7 +64,7 @@ class Consent {
 			$this->disableAllPixels();
 		}
 
-		$this->consentLoaded = true;
+		$this->consentLoaded = (bool) did_action( 'plugins_loaded' );
 
 		if ( apply_filters( 'pys_disable_by_gdpr', false ) ) {
 			$this->disableAllPixels();
@@ -67,11 +72,42 @@ class Consent {
 			return;
 		}
 
-		$this->consentData[ 'facebook' ] = !apply_filters( 'pys_disable_facebook_by_gdpr', false );
-		$this->consentData[ 'ga' ] = $this->consentData[ 'gtm' ] = !apply_filters( 'pys_disable_analytics_by_gdpr', false );
-		$this->consentData[ 'pinterest' ] = !apply_filters( 'pys_disable_pinterest_by_gdpr', false );
-		$this->consentData[ 'bing' ] = !apply_filters( 'pys_disable_bing_by_gdpr', false );
-		$this->consentData[ 'reddit' ] = !apply_filters( 'pys_disable_reddit_by_gdpr', false );
+		$this->applyGdprFilter( array( 'facebook' ), 'pys_disable_facebook_by_gdpr', $has_cookie );
+		$this->applyGdprFilter( array( 'ga', 'gtm' ), 'pys_disable_analytics_by_gdpr', $has_cookie );
+		$this->applyGdprFilter( array( 'pinterest' ), 'pys_disable_pinterest_by_gdpr', $has_cookie );
+		$this->applyGdprFilter( array( 'bing' ), 'pys_disable_bing_by_gdpr', $has_cookie );
+		$this->applyGdprFilter( array( 'reddit' ), 'pys_disable_reddit_by_gdpr', $has_cookie );
+		$this->applyGdprFilter( array( 'openai' ), 'pys_disable_openai_by_gdpr', $has_cookie );
+	}
+
+	/**
+	 * A consent plugin speaks through one of two channels, and only one of them
+	 * is present on any given site.
+	 *
+	 * @param string[] $slugs      Pixels the filter governs.
+	 * @param string   $filter     Filter name.
+	 * @param bool     $has_cookie Whether the visitor's choice was in the cookie.
+	 * @return void
+	 */
+	private function applyGdprFilter( array $slugs, string $filter, bool $has_cookie ): void {
+
+		if ( has_filter( $filter ) ) {
+			$disabled = (bool) apply_filters( $filter, false );
+
+			foreach ( $slugs as $slug ) {
+				$this->consentData[ $slug ] = !$disabled;
+			}
+
+			return;
+		}
+
+		if ( $has_cookie ) {
+			return; // the cookie already carries the answer
+		}
+
+		foreach ( $slugs as $slug ) {
+			$this->consentData[ $slug ] = true;
+		}
 	}
 
 	private function checkConsentPlugin(): void {
@@ -86,8 +122,65 @@ class Consent {
 		unset( $pixel );
 	}
 
+	/**
+	 * A refusal does not always mean silence.
+	 *
+	 * @param string $pixel Pixel slug.
+	 * @return bool
+	 */
+	public function firesInRestrictedMode( $pixel ): bool {
+
+		switch ( $pixel ) {
+
+			case 'facebook':
+				$restricted = (bool) apply_filters( 'pys_meta_ldu_mode', false );
+				break;
+
+			case 'reddit':
+				$restricted = (bool) apply_filters( 'pys_reddit_ldu_mode', false );
+				break;
+
+			case 'ga':
+			case 'gtm':
+			case 'google_ads':
+				$restricted = has_filter( 'cm_google_consent_mode' )
+					|| has_filter( 'pys_analytics_storage_mode' )
+					|| has_filter( 'pys_ad_storage_mode' )
+					|| has_filter( 'pys_ad_user_data_mode' )
+					|| has_filter( 'pys_ad_personalization_mode' );
+				break;
+
+			case 'bing':
+				$restricted = has_filter( 'cm_bing_consent_mode' )
+					|| has_filter( 'pys_bing_ad_storage_mode' );
+				break;
+
+			default:
+				$restricted = false;
+		}
+
+		return (bool) apply_filters( 'pys_pixel_restricted_mode', (bool) $restricted, $pixel );
+	}
+
+	/**
+	 * May this pixel report anything at all right now?
+	 *
+	 * @param string $pixel Pixel slug.
+	 * @return bool
+	 */
+	public function mayFire( $pixel ): bool {
+		return $this->checkConsent( $pixel ) || $this->firesInRestrictedMode( $pixel );
+	}
+
 	public function checkConsent( $pixel ): bool {
-        return (bool) apply_filters( 'pys_check_consent_by_gdpr', $this->consentData[ $pixel ], $pixel );
+
+		if ( $this->consentPlugin ) {
+			$this->loadConsent();
+		}
+
+		$consented = $this->consentData[ $pixel ] ?? false;
+
+        return (bool) apply_filters( 'pys_check_consent_by_gdpr', $consented, $pixel );
 	}
 }
 

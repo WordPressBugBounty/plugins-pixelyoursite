@@ -52,7 +52,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 							?>
                             <h4 class="switcher-label secondary_heading">Enable Pixel</h4>
                         </div>
+
                         <div class="pixel-data-wrap">
+                            <div>
+                                <div class="d-flex align-items-center mb-4">
+                                    <?php Facebook()->render_switcher_input( "meta_enabled_capi" ); ?>
+                                    <h4 class="switcher-label secondary_heading"><?php _e('Meta-Enabled Conversion API', 'pys'); ?></h4>
+                                </div>
+                                <p class="text-gray"><?php _e('Allow Meta to process Meta Pixel events using API. It can improve tracking performance. Use it along the traditional token-based Conversion API configured bellow.', 'pys'); ?></p>
+                            </div>
                             <?php
                             $_pys_pixel_ids    = (array) Facebook()->getOption('pixel_id');
                             $_pys_pixel_set    = Facebook()->enabled() && !empty($_pys_pixel_ids) && !empty($_pys_pixel_ids[0]);
@@ -83,14 +91,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
                             <div class="d-flex align-items-center">
                                 <?php Facebook()->render_switcher_input( "use_server_api" ); ?>
-                                <h4 class="switcher-label secondary_heading"><?php _e('Enable Conversion API', 'pys'); ?></h4>
+                                <h4 class="switcher-label secondary_heading"><?php _e('Token-based Conversion API', 'pys'); ?></h4>
                             </div>
                             <div class="notice notice-warning inline pys-capi-pixel-warning pys-capi-enable-warning<?php echo !($_pys_pixel_set && !$_pys_use_capi) ? ' pys-capi-hidden' : ''; ?>">
                                 <p>Enable Conversion API for this pixel. <a href="https://www.youtube.com/watch?v=HM98mGZshvc" target="_blank" class="link">Watch this video to learn how to do it.</a></p>
                             </div>
 
                             <div>
-                                <h4 class="primary_heading mb-4">Conversion API:</h4>
+                                <h4 class="primary_heading mb-4">Conversion API Token:</h4>
                                 <?php Facebook()->render_text_area_array_item( "server_access_api_token", "Api token" ) ?>
                             </div>
                             <div class="notice notice-warning inline pys-capi-pixel-warning pys-capi-token-warning<?php echo !($_pys_pixel_set && $_pys_use_capi && empty($_pys_capi_token)) ? ' pys-capi-hidden' : ''; ?>">
@@ -295,7 +303,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <div>
                                 <p class="text-gray pb-8">
                                     How to enable Google Consent Mode V2:
-                                    <a href=https://www.pixelyoursite.com/google-consent-mode-v2-wordpress?utm_source=plugin&utm_medium=pro&utm_campaign=google-consent"
+                                    <a href="https://www.pixelyoursite.com/strategy/google-consent-mode-v2"
                                        target="_blank" class="link">click here</a>
                                 </p>
                                 <p class="text-gray pb-8">
@@ -337,7 +345,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                                                                              target="_blank">pro version</a>.</h3>
                             <div class="text-gray">
                                 How to enable Google Consent Mode V2:
-                                <a class="link" href="https://www.pixelyoursite.com/google-consent-mode-v2-wordpress?utm_source=plugin&utm_medium=free&utm_campaign=google-consent" target="_blank">click here</a>
+                                <a class="link" href="https://www.pixelyoursite.com/strategy/google-consent-mode-v2" target="_blank">click here</a>
                             </div>
                             <div class="text-gray">
                                 Learn how to install the Google Ads Tag:
@@ -373,6 +381,125 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </div>
                         <?php renderProBadge(); ?>
 
+                    </div>
+                </div>
+            </div>
+
+            <div class="line"></div>
+
+            <input type="checkbox" class="general-settings-checkbox" id="openai_settings_switch" style="display: none">
+            <div class="d-flex pixel-wrap align-items-center justify-content-between">
+                <div class="pixel-heading d-flex justify-content-start align-items-center">
+                    <img class="tag-logo" alt="openai-logo"
+                         src="<?php echo PYS_FREE_URL; ?>/dist/images/openai-logo.svg">
+                    <div>
+                        <h3 class="secondary_heading">Your OpenAI Tag</h3>
+                    </div>
+                </div>
+                <div>
+                    <label for="openai_settings_switch">
+                        <?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                    </label>
+                </div>
+            </div>
+            <div class="settings_content_wrap">
+                <div class="settings_content">
+                    <div class="plate pixel_info mb-24">
+                        <div class="d-flex align-items-center pixel-switcher-enabled mb-24">
+							<?php OpenAI()->render_switcher_input( "enabled" ); ?>
+                            <h4 class="switcher-label secondary_heading">Enable Pixel</h4>
+                        </div>
+
+                        <div class="pixel-data-wrap">
+                            <div class="align-items-center">
+                                <h4 class="primary_heading mb-4">OpenAI pixel:</h4>
+								<?php OpenAI()->render_pixel_id( 'pixel_id', 'OpenAI pixel' ); ?>
+
+                                <div class="mt-6">
+                                    <p class="form-text text-small">
+                                        Beta: the OpenAI Ads (ChatGPT Ads) integration is still in beta.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="text-gray pb-8">
+			                        <?php _e('Learn how to install and configure OpenAI pixel and API:', 'pys');?>
+                                    <a href="https://www.pixelyoursite.com/docs/openai-settings-setup" target="_blank"
+                                       class="link">click here</a>
+                                </p>
+
+                                <p class="text-gray">
+			                        <?php _e('Learn how to manage consent for OpenAI:', 'pys');?>
+                                    <a href="https://www.youtube.com/watch?v=-Wsf34o83qs" target="_blank"
+                                       class="link">watch video</a>
+                                </p>
+                            </div>
+
+                            <div>
+                                <div class="d-flex align-items-center">
+									<?php OpenAI()->render_switcher_input( 'use_server_api' ); ?>
+                                    <h4 class="switcher-label secondary_heading">Enable OpenAI Conversions API</h4>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="primary_heading mb-4">API Key:</h4>
+								<?php OpenAI()->render_text_area_array_item( 'server_access_api_token', 'API key' ); ?>
+                                <div class="mt-6">
+                                    <p class="form-text text-small">
+                                        The Conversions API key from your OpenAI Ads account. This is not the same
+                                        credential as the Ads API key used to manage campaigns.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="d-flex align-items-center">
+									<?php OpenAI()->render_switcher_input( 'server_validate_only' ); ?>
+                                    <h4 class="switcher-label secondary_heading">Validate server events only</h4>
+                                </div>
+                                <div class="mt-6">
+                                    <p class="form-text text-small">
+                                        OpenAI checks the payload and reports errors, but does not record the events.
+                                        Use this while testing and <strong>turn it off afterwards</strong> — nothing is
+                                        measured while it is on.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="d-flex align-items-center">
+									<?php OpenAI()->render_switcher_input( 'debug_enabled' ); ?>
+                                    <h4 class="switcher-label secondary_heading">Set debug true</h4>
+                                </div>
+                                <div class="mt-6">
+                                    <p class="form-text text-small">
+                                        Enable this option if you want to test pixel events using OpenAI Pixel Helper
+                                        browser add-on.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center">
+								<?php OpenAI()->render_switcher_input( 'advanced_matching_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable Advanced Matching</h4>
+                            </div>
+
+                            <div>
+                                <p class="text-gray">
+                                    If your site sends a Content-Security-Policy header, allow
+                                    <span class="event-parameter-list">https://bzrcdn.openai.com</span> in
+                                    <span class="event-parameter-list">script-src</span> and
+                                    <span class="event-parameter-list">connect-src</span>,
+                                    <span class="event-parameter-list">https://bzr.openai.com</span> in
+                                    <span class="event-parameter-list">connect-src</span> and
+                                    <span class="event-parameter-list">img-src</span>.
+                                    <a href="https://developers.openai.com/ads/measurement-pixel" target="_blank"
+                                       class="link">OpenAI documentation</a>
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1441,7 +1568,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </div>
 
                     <div class="d-flex align-items-center">
-                        <a href="https://www.pixelyoursite.com/facebook-dynamic-product-ads-for-wordpress"
+                        <a href="https://www.pixelyoursite.com/strategy/how-to-do-facebook-dynamic-ads-for-wordpress-posts"
                            target="_blank"
                            class="link">Click here to learn how to do it</a>
                     </div>
@@ -1557,7 +1684,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <p class="primary-heading-color">
                         <span class="primary-text-color primary_heading">You need to upload your blog posts into a Facebook Product Catalog.</span>
                         You can do this with our dedicated plugin: <a
-                                href="https://www.pixelyoursite.com/wordpress-feed-facebook-dpa" target="_blank"
+                                href="https://www.pixelyoursite.com/plugins/wordpress-feed-for-facebook-dynamic-product-ads" target="_blank"
                                 class="link">Click
                             Here</a>
                     </p>

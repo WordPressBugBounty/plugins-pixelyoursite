@@ -36,6 +36,7 @@ final class GetTrackingAuditAbility extends AbstractAbility {
 		'pinterest'        => array( 'PixelYourSite\\Pinterest', 'pixel_id' ),
 		'bing'             => array( 'PixelYourSite\\Bing', 'pixel_id' ),
 		'reddit'           => array( 'PixelYourSite\\Reddit', 'pixel_id' ),
+		'openai'           => array( 'PixelYourSite\\OpenAI', 'pixel_id' ),
 		'gtm'              => array( 'PixelYourSite\\GTM', 'gtm_id' ),
 	);
 
@@ -211,11 +212,12 @@ final class GetTrackingAuditAbility extends AbstractAbility {
 	}
 
 	/**
-	 * Server-side (CAPI) audit domain — Free has functional Facebook CAPI and
-	 * Pinterest CAPI (Pinterest add-on). Read-only: reports enabled / token-present
-	 * (never the token value) + Pinterest ad_account_id. Per-platform status:
-	 * ok when delivery is on AND its token (+ Pinterest ad_account) is saved;
-	 * warning otherwise (with a fix hint). A platform is skipped when it has no
+	 * Server-side (CAPI) audit domain — Free has functional Facebook CAPI,
+	 * OpenAI CAPI and Pinterest CAPI (Pinterest add-on). Read-only: reports
+	 * enabled / token-present (never the token value), plus Pinterest's
+	 * ad_account_id and OpenAI's validate_only. Per-platform status: ok when
+	 * delivery is on AND its token (+ Pinterest ad_account) is saved AND nothing
+	 * is suppressing delivery; warning otherwise (with a fix hint). A platform is skipped when it has no
 	 * pixel configured (a CAPI warning is meaningless without a pixel). Domain
 	 * status: ok if all configured platforms are ok, warning if any warn,
 	 * not_configured when no platform qualifies, not_active if Facebook is absent.
@@ -247,6 +249,35 @@ final class GetTrackingAuditAbility extends AbstractAbility {
 						'fix'          => $tokenSet
 							? 'CAPI token is saved but server-side delivery is off. Enable it in PixelYourSite → Dashboard.'
 							: 'No CAPI token saved. Go to PixelYourSite → Dashboard to add your Facebook Conversions API token and enable delivery. (Saving the token via the AI assistant is a Pro feature — do it manually in the admin.)',
+					),
+				);
+			}
+		}
+
+		// OpenAI — ships with Free, so no add-on check; skipped without a pixel.
+		$oa = function_exists( 'PixelYourSite\\OpenAI' ) ? self::instance( 'PixelYourSite\\OpenAI' ) : null;
+
+		if ( $oa && self::hasId( 'PixelYourSite\\OpenAI', 'pixel_id' ) ) {
+
+			$tokenSet     = self::hasValue( $oa->getOption( 'server_access_api_token' ) );
+			$capiOn       = self::toBool( $oa->getOption( 'use_server_api' ) );
+			$validateOnly = self::toBool( $oa->getOption( 'server_validate_only' ) );
+
+			if ( $capiOn && $tokenSet && !$validateOnly ) {
+				$platforms[ 'openai' ] = array( 'status' => 'ok', 'detail' => null );
+			} else {
+				$anyWarning            = true;
+				$platforms[ 'openai' ] = array(
+					'status' => 'warning',
+					'detail' => array(
+						'token'         => $tokenSet ? 'configured' : 'missing',
+						'capi_enabled'  => $capiOn,
+						'validate_only' => $validateOnly,
+						'fix'           => !$tokenSet
+							? 'No OpenAI Conversions API key saved. Go to PixelYourSite → Dashboard → Your OpenAI Ads to add it.'
+							: ( !$capiOn
+								? 'OpenAI Conversions API key is saved but server-side delivery is off. Enable it in PixelYourSite → Dashboard → Your OpenAI Ads.'
+								: 'OpenAI server-side delivery is on, but "Send events for validation only" is ALSO on — events are validated and then DISCARDED, nothing is recorded. Turn it off in PixelYourSite → Dashboard → Your OpenAI Ads once testing is done.' ),
 					),
 				);
 			}
@@ -284,7 +315,7 @@ final class GetTrackingAuditAbility extends AbstractAbility {
 
 		foreach ( $platforms as &$p ) {
 			if ( 'warning' === ( $p[ 'status' ] ?? '' ) && isset( $p[ 'detail' ][ 'fix' ] ) ) {
-				$p[ 'detail' ][ 'fix' ] .= ' IMPORTANT: PixelYourSite Free MCP has NO tool to enable server-side delivery or save the CAPI token — this is a MANUAL admin action. Tell the user to do it themselves in PixelYourSite → Dashboard; do NOT offer to enable/save it via the assistant (writing CAPI settings requires PixelYourSite Pro).';
+				$p[ 'detail' ][ 'fix' ] .= ' IMPORTANT: PixelYourSite Free MCP has NO tool to enable server-side delivery or save the CAPI token — this is a MANUAL admin action. Tell the user to do it themselves on that page in the PixelYourSite admin; do NOT offer to enable/save it via the assistant (writing CAPI settings requires PixelYourSite Pro).';
 			}
 		}
 		unset( $p );

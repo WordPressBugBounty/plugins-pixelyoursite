@@ -32,6 +32,12 @@ class Plugin_Updater {
     private $beta = false;
 
     private $plugin_data = [];
+
+    /** Property used to mark a cached API response as a stored failure. */
+    const FAILED_RESPONSE_FLAG = 'pys_request_failed';
+
+    /** The package validation filter is global, so it is only registered once. */
+    private static $package_check_registered = false;
     /**
      * Class constructor.
      *
@@ -68,11 +74,27 @@ class Plugin_Updater {
      */
     public function init() {
 
+        // Must work in every context: WP-CLI and wp-cron (background auto-updates)
+        // read this transient too, and they never reach the admin-only hooks below.
         add_filter( 'site_transient_update_plugins', array( $this, 'check_update' ) );
         add_filter( 'plugins_api', array( $this, 'plugins_api_filter' ), 10, 3 );
-        remove_action( 'after_plugin_row_' . $this->name, 'wp_plugin_update_row', 10 );
-        add_action( 'after_plugin_row_' . $this->name, array( $this, 'show_update_notification' ), 10, 2 );
-        add_action( 'admin_init', array( $this, 'show_changelog' ) );
+
+        // Applies the edd_sl_api_request_verify_ssl filter to the package download too.
+        add_filter( 'http_request_args', array( $this, 'http_request_args' ), 10, 2 );
+
+        // Turns a non-ZIP answer from the store into a readable error instead of
+        // WordPress' "PCLZIP_ERR_BAD_FORMAT (-10)". Global filter, registered once.
+        if ( ! self::$package_check_registered ) {
+            self::$package_check_registered = true;
+            add_filter( 'upgrader_pre_download', array( $this, 'validate_package_download' ), 10, 4 );
+        }
+
+        // Admin UI only.
+        if ( is_admin() ) {
+            remove_action( 'after_plugin_row_' . $this->name, 'wp_plugin_update_row', 10 );
+            add_action( 'after_plugin_row_' . $this->name, array( $this, 'show_update_notification' ), 10, 2 );
+            add_action( 'admin_init', array( $this, 'show_changelog' ) );
+        }
 		
 	}
 	
@@ -118,9 +140,7 @@ class Plugin_Updater {
         if ( $need_refresh ) {
             $version_info = $this->api_request( 'plugin_latest_version',
                 array( 'slug' => $this->slug, 'beta' => $this->beta ) );
-            $timeout = $this->get_timeout();
-            $this->set_version_info_cache( $version_info,"",$timeout );
-
+            $this->cache_api_response( $version_info );
         }
 
         if ( false !== $version_info && is_object( $version_info ) && isset( $version_info->new_version ) ) {
@@ -184,8 +204,7 @@ class Plugin_Updater {
             if ( $need_refresh ) {
                 $version_info = $this->api_request( 'plugin_latest_version',
                     array( 'slug' => $this->slug, 'beta' => $this->beta ) );
-                $timeout = $this->get_timeout();
-                $this->set_version_info_cache( $version_info,"",$timeout );
+                $this->cache_api_response( $version_info );
             }
 
             if ( ! is_object( $version_info ) ) {
@@ -297,15 +316,13 @@ class Plugin_Updater {
 
             $api_response = $this->api_request( 'plugin_information', $to_send );
 
-            // Expires in 3 hours
-            $timeout = $this->get_timeout();
-            $this->set_version_info_cache( $api_response, $cache_key,$timeout );
+            $this->cache_api_response( $api_response, $cache_key );
 
             if ( false !== $api_response ) {
                 $_data = $api_response;
             }
 
-        } else {
+        } elseif ( ! $this->is_failed_response( $edd_api_request_transient ) ) {
             $_data = $edd_api_request_transient;
         }
 
@@ -343,7 +360,7 @@ class Plugin_Updater {
     public function http_request_args( $args, $url ) {
 
         $verify_ssl = $this->verify_ssl();
-        if ( strpos( $url, 'https://' ) !== false && strpos( $url, 'edd_action=package_download' ) ) {
+        if ( strpos( $url, 'https://' ) !== false && strpos( $url, 'edd_action=package_download' ) !== false ) {
             $args['sslverify'] = $verify_ssl;
         }
 
@@ -470,8 +487,7 @@ class Plugin_Updater {
                     $version_info->$key = (array) $section;
                 }
             }
-            $timeout = $this->get_timeout();
-            $this->set_version_info_cache( $version_info, $cache_key,$timeout );
+            $this->cache_api_response( $version_info, $cache_key );
 
         }
 
@@ -542,6 +558,136 @@ class Plugin_Updater {
      * @since  1.6.13
      * @return bool
      */
+    /**
+     * Download our own packages ourselves and make sure a ZIP really came back.
+     *
+     * EDD Software Licensing answers an invalid license, a domain mismatch, an
+     * exhausted download limit or a firewall block with an HTML page served as
+     * HTTP 200. WordPress stores that page as a .zip and the install dies with
+     * "PCLZIP_ERR_BAD_FORMAT (-10)", which tells nobody anything. Here we check
+     * the ZIP signature and surface what the server actually sent instead.
+     *
+     * The filter is global and registered by whichever instance came first, so the
+     * plugin being updated is taken from $hook_extra rather than from $this.
+     *
+     * @param bool|string|\WP_Error $reply      False unless another handler took over.
+     * @param string                $package    Package URL.
+     * @param object                $upgrader   WP_Upgrader instance, when available.
+     * @param array                 $hook_extra Upgrader context, when available.
+     *
+     * @return bool|string|\WP_Error Local file on success, WP_Error on failure.
+     */
+    public function validate_package_download( $reply, $package = '', $upgrader = null, $hook_extra = array() ) {
+
+        // Another handler already provided the file.
+        if ( false !== $reply ) {
+            return $reply;
+        }
+
+        if ( ! is_string( $package ) || strpos( $package, 'edd_action=package_download' ) === false ) {
+            return $reply;
+        }
+
+        // Our store only.
+        if ( strpos( $package, $this->api_url ) !== 0 ) {
+            return $reply;
+        }
+
+        if ( is_object( $upgrader ) && isset( $upgrader->skin ) && method_exists( $upgrader->skin, 'feedback' ) ) {
+            $upgrader->skin->feedback( 'downloading_package', $package );
+        }
+
+        if ( ! function_exists( 'download_url' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        $file = download_url( $package, 300 );
+
+        if ( is_wp_error( $file ) ) {
+            return $file;
+        }
+
+        $handle    = @fopen( $file, 'rb' );
+        $signature = $handle ? fread( $handle, 2 ) : '';
+
+        if ( $handle ) {
+            fclose( $handle );
+        }
+
+        if ( 'PK' === $signature ) {
+            return $file;
+        }
+
+        // Not an archive: keep the beginning of the response for the error message.
+        $body = (string) @file_get_contents( $file, false, null, 0, 400 );
+        @unlink( $file );
+
+        // The message is shown both as HTML (wp-admin) and as plain text (WP-CLI,
+        // auto-update e-mails), so drop markup instead of escaping it - entities
+        // would be unreadable in the plain text case.
+        $body = wp_strip_all_tags( $body );
+        $body = trim( preg_replace( '/\s+/', ' ', str_replace( array( '<', '>' ), '', $body ) ) );
+
+        return new \WP_Error(
+            'pys_invalid_package',
+            sprintf(
+                __( 'The update server did not return a ZIP archive for %1$s. Please contact PixelYourSite support and pass along this answer from the server: %2$s',
+                    'pys' ),
+                is_array( $hook_extra ) && ! empty( $hook_extra['plugin'] ) ? $hook_extra['plugin'] : $this->slug,
+                $body !== '' ? '"' . $body . '"' : __( '(empty response)', 'pys' )
+            )
+        );
+
+    }
+
+    /**
+     * Store an API response in the cache.
+     *
+     * A failed or incomplete answer must never be cached for the full 24 hours:
+     * one timeout, firewall block or truncated JSON would otherwise hide available
+     * updates - or keep a dead download link alive - for a whole day. Failures are
+     * cached as a short-lived marker instead, so the next check retries soon while
+     * the API is still not hit on every single request.
+     *
+     * @param object|false $response
+     * @param string       $cache_key
+     */
+    private function cache_api_response( $response, $cache_key = '' ) {
+
+        if ( is_object( $response ) && ( isset( $response->new_version ) || isset( $response->sections ) ) ) {
+            $this->set_version_info_cache( $response, $cache_key, $this->get_timeout() );
+
+            return;
+        }
+
+        $this->set_version_info_cache(
+            (object) array( self::FAILED_RESPONSE_FLAG => true ),
+            $cache_key,
+            $this->get_error_timeout()
+        );
+
+    }
+
+    /**
+     * Is the cached value a stored failure marker rather than real plugin data?
+     *
+     * @param mixed $value
+     *
+     * @return bool
+     */
+    private function is_failed_response( $value ) {
+        return is_object( $value ) && ! empty( $value->{self::FAILED_RESPONSE_FLAG} );
+    }
+
+    /**
+     * Retry window used for failed API responses.
+     *
+     * @return int
+     */
+    private function get_error_timeout() {
+        return strtotime( '+15 minutes', current_time( 'timestamp' ) );
+    }
+
     private function verify_ssl() {
         return (bool) apply_filters( 'edd_sl_api_request_verify_ssl', true, $this );
     }

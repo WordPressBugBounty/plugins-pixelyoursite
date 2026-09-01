@@ -55,6 +55,15 @@ use PixelYourSite\Facebook\Helpers;
                         </div>
                     </div>
 
+                    <?php if ( OpenAI()->enabled() ) : ?>
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <div class="d-flex align-items-center flex-with-badge">
+                                <?php renderDummySwitcher( false); ?>
+                                <h4 class="switcher-label secondary_heading"><?php _e( 'OpenAI Purchase tracking via API', 'pys' ); ?></h4>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if ( Pinterest()->enabled() ) : ?>
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <div class="d-flex align-items-center flex-with-badge">
@@ -293,7 +302,7 @@ use PixelYourSite\Facebook\Helpers;
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between gap-24">
                 <p style="text-align: center;"><?php _e('Use our dedicated plugin to upload and update your products to Meta Product Catalogs, Google Merchant, Google Ads Custom Vertical, Pinterest Catalogs, or TikTok Catalogs.', 'pys');?></p>
-                <a class="link" href="https://www.pixelyoursite.com/product-catalog-facebook?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-catalogs-woo-tab"
+                <a class="link" href="https://www.pixelyoursite.com/plugins/product-catalog-feed-for-woocommerce"
                    target="_blank"><?php _e('Click to get Product Catalog Feed Pro', 'pys');?></a>
             </div>
         </div>
@@ -972,6 +981,101 @@ use PixelYourSite\Facebook\Helpers;
                     </div>
                 <?php endif; ?>
 
+
+                <?php if ( OpenAI()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">OpenAI ID settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php OpenAI()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your product catalog does not include the variants for
+                                        variable products.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                    <div class="d-flex align-items-center flex-with-badge">
+                                        <?php renderDummySwitcher(); ?>
+                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
+                                    </div>
+                                    <?php renderProBadge(); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_select_input( 'woo_content_id', array(
+                                        'product_id'  => 'Product ID',
+                                        'product_sku' => 'Product SKU',
+                                    ) ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <?php if ( isWPMLActive() && OpenAI()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+                                                    <?php OpenAI()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
+                                                </h4>
+                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                                    <div class="d-flex align-items-center flex-with-badge">
+                                                        <?php renderDummySelectInput( 'Select language');?>
+                                                    </div>
+                                                    <?php renderProBadge(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the pixel and we will use the native product ID for each translated item.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
 	            <?php if ( Reddit()->enabled() ) : ?>
                     <div class="card card-style6">
                         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
@@ -1248,7 +1352,7 @@ use PixelYourSite\Facebook\Helpers;
                                 <div class="d-flex align-items-center flex-with-badge">
                                     <label class="primary_heading">Fire the Purchase Event for the following order status:</label>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
                             <div class="wc-order-statuses mb-12">
                                 <?php
@@ -1286,7 +1390,7 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable the purchase event on Google
                                         Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
 
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
@@ -1311,6 +1415,13 @@ use PixelYourSite\Facebook\Helpers;
                             </div>
                         <?php endif; ?>
 
+
+                        <?php if ( OpenAI()->enabled() ) : ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'woo_purchase_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the order_created event on OpenAI</h4>
+                            </div>
+                        <?php endif; ?>
 	                    <?php if ( Reddit()->enabled() ) : ?>
                             <div class="d-flex align-items-center">
 			                    <?php Reddit()->render_switcher_input( 'woo_purchase_enabled' ); ?>
@@ -1339,7 +1450,7 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable Conversion with Card Data (CwCD) optional fileds</h4>
                                 </div>
                                 <p class="text-gray">
-                                    <div class="mt-8">Optional, useful when using <a href="https://www.pixelyoursite.com/google-automated-discounts-for-woocommerce" target="_blank">Google Automated Discounts</a> </div>
+                                    <div class="mt-8">Optional, useful when using <a href="https://www.pixelyoursite.com/strategy/gad" target="_blank">Google Automated Discounts</a> </div>
                                 </p>
                             </div>
                             <div>
@@ -1420,6 +1531,10 @@ use PixelYourSite\Facebook\Helpers;
                             <?php
                             renderWooSubscriptionsPlatformSwitcher( Facebook() );
                             renderWooSubscriptionsPlatformSwitcher( GA() );
+
+                            if ( OpenAI()->enabled() ) {
+                                renderWooSubscriptionsPlatformSwitcher( OpenAI() );
+                            }
 
                             if ( Pinterest()->enabled() ) {
                                 renderWooSubscriptionsPlatformSwitcher( Pinterest() );
@@ -1505,7 +1620,7 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable the begin_checkout event on
                                         Google Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
 
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
@@ -1531,6 +1646,14 @@ use PixelYourSite\Facebook\Helpers;
                                 <?php Bing()->render_switcher_input( 'woo_initiate_checkout_enabled' ); ?>
                                 <h4 class="switcher-label secondary_heading">Enable the InitiateCheckout on Bing</h4>
                                 <?php Bing()->renderAddonNotice(); ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ( OpenAI()->enabled() ) :
+                            $configured = true; ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'woo_initiate_checkout_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the checkout_started event on OpenAI</h4>
                             </div>
                         <?php endif; ?>
 
@@ -1593,7 +1716,7 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable the add_to_cart event on Google
                                         Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
 
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
@@ -1620,6 +1743,14 @@ use PixelYourSite\Facebook\Helpers;
                             </div>
                         <?php endif; ?>
 
+
+                        <?php if ( OpenAI()->enabled() ) :
+                            $configured = true; ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'woo_add_to_cart_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the items_added event on OpenAI</h4>
+                            </div>
+                        <?php endif; ?>
 	                    <?php if ( Reddit()->enabled() ) :
 		                    $configured = true; ?>
                             <div class="d-flex align-items-center">
@@ -1696,7 +1827,7 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable the view_item event on Google
                                         Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
                         </div>
@@ -1722,6 +1853,14 @@ use PixelYourSite\Facebook\Helpers;
                             </div>
                         <?php endif; ?>
 
+
+                        <?php if ( OpenAI()->enabled() ) :
+                            $configured = true; ?>
+                            <div class="d-flex align-items-center">
+                                <?php OpenAI()->render_switcher_input( 'woo_view_content_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading">Enable the contents_viewed event on OpenAI</h4>
+                            </div>
+                        <?php endif; ?>
 	                    <?php if ( Reddit()->enabled() ) :
 		                    $configured = true; ?>
                             <div class="d-flex align-items-center">
@@ -1775,7 +1914,7 @@ use PixelYourSite\Facebook\Helpers;
                                     <h4 class="switcher-label secondary_heading">Enable the view_item_list event on Google
                                         Ads</h4>
                                 </div>
-                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
+                                <?php renderProBadge('https://www.pixelyoursite.com/google-ads-tag?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature'); ?>
                             </div>
                             <?php renderDummyGoogleAdsConversionLabelInputs(); ?>
                         </div>

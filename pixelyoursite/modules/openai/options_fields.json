@@ -1,0 +1,31 @@
+{
+  "enabled": "checkbox",
+  "pixel_id": "array",
+  "advanced_matching_enabled": "checkbox",
+  "debug_enabled": "checkbox",
+
+  "use_server_api": "checkbox",
+  "server_access_api_token": "array_v",
+  "server_validate_only": "checkbox",
+
+  "woo_variable_as_simple": "checkbox",
+  "woo_content_id": "select",
+  "woo_content_id_prefix": "text",
+  "woo_content_id_suffix": "text",
+  "woo_wpml_unified_id": "checkbox",
+
+  "woo_view_content_enabled": "checkbox",
+  "woo_add_to_cart_enabled": "checkbox",
+  "woo_initiate_checkout_enabled": "checkbox",
+  "woo_purchase_enabled": "checkbox",
+
+  "edd_variable_as_simple": "checkbox",
+  "edd_content_id": "select",
+  "edd_content_id_prefix": "text",
+  "edd_content_id_suffix": "text",
+
+  "edd_view_content_enabled": "checkbox",
+  "edd_add_to_cart_enabled": "checkbox",
+  "edd_initiate_checkout_enabled": "checkbox",
+  "edd_purchase_enabled": "checkbox"
+}

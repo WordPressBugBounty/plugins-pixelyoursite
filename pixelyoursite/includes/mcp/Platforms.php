@@ -7,7 +7,8 @@
  *
  * Free variant: no TikTok and no standalone Google Ads module (Free has neither
  * a `TikTok()` nor an `Ads()` accessor). Two kinds of module:
- *  - **Pixel platforms** (facebook, google_analytics, pinterest, bing, reddit)
+ *  - **Pixel platforms** (facebook, google_analytics, pinterest, bing, reddit,
+ *    openai)
  *    — active = a non-empty main pixel / ID. Bing/Reddit/Pinterest are add-on
  *    plugins, so we gate on `function_exists()` for their accessor.
  *  - **Google tag modules** (gatags, gtm) — no own pixel ID; they hold the
@@ -37,6 +38,7 @@ final class Platforms {
 		'pinterest'        => array( 'PixelYourSite\\Pinterest', 'pixel_id' ),
 		'bing'             => array( 'PixelYourSite\\Bing', 'pixel_id' ),
 		'reddit'           => array( 'PixelYourSite\\Reddit', 'pixel_id' ),
+		'openai'           => array( 'PixelYourSite\\OpenAI', 'pixel_id' ),
 	);
 
 	/**

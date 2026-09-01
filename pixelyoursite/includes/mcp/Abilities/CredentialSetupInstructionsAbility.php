@@ -27,6 +27,7 @@ final class CredentialSetupInstructionsAbility extends AbstractAbility {
 	 */
 	private const PLATFORMS = array(
 		'facebook',
+		'openai',
 		'pinterest',
 		'bing',
 		'reddit',
@@ -57,7 +58,7 @@ final class CredentialSetupInstructionsAbility extends AbstractAbility {
 	 * @return string
 	 */
 	public static function description(): string {
-		return 'Returns step-by-step instructions for generating a server-side credential for one tracking platform. Static content, no DB calls, safe to call before any other tool. The response includes: what the credential is called on that platform, the exact `admin_ui_path` inside the platform\'s admin UI (quote it verbatim to the user — do not paraphrase), what to copy, whether the value can be retrieved later or is shown only once, and the common mistakes that cause silent CAPI failures. Call this when the user wants to set up server-side events / Conversions API for Facebook or Pinterest and get_tracking_audit shows that platform\'s `capi` status as `warning`. Free supports only Facebook and Pinterest CAPI (bing/reddit/gtm are id-only). GA4 Measurement Protocol, Google Ads Enhanced Conversions and TikTok are NOT in Free — do not offer their setup; say plainly they require Pro. Pass exactly one `platform` per call — do not loop across all platforms; ask the user which platform first.';
+		return 'Returns step-by-step instructions for generating a server-side credential for one tracking platform. Static content, no DB calls, safe to call before any other tool. The response includes: what the credential is called on that platform, the exact `admin_ui_path` inside the platform\'s admin UI (quote it verbatim to the user — do not paraphrase), what to copy, whether the value can be retrieved later or is shown only once, and the common mistakes that cause silent CAPI failures. Call this when the user wants to set up server-side events / Conversions API for Facebook, OpenAI or Pinterest and get_tracking_audit shows that platform\'s `capi` status as `warning`. Free supports Facebook, OpenAI and Pinterest CAPI (bing/reddit/gtm are id-only). GA4 Measurement Protocol, Google Ads Enhanced Conversions and TikTok are NOT in Free — do not offer their setup; say plainly they require Pro. Pass exactly one `platform` per call — do not loop across all platforms; ask the user which platform first.';
 	}
 
 	/**
@@ -74,7 +75,7 @@ final class CredentialSetupInstructionsAbility extends AbstractAbility {
 				'platform' => array(
 					'type'        => 'string',
 					'enum'        => self::PLATFORMS,
-					'description' => 'Tracking platform. Pick one. `facebook` = Meta Pixel + Conversions API token. `pinterest` = Pinterest Conversions API token + Ad Account ID (needs the Pinterest add-on). GA4 Measurement Protocol, Google Ads Enhanced Conversions and TikTok Events API are NOT available in PixelYourSite Free (Pro, or not a Free platform); do not offer their setup, and if asked say plainly they require Pro. `bing`, `reddit` and `gtm` are id-only in PYS — no separate server-side token (`gtm` is the Google Tag Manager container ID; see response `pitfall` for details).',
+					'description' => 'Tracking platform. Pick one. `facebook` = Meta Pixel + Conversions API token. `openai` = OpenAI Ads Pixel ID + Conversions API key (ships with Free; no add-on needed). `pinterest` = Pinterest Conversions API token + Ad Account ID (needs the Pinterest add-on). GA4 Measurement Protocol, Google Ads Enhanced Conversions and TikTok Events API are NOT available in PixelYourSite Free (Pro, or not a Free platform); do not offer their setup, and if asked say plainly they require Pro. `bing`, `reddit` and `gtm` are id-only in PYS — no separate server-side token (`gtm` is the Google Tag Manager container ID; see response `pitfall` for details).',
 				),
 			),
 		);
@@ -148,6 +149,15 @@ final class CredentialSetupInstructionsAbility extends AbstractAbility {
 					'what_to_copy'      => 'The System User access token shown in the dialog. NOT a personal user token.',
 					'retrievable_later' => false,
 					'pitfall'           => 'Personal user tokens silently expire and break CAPI without any error. Always issue from a System User in Business Manager — System User tokens are long-lived and survive admin changes.',
+				);
+
+			case 'openai':
+				return array(
+					'credential_name'   => 'Pixel ID + Conversions API key',
+					'admin_ui_path'     => 'OpenAI Ads Manager → Conversions → Data source → the "Save your key" dialog issues the Conversions API key together with the Pixel ID.',
+					'what_to_copy'      => 'Both the Pixel ID and the Conversions API key. Both go in the same place: PixelYourSite → Dashboard → Your OpenAI Ads, where "Enable OpenAI Conversions API" also has to be switched on.',
+					'retrievable_later' => false,
+					'pitfall'           => 'Three things fail silently here. (1) The key is shown ONCE and no endpoint lists existing keys — if it was not copied, a new one must be issued. (2) Every conversion event must ALSO be registered in Conversions → Conversion events on OpenAI\'s side, or events are accepted with a 200 and never counted. (3) PixelYourSite has a "Send events for validation only" switch used for testing: while it is on, events are validated and then DISCARDED. Check it before concluding the setup is broken — get_tracking_audit reports it as `validate_only`.',
 				);
 
 			case 'pinterest':

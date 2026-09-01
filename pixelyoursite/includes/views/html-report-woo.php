@@ -75,12 +75,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     Visualize your data inside the plugin, or download it as CSV. </p>
                                 <div class="d-flex align-items-center justify-content-center gap-16">
                                     <h3 class="text-center">Get detailed info about products sold by each campaign, ad set, or ad</h3>
-                                    <a href="https://www.pixelyoursite.com/woocommerce-first-party-reports?utm_source=free-plugin-reports-page-woo&utm_medium=free-plugin-reports-page-woo&utm_campaign=free-plugin-reports-page-woo&utm_content=free-plugin-reports-page-woo&utm_term=free-plugin-reports-page-woo"
+                                    <a href="https://www.pixelyoursite.com/strategy/woocommerce-first-party-reports"
                                        target="_blank" class="btn btn-block btn-sm btn-save orange_button">Click to find more</a>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-center gap-16">
                                     <h3 class="text-center">Analyse your WooCommerce data with ChatGPT</h3>
-                                    <a href="https://www.pixelyoursite.com/pixelyoursite-and-chatgpt?utm_source=free-plugin-reports-page-woo&utm_medium=free-plugin-reports-page-woo&utm_campaign=free-plugin-reports-page-woo&utm_content=free-plugin-reports-page-woo&utm_term=free-plugin-reports-page-woo"
+                                    <a href="https://www.pixelyoursite.com/strategy/chatgpt"
                                        target="_blank" class="btn btn-block btn-sm btn-save orange_button">Click to find more</a>
                                 </div>
                             </div>

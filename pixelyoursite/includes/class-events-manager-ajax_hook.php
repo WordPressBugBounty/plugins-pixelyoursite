@@ -109,7 +109,7 @@ class AjaxHookEventManager {
         $sharedEventId = EventIdGenerator::guidv4();
         foreach ( PYS()->getRegisteredPixels() as $pixel ) {
 
-			if ( !Consent()->checkConsent( $pixel->getSlug() ) ) {
+			if ( !Consent()->mayFire( $pixel->getSlug() ) ) {
 				continue;
 			}
 
@@ -159,6 +159,10 @@ class AjaxHookEventManager {
 
                 if($pixel->getSlug() === "pinterest" && Pinterest()->isServerApiEnabled()) {
                     PinterestServer()->sendEventsNow(array($event));
+                }
+
+                if($pixel->getSlug() === "openai" && OpenAI()->isServerApiEnabled()) {
+                    OpenAIServer()->sendEventsNow(array($event));
                 }
             }
 
