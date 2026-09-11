@@ -83,21 +83,34 @@ include "html-popovers.php";
                     <div class="d-flex align-items-center">
                         <?php PYS()->render_switcher_input( 'fetch_user_data_via_rest' ); ?>
                         <h4 class="switcher-label secondary_heading">
-                            <?php _e( 'Fetch user data via REST API <strong>(for shared HTML cache setups)</strong>', 'pys' ); ?>
+                            <?php _e( 'Fetch visitor data via REST API <strong>(for full-page caching)</strong>', 'pys' ); ?>
                         </h4>
                     </div>
                     <div class="pys-notice pys-notice-warning mt-4" style="background:#fff8e1;border-left:4px solid #f0ad4e;padding:12px 16px;border-radius:4px;">
-                        <strong><?php _e( '&#9888; Enable only if you use a shared HTML cache for logged-in users', 'pys' ); ?></strong>
+                        <strong><?php _e( '&#9888; Two situations need this &mdash; otherwise leave it off', 'pys' ); ?></strong>
                         <p class="mt-2 mb-0">
                             <?php _e(
-                                'When active, user-specific data is removed from the cached HTML and loaded on every '
-                                . 'page view via a separate REST API call: nonces, UTMs, and the Advanced Matching '
-                                . 'parameters of the Meta pixel (and of the Pinterest and Reddit tags when those '
-                                . 'add-ons are active). This prevents identity bleed between users served the same '
-                                . 'cached page (e.g. LiteSpeed Cache shared-cache mode).<br><br>'
-                                . '<strong>Do NOT enable on standard setups.</strong> It adds an extra REST request '
-                                . '(full WordPress boot) on every page view, which increases server CPU load and may '
-                                . 'delay pixel events on shared hosting.',
+                                'When active, everything that belongs to one particular visitor is taken out of the '
+                                . 'cached HTML and loaded per page view through a separate REST API call: nonces, the '
+                                . 'Advanced Matching parameters of the Meta pixel (and of the Pinterest and Reddit '
+                                . 'tags when those add-ons are active), and the visit data recorded in the PHP session '
+                                . '(landing page, traffic source, UTM parameters).<br><br>'
+                                . '<strong>Turn it on if you cache pages and Advanced Matching is enabled.</strong> '
+                                . 'That applies to guests as much as to logged-in visitors: for a visitor who is not '
+                                . 'logged in, Advanced Matching is read from the cookie this plugin writes after a '
+                                . 'form submission, so it is printed into the page and a full-page cache would hand '
+                                . 'it to the next visitor.<br><br>'
+                                . '<strong>Turn it on also if</strong> you need the visit data of visitors who have '
+                                . 'not accepted cookies yet, because without this call the landing page, the traffic '
+                                . 'source and the UTM parameters come only from the cookies of that visitor and from '
+                                . 'the current URL, and a consent manager that blocks those cookies leaves nothing '
+                                . 'to read.<br><br>'
+                                . 'The landing page, the traffic source and the UTM parameters are kept out of the '
+                                . 'cached HTML at all times, with or without this option, so those never travel from '
+                                . 'one visitor to another.<br><br>'
+                                . '<strong>The cost:</strong> one extra REST request, with a full WordPress boot, on '
+                                . 'every page view, and the pixel events wait for its answer before they fire. On '
+                                . 'shared hosting that is noticeable.',
                                 'pys'
                             ); ?>
                         </p>
@@ -146,7 +159,10 @@ include "html-popovers.php";
                         <h4 class="switcher-label secondary_heading"><?php _e('Disable PHP sessions', 'pys');?></h4>
                     </div>
                     <p class="text-gray mt-4">
-                        <?php _e('If you are having problems with sessions or cache when the plugin is enabled due to the creation of the PHPSESSID cookie, enable this option. This may reduce the effectiveness of some of our session-based parameters, such as landing page, traffic source, or UTM.', 'pys');?>
+                        <?php _e('Turn this on if the PHPSESSID cookie itself causes trouble — for example a page cache that refuses to serve cached pages once the cookie is set. Note that other plugins can open a PHP session of their own, so this option cannot guarantee that the PHPSESSID cookie disappears from your site altogether.', 'pys');?>
+                    </p>
+                    <p class="text-gray mt-4">
+                        <?php _e('Cost of turning it on: the landing page, the traffic source and the UTM parameters then come only from the cookies of that visitor and from the current URL, and the REST API option above has nothing left to read. With full-page caching the cookies are usually the better source anyway — on a cache hit PHP does not run, so the session records nothing — but if a consent manager blocks the cookies of the plugin, the visit stays unrecorded until the visitor accepts them.', 'pys');?>
                     </p>
                 </div>
             </div>

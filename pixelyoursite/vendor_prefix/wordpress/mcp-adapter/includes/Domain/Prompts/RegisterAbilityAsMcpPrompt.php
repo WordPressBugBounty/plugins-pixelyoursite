@@ -394,7 +394,7 @@ class RegisterAbilityAsMcpPrompt
          * @param string      $name    The sanitized prompt name.
          * @param \WP_Ability $ability The source ability instance.
          */
-        $filtered_name = apply_filters('mcp_adapter_prompt_name', $sanitized_name, $this->ability);
+        $filtered_name = apply_filters('pys_pro_mcp_adapter_prompt_name', $sanitized_name, $this->ability);
         // Validate post-filter (in case filter broke it).
         if (!is_string($filtered_name) || !McpValidator::validate_name($filtered_name)) {
             return new WP_Error('mcp_prompt_name_filter_invalid', sprintf(
@@ -436,7 +436,7 @@ class RegisterAbilityAsMcpPrompt
             ), array('exception' => $e));
         }
         // Optional deep validation if enabled.
-        $mcp_validation_enabled = apply_filters('mcp_adapter_validation_enabled', \false);
+        $mcp_validation_enabled = apply_filters('pys_pro_mcp_adapter_validation_enabled', \false);
         if ($mcp_validation_enabled) {
             $validation_result = McpPromptValidator::validate_prompt_dto($prompt_dto);
             if (is_wp_error($validation_result)) {

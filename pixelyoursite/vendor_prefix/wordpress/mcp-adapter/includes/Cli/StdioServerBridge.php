@@ -84,9 +84,9 @@ class StdioServerBridge
          *
          * @param bool $enabled Whether STDIO transport is enabled. Default true.
          */
-        $enable_serve = apply_filters('mcp_adapter_enable_stdio_transport', \true);
+        $enable_serve = apply_filters('pys_pro_mcp_adapter_enable_stdio_transport', \true);
         if (!$enable_serve) {
-            throw new \RuntimeException('The STDIO transport is disabled. Enable it by setting the "mcp_adapter_enable_stdio_transport" filter to true.');
+            throw new \RuntimeException('The STDIO transport is disabled. Enable it by setting the "pys_pro_mcp_adapter_enable_stdio_transport" filter to true.');
         }
         $this->is_running = \true;
         // Log to stderr to keep stdout clean for MCP messages

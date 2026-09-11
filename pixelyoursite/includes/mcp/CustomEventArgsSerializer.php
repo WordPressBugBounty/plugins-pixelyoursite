@@ -188,6 +188,10 @@ final class CustomEventArgsSerializer {
 				case CustomEventConditionMap::SHAPE_USER_ROLE:
 					$row[ 'user_role' ] = (array) $condition->getParam( 'user_role' );
 					break;
+				case CustomEventConditionMap::SHAPE_PRODUCT_ID:
+					$row[ 'product_ids' ]        = (array) $condition->getParam( 'product_ids' );
+					$row[ 'product_match_mode' ] = (string) $condition->getParam( 'product_match_mode' );
+					break;
 				default: // rule_value — nested under the type key
 					$row[ $type ] = array(
 						'condition_rule'  => $condition->getParam( 'condition_rule' ),

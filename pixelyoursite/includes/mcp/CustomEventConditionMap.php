@@ -6,8 +6,8 @@
  * (ConditionalEvent::$conditional_type_array).
  *
  * Free WRITABLE conditions via MCP: url_filters, device, user_role (see
- * WRITABLE_TYPES). url_parameters, landing_page and source are PixelYourSite Pro
- * conditions — kept here (mirroring the full admin dropdown) so the tool NEVER
+ * WRITABLE_TYPES). url_parameters, landing_page, source and product_id are
+ * PixelYourSite Pro conditions — kept here (mirroring the full admin dropdown) so the tool NEVER
  * reports a real condition type as "does not exist", an existing condition of
  * that type can still be read/labelled, and available_condition_types shows it
  * as `editable:false` (Pro). `isWritable()` returns false for those three.
@@ -28,6 +28,7 @@ final class CustomEventConditionMap {
 	public const SHAPE_RULE_VALUE = 'rule_value';
 	public const SHAPE_DEVICE     = 'device';
 	public const SHAPE_USER_ROLE  = 'user_role';
+	public const SHAPE_PRODUCT_ID = 'product_id';
 
 	/** Condition types Free can CREATE/EDIT via MCP. */
 	public const WRITABLE_TYPES = array( 'url_filters', 'device', 'user_role' );
@@ -39,6 +40,7 @@ final class CustomEventConditionMap {
 		'url_parameters' => array( 'label' => 'URL parameters', 'shape' => self::SHAPE_RULE_VALUE ),
 		'landing_page'   => array( 'label' => 'Landing page', 'shape' => self::SHAPE_RULE_VALUE ),
 		'source'         => array( 'label' => 'Source (traffic source / referrer)', 'shape' => self::SHAPE_RULE_VALUE ),
+		'product_id'     => array( 'label' => 'Product ID', 'shape' => self::SHAPE_PRODUCT_ID ),
 	);
 
 	private const RULE_VALUES = array(

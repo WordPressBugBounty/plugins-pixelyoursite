@@ -72,7 +72,8 @@ abstract class SettingsCustomEvent {
         $disabled_array = array(
             'url_parameters',
             'landing_page',
-            'source'
+            'source',
+            'product_id'
         );
         $i = $this->getConditionIndex();
         if(!empty($conditional_type)){

@@ -69,6 +69,6 @@ class InitializeHandler
          * @param \WP\McpSchema\Common\Protocol\DTO\InitializeResult $result The initialize result DTO.
          * @param \WP\MCP\Core\McpServer                             $server The MCP server instance.
          */
-        return apply_filters('mcp_adapter_initialize_response', $result, $this->mcp);
+        return apply_filters('pys_pro_mcp_adapter_initialize_response', $result, $this->mcp);
     }
 }

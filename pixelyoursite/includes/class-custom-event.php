@@ -436,6 +436,8 @@ class CustomEvent {
                     case 'user_role':
                         $condition->updateParam('user_role', $data_condition[ 'user_role' ]);
                         break;
+                    case 'product_id':
+                        continue 2;
                 }
 
                 $condition->updateParam( 'index', $condition_index );

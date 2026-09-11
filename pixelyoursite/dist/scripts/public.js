@@ -476,7 +476,11 @@
         }
 
 
-        function getLandingPageValue() {
+        /**
+         * @param useCurrentUrlFallback Pass false where an empty value is better
+         *        than a guess, because a more reliable fallback exists downstream.
+         */
+        function getLandingPageValue(useCurrentUrlFallback = true) {
             let name = "pys_landing_page"
             if(options.visit_data_model === "last_visit") {
                 name = "last_pys_landing_page"
@@ -484,11 +488,21 @@
             if(Cookies.get(name) && Cookies.get(name) !== "undefined") {
                 return Cookies.get(name);
             }
-            else if(options.hasOwnProperty("tracking_analytics") && options.tracking_analytics.TrafficLanding){
+            // No cookie of our own. The dynamic-options endpoint may still know:
+            // it answers per visitor and is never cached, so it is allowed to carry
+            // the PHP session copy — which is all a visitor whose cookies a consent
+            // manager has blocked ever has. In the HTML this value is always empty,
+            // and an empty value means "nothing to say", so this branch is simply
+            // skipped unless the endpoint filled it in.
+            if ( options.hasOwnProperty( "tracking_analytics" )
+                && options.tracking_analytics
+                && options.tracking_analytics.TrafficLanding ) {
                 return options.tracking_analytics.TrafficLanding;
-            } else{
-                return "";
             }
+
+            // Nobody knows better than the current URL: it is what the cookie would
+            // have been set to a moment ago.
+            return useCurrentUrlFallback ? window.location.href : "";
         }
         function getTrafficSourceValue() {
             let name = "pysTrafficSource"
@@ -497,9 +511,14 @@
             }
             if(Cookies.get(name) && Cookies.get(name) !== "undefined") {
                 return Cookies.get(name);
-            } else{
-                return "";
             }
+            // See getLandingPageValue(): filled by the dynamic-options endpoint only.
+            if ( options.hasOwnProperty( "tracking_analytics" )
+                && options.tracking_analytics
+                && options.tracking_analytics.TrafficSource ) {
+                return options.tracking_analytics.TrafficSource;
+            }
+            return "";
         }
 
         function getUTMId(useLast = false) {
@@ -509,12 +528,22 @@
                 if (useLast) {
                     cookiePrefix = 'last_pys_'
                 }
+                // Fall back to this request's own query string, not to the server
+                // options: cached HTML carries whatever the visitor who generated
+                // the cache entry arrived with.
+                let queryVars = getQueryVars();
                 $.each(utmId, function (index, name) {
                     if (Cookies.get(cookiePrefix + name)) {
                         terms[name] = Cookies.get(cookiePrefix + name)
                     }
-                    else if(options.hasOwnProperty("tracking_analytics") && options.tracking_analytics.TrafficUtmsId[name]) {
+                    else if(options.hasOwnProperty("tracking_analytics")
+                        && options.tracking_analytics
+                        && options.tracking_analytics.TrafficUtmsId
+                        && options.tracking_analytics.TrafficUtmsId[name]) {
                         terms[name] = filterEmails(options.tracking_analytics.TrafficUtmsId[name])
+                    }
+                    else if(queryVars.hasOwnProperty(name)) {
+                        terms[name] = filterEmails(queryVars[name])
                     }
                 });
                 return terms;
@@ -534,13 +563,21 @@
                     cookiePrefix = 'last_pys_'
                 }
                 let terms = [];
+                // See getUTMId(): the query string, never the server options.
+                let queryVars = getQueryVars();
                 $.each(utmTerms, function (index, name) {
                     if (Cookies.get(cookiePrefix + name)) {
                         let value = Cookies.get(cookiePrefix + name);
                         terms[name] = filterEmails(value); // do not allow email in request params (Issue #70)
                     }
-                    else if(options.hasOwnProperty("tracking_analytics") && options.tracking_analytics.TrafficUtms[name]) {
+                    else if(options.hasOwnProperty("tracking_analytics")
+                        && options.tracking_analytics
+                        && options.tracking_analytics.TrafficUtms
+                        && options.tracking_analytics.TrafficUtms[name]) {
                         terms[name] = filterEmails(options.tracking_analytics.TrafficUtms[name])
+                    }
+                    else if(queryVars.hasOwnProperty(name)) {
+                        terms[name] = filterEmails(queryVars[name])
                     }
                 });
 
@@ -2237,8 +2274,13 @@
                 });
 
                 var dateTime = getDateTime();
-                var landing = getLandingPageValue();
-                var lastLanding = getLandingPageValue();
+                // No current-URL fallback here: an empty field lets
+                // EnrichOrder::getRequestValue() use its own server-side default,
+                // which is the visit data from the PHP session — more reliable than
+                // the checkout URL. The checkout page is never HTML-cached, so
+                // reading the session there is safe.
+                var landing = getLandingPageValue(false);
+                var lastLanding = getLandingPageValue(false);
                 var trafic = getTrafficSourceValue();
                 var lastTrafic = getTrafficSourceValue();
 

@@ -163,7 +163,7 @@ final class McpPrompt implements McpComponentInterface
             ), array('exception' => $e));
         }
         // Optional deep validation if enabled.
-        $mcp_validation_enabled = apply_filters('mcp_adapter_validation_enabled', \false);
+        $mcp_validation_enabled = apply_filters('pys_pro_mcp_adapter_validation_enabled', \false);
         if ($mcp_validation_enabled) {
             $validation_result = McpPromptValidator::validate_prompt_dto($prompt);
             if (is_wp_error($validation_result)) {
@@ -212,7 +212,7 @@ final class McpPrompt implements McpComponentInterface
             return new WP_Error('mcp_prompt_builder_failed', $throwable->getMessage(), array('error_type' => get_class($throwable)));
         }
         // Optional deep validation if enabled.
-        $mcp_validation_enabled = apply_filters('mcp_adapter_validation_enabled', \false);
+        $mcp_validation_enabled = apply_filters('pys_pro_mcp_adapter_validation_enabled', \false);
         if ($mcp_validation_enabled) {
             $validation_result = McpPromptValidator::validate_prompt_dto($prompt);
             if (is_wp_error($validation_result)) {

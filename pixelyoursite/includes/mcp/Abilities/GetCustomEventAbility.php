@@ -320,6 +320,10 @@ final class GetCustomEventAbility extends AbstractAbility {
 				$row[ 'device' ] = (string) $c->getParam( 'device' );
 			} elseif ( CustomEventConditionMap::SHAPE_USER_ROLE === $shape ) {
 				$row[ 'user_role' ] = (array) $c->getParam( 'user_role' );
+			} elseif ( CustomEventConditionMap::SHAPE_PRODUCT_ID === $shape ) {
+				$row[ 'product_ids' ]        = array_map( 'intval', (array) $c->getParam( 'product_ids' ) );
+				$row[ 'product_match_mode' ] = (string) $c->getParam( 'product_match_mode' );
+				$row[ 'pro_only' ]           = true;
 			} else {
 				$row[ 'rule' ]  = (string) $c->getParam( 'condition_rule' );
 				$row[ 'value' ] = self::sanitiseUserString( $c->getParam( 'condition_value' ), 0 );

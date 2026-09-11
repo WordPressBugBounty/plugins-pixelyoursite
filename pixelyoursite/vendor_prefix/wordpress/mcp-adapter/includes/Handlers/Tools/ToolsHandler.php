@@ -80,7 +80,7 @@ class ToolsHandler
          * @param array<\WP\McpSchema\Server\Tools\DTO\Tool> $tools  Array of Tool DTOs.
          * @param \WP\MCP\Core\McpServer                     $server The MCP server instance.
          */
-        $tools = $this->validate_filtered_list(apply_filters('mcp_adapter_tools_list', $tools, $this->mcp), $tools, 'mcp_adapter_tools_list', $this->mcp->get_error_handler());
+        $tools = $this->validate_filtered_list(apply_filters('pys_pro_mcp_adapter_tools_list', $tools, $this->mcp), $tools, 'pys_pro_mcp_adapter_tools_list', $this->mcp->get_error_handler());
         return ListToolsResult::fromArray(array('tools' => $tools));
     }
     /**
@@ -141,7 +141,7 @@ class ToolsHandler
              * @param \WP\MCP\Domain\Tools\McpTool $mcp_tool  The MCP tool instance.
              * @param \WP\MCP\Core\McpServer       $server    The MCP server instance.
              */
-            $args = apply_filters('mcp_adapter_pre_tool_call', $args, $tool_name, $mcp_tool, $this->mcp);
+            $args = apply_filters('pys_pro_mcp_adapter_pre_tool_call', $args, $tool_name, $mcp_tool, $this->mcp);
             // Allow pre-filter to short-circuit execution by returning WP_Error.
             if (is_wp_error($args)) {
                 return $this->create_error_result($args->get_error_message());
@@ -161,7 +161,7 @@ class ToolsHandler
              * @param \WP\MCP\Domain\Tools\McpTool $mcp_tool  The MCP tool instance.
              * @param \WP\MCP\Core\McpServer       $server    The MCP server instance.
              */
-            $result = apply_filters('mcp_adapter_tool_call_result', $result, $args, $tool_name, $mcp_tool, $this->mcp);
+            $result = apply_filters('pys_pro_mcp_adapter_tool_call_result', $result, $args, $tool_name, $mcp_tool, $this->mcp);
             if (is_wp_error($result)) {
                 $this->mcp->get_error_handler()->log('Tool execution returned WP_Error', array('tool_name' => $tool_name, 'error_code' => $result->get_error_code(), 'error_message' => $result->get_error_message(), 'error_data' => $result->get_error_data()));
                 return $this->create_error_result($result->get_error_message());

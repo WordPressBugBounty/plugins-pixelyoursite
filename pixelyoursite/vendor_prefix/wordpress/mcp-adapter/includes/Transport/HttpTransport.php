@@ -95,7 +95,7 @@ class HttpTransport implements McpRestTransportInterface
          * @param string                                        $capability The required capability. Default 'read'.
          * @param \WP\MCP\Transport\Infrastructure\HttpRequestContext $context    The HTTP request context.
          */
-        $user_capability = apply_filters('mcp_adapter_default_transport_permission_user_capability', 'read', $context);
+        $user_capability = apply_filters('pys_pro_mcp_adapter_default_transport_permission_user_capability', 'read', $context);
         // Validate that the filtered capability is a non-empty string
         if (!is_string($user_capability) || empty($user_capability)) {
             $user_capability = 'read';

@@ -221,10 +221,34 @@ class EventsManager {
 			'disabled_utmId_cookie'              => apply_filters( 'pys_disable_utmId_cookie', false ),
 		);
 
+		/*
+		 * Deliberately empty of landing page, traffic source and UTMs.
+		 *
+		 * This array is printed into the page HTML, and a full-page cache stores
+		 * that HTML once and serves it to everybody: whichever visitor happened to
+		 * generate the cache entry would hand their own landing page and campaign
+		 * parameters to every later visitor of that page. The front end derives all
+		 * three on its own — from its own cookies, falling back to the current URL —
+		 * so nothing is lost by leaving them out. See getLandingPageValue() and
+		 * getUTMs() in dist/scripts/public.js.
+		 *
+		 * The session copies written by PYS::populateSessionVisitData() stay: the
+		 * server-side (CAPI) events read them, and those run per request and are
+		 * never served from a page cache.
+		 *
+		 * The keys are emptied, never removed. A visitor can be running an older
+		 * public.js than the HTML it receives — from their own browser cache while
+		 * ?ver= is unchanged, or from a cache plugin's minified copy, which is not
+		 * rebuilt when this file changes. That older script does
+		 * options.tracking_analytics.TrafficUtmsId[ name ] with no guard on the inner
+		 * object, so a missing key is a TypeError that takes pysNormalInit() down and
+		 * with it every event on the page. An empty array reads as "nothing here" and
+		 * costs nothing.
+		 */
 		$options[ 'tracking_analytics' ] = array(
-			"TrafficLanding" => sanitize_url($_COOKIE[ 'pys_landing_page' ] ?? $_SESSION[ 'LandingPage' ] ?? 'undefined'),
-			"TrafficUtms"    => getUtms(),
-			"TrafficUtmsId"  => getUtmsId(),
+			"TrafficLanding" => '',
+			"TrafficUtms"    => array(),
+			"TrafficUtmsId"  => array(),
 		);
 
         $options['GATags']["ga_datalayer_type"] = GATags()->getOption('gtag_datalayer_type');
@@ -244,7 +268,10 @@ class EventsManager {
         if ( PYS()->getOption( 'fetch_user_data_via_rest' ) ) {
             unset( $options['ajax_event'] );
             unset( $options['cache_bypass'] );
-            unset( $options['tracking_analytics'] );
+            // tracking_analytics is deliberately left in place. It holds no visitor
+            // data any more (see outputData() above), and the front end reads its
+            // inner keys unguarded — removing the array turns an unreachable
+            // dynamic-options endpoint into a TypeError that kills every event.
             unset( $options['gdpr']['all_disabled_by_api'] );
             unset( $options['gdpr']['facebook_disabled_by_api'] );
             unset( $options['gdpr']['analytics_disabled_by_api'] );

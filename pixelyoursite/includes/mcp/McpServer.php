@@ -48,6 +48,9 @@ class McpServer {
 
 	private static ?self $instance = null;
 
+	/** Guards the deferred adapter boot: `rest_api_init` and WP-CLI `init` can both reach it. */
+	private bool $adapter_booted = false;
+
 	/**
 	 * Singleton accessor; boots the server on first call.
 	 *
@@ -66,8 +69,8 @@ class McpServer {
 	}
 
 	/**
-	 * Wire categories, abilities and the tool-name filter. No-op if
-	 * dependencies are missing.
+	 * Register the read-only option and the admin page, then arm the deferred
+	 * adapter boot. No-op if dependencies are missing.
 	 *
 	 * @return void
 	 */
@@ -76,49 +79,75 @@ class McpServer {
 			return;
 		}
 
+		$this->register_read_only_option();
+
+		// Settings tab UI under PixelYourSite → MCP (tokens, read-only,
+		// activity log). Registered on every request — it gates itself on
+		// is_admin() — and deliberately not behind the token check below: a
+		// token-less install must still be able to open the page and mint its
+		// first token.
+		( new AdminPage( self::ROUTE_NAMESPACE, self::ROUTE ) )->register();
+
+		// The MCP endpoint authenticates with a Bearer token issued in
+		// wp-admin. With no token on record it could only ever answer 401, so
+		// the adapter is not booted at all. Reading the token registry costs
+		// an uncached query, so that check is deferred to the only two
+		// contexts where the adapter can do anything: a REST request (the
+		// adapter registers its routes on `rest_api_init` 15) and WP-CLI (it
+		// hooks `init` 20 instead). Front-end page views, admin screens,
+		// admin-ajax and cron now pay nothing for it. Deferring also keeps the
+		// read away from plugin-load time, when the PYS options table may not
+		// exist yet — it is created on `init` 9, ahead of both entry points.
+		add_action( 'rest_api_init', array( $this, 'boot_adapter' ), 0 );
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			add_action( 'init', array( $this, 'boot_adapter' ), 10 );
+		}
+	}
+
+	/**
+	 * Boot the prefixed adapter and everything that only matters once it is
+	 * running. Runs at most once, from `rest_api_init` 0 or — under WP-CLI —
+	 * `init` 10. Both are early enough for the adapter's own registration
+	 * (`rest_api_init` 15 / `init` 20) and for the Abilities API, whose
+	 * registry the adapter first touches while creating servers.
+	 *
+	 * @return void
+	 */
+	public function boot_adapter(): void {
+		if ( $this->adapter_booted ) {
+			return;
+		}
+		$this->adapter_booted = true;
+
+		if ( 0 === Auth::count() ) {
+			return;
+		}
+
 		$this->run_adapter();
 
-		// Other plugins bundle the un-prefixed mcp-adapter and hook typed
-		// callbacks onto the shared `mcp_adapter_init` action
-		AdapterHookGuard::register();
-
-		// WooCommerce bundles its own (un-prefixed) copy of mcp-adapter. php-scoper
-		// prefixes classes but NOT hook-name strings, so both copies share the
-		// global `mcp_adapter_init` action — the adapter's default factory then
-		// re-fires and errors with `duplicate_server_id`. We register our own
-		// server, so drop the default-factory callback before it runs.
-		add_action( 'mcp_adapter_init', static function (): void {
-			remove_action(
-				'mcp_adapter_init',
-				array( \PYS_PRO_GLOBAL\WP\MCP\Servers\DefaultServerFactory::class, 'create' )
-			);
-		}, 1 );
+		// Our adapter copy is fully private — hook names are prefixed in the
+		// scoped build (see pixelyoursite-pro/scoper.inc.php `patchers`), so
+		// no other plugin's mcp-adapter can reach our callbacks and ours
+		// cannot reach theirs.
+		add_filter( 'pys_pro_mcp_adapter_create_default_server', '__return_false' );
 
 		add_action( 'wp_abilities_api_categories_init', array( $this, 'register_category' ) );
 		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
-		add_action( 'mcp_adapter_init', array( $this, 'register_server' ) );
+		add_action( 'pys_pro_mcp_adapter_init', array( $this, 'register_server' ) );
 
 		// Map hyphen ability IDs to the underscore MCP tool names.
-		add_filter( 'mcp_adapter_tool_name', array( ToolNameMap::class, 'filter' ), 10, 2 );
+		add_filter( 'pys_pro_mcp_adapter_tool_name', array( ToolNameMap::class, 'filter' ), 10, 2 );
 
 		// Append a neutral language directive to the initialize instructions.
-		add_filter( 'mcp_adapter_initialize_response', array( $this, 'add_language_instruction' ), 10, 2 );
+		add_filter( 'pys_pro_mcp_adapter_initialize_response', array( $this, 'add_language_instruction' ), 10, 2 );
 
-		// Register the read-only toggle as a PYS Settings option.
-		add_action( 'init', static function (): void {
-			if ( function_exists( '\\PixelYourSite\\PYS' ) ) {
-				\PixelYourSite\PYS()->addOption( Capabilities::OPTION_READ_ONLY_ENABLED, 'checkbox', false );
-			}
-		}, 11 );
-
-		// Rate-limit + loop fingerprint + repeated-failure detection.
+		// Rate-limit + loop fingerprint + repeated-failure detection. Hooks
+		// `rest_pre_dispatch`, which runs after `rest_api_init`.
 		( new RequestGuard( self::ROUTE_NAMESPACE, self::ROUTE, self::SERVER_ID ) )->register();
 
 		// Audit log of every write-tool call.
 		( new Provenance( self::SERVER_ID ) )->register();
-
-		// Settings tab UI under PixelYourSite → MCP (tokens, read-only, activity log).
-		( new AdminPage( self::ROUTE_NAMESPACE, self::ROUTE ) )->register();
 	}
 
 	/**
@@ -178,25 +207,38 @@ class McpServer {
 	}
 
 	/**
-	 * Boot the prefixed wordpress/mcp-adapter Plugin singleton. The adapter's
-	 * own Autoloader expects a standalone vendor/ next to itself; we
-	 * short-circuit it because the prefixed composer classmap already loaded
-	 * everything.
+	 * Boot the prefixed wordpress/mcp-adapter Plugin singleton.
+	 *
+	 * No `WP_MCP_*` constants are defined here on purpose: they are global
+	 * (scoper.inc.php excludes them from prefixing) and would leak our path
+	 * and version into every other plugin's copy of the adapter. Our bundle
+	 * never reads them — `Autoloader.php` is the only consumer and nothing
+	 * references it, because the standalone `mcp-adapter.php` entry point is
+	 * excluded from the scoper finder and the prefixed composer classmap has
+	 * already loaded every class.
 	 *
 	 * @return void
 	 */
 	private function run_adapter(): void {
-		if ( !defined( 'WP_MCP_AUTOLOAD' ) ) {
-			define( 'WP_MCP_AUTOLOAD', false );
-		}
-		if ( !defined( 'WP_MCP_DIR' ) ) {
-			define( 'WP_MCP_DIR', PYS_FREE_PATH . '/vendor_prefix/wordpress/mcp-adapter' );
-		}
-		if ( !defined( 'WP_MCP_VERSION' ) ) {
-			define( 'WP_MCP_VERSION', self::ADAPTER_VERSION );
-		}
-
 		Plugin::instance();
+	}
+
+	/**
+	 * Register the read-only toggle as a PYS Settings option so the admin
+	 * page can render it. Defaults to off; existing installs keep their
+	 * stored value.
+	 *
+	 * Registered unconditionally: the admin page renders this toggle even when
+	 * the adapter itself is never booted (no token on record yet).
+	 *
+	 * @return void
+	 */
+	private function register_read_only_option(): void {
+		add_action( 'init', static function (): void {
+			if ( function_exists( '\\PixelYourSite\\PYS' ) ) {
+				\PixelYourSite\PYS()->addOption( Capabilities::OPTION_READ_ONLY_ENABLED, 'checkbox', false );
+			}
+		}, 11 );
 	}
 
 	/**

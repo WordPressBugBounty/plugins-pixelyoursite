@@ -91,7 +91,7 @@ class McpComponentRegistry
          * @param string    $server_id     The server ID for which components are being registered.
          * @param \WP\MCP\Core\McpServer $server        The McpServer instance owning the registry.
          */
-        $this->should_record_component_registration = apply_filters('mcp_adapter_observability_record_component_registration', \false, $this->mcp_server->get_server_id(), $this->mcp_server);
+        $this->should_record_component_registration = apply_filters('pys_pro_mcp_adapter_observability_record_component_registration', \false, $this->mcp_server->get_server_id(), $this->mcp_server);
     }
     /**
      * Register tools to the server.

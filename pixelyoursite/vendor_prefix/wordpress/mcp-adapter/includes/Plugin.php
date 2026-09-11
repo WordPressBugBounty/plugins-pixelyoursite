@@ -39,7 +39,7 @@ final class Plugin
              *
              * @param self $instance The main plugin class instance.
              */
-            do_action('wp_mcp_init', self::$instance);
+            do_action('pys_pro_wp_mcp_init', self::$instance);
         }
         return self::$instance;
     }

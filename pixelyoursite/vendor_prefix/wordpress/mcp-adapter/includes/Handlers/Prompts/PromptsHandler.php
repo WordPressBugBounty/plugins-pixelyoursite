@@ -75,7 +75,7 @@ class PromptsHandler
          * @param array<\WP\McpSchema\Server\Prompts\DTO\Prompt> $prompts Array of Prompt DTOs.
          * @param \WP\MCP\Core\McpServer                         $server  The MCP server instance.
          */
-        $prompts = $this->validate_filtered_list(apply_filters('mcp_adapter_prompts_list', $prompts, $this->mcp), $prompts, 'mcp_adapter_prompts_list', $this->mcp->get_error_handler());
+        $prompts = $this->validate_filtered_list(apply_filters('pys_pro_mcp_adapter_prompts_list', $prompts, $this->mcp), $prompts, 'pys_pro_mcp_adapter_prompts_list', $this->mcp->get_error_handler());
         return ListPromptsResult::fromArray(array('prompts' => $prompts));
     }
     /**
@@ -128,7 +128,7 @@ class PromptsHandler
              * @param \WP\MCP\Domain\Prompts\McpPrompt   $mcp_prompt  The MCP prompt instance.
              * @param \WP\MCP\Core\McpServer             $server      The MCP server instance.
              */
-            $arguments = apply_filters('mcp_adapter_pre_prompt_get', $arguments, $prompt_name, $mcp_prompt, $this->mcp);
+            $arguments = apply_filters('pys_pro_mcp_adapter_pre_prompt_get', $arguments, $prompt_name, $mcp_prompt, $this->mcp);
             // Allow pre-filter to short-circuit execution by returning WP_Error.
             if (is_wp_error($arguments)) {
                 return McpErrorFactory::internal_error($request_id, $arguments->get_error_message());
@@ -148,7 +148,7 @@ class PromptsHandler
              * @param \WP\MCP\Domain\Prompts\McpPrompt   $mcp_prompt  The MCP prompt instance.
              * @param \WP\MCP\Core\McpServer             $server      The MCP server instance.
              */
-            $result = apply_filters('mcp_adapter_prompt_get_result', $result, $arguments, $prompt_name, $mcp_prompt, $this->mcp);
+            $result = apply_filters('pys_pro_mcp_adapter_prompt_get_result', $result, $arguments, $prompt_name, $mcp_prompt, $this->mcp);
             if (is_wp_error($result)) {
                 $this->mcp->get_error_handler()->log('Prompt execution returned WP_Error', array('prompt_name' => $prompt_name, 'error_code' => $result->get_error_code(), 'error_message' => $result->get_error_message()));
                 return McpErrorFactory::internal_error($request_id, $result->get_error_message());

@@ -83,7 +83,7 @@ final class McpAdapter
          *
          * @param \WP\MCP\Core\McpAdapter $adapter The MCP Adapter singleton instance.
          */
-        do_action('mcp_adapter_init', $this);
+        do_action('pys_pro_mcp_adapter_init', $this);
         $this->register_wp_cli_commands();
         self::$initialized = \true;
     }
@@ -104,13 +104,13 @@ final class McpAdapter
          *
          * @param bool $create_default Whether to create the default server. Default true.
          */
-        if (!apply_filters('mcp_adapter_create_default_server', \true)) {
+        if (!apply_filters('pys_pro_mcp_adapter_create_default_server', \true)) {
             return;
         }
         // Register category before abilities
         add_action('wp_abilities_api_categories_init', array($this, 'register_default_category'));
         add_action('wp_abilities_api_init', array($this, 'register_default_abilities'));
-        add_action('mcp_adapter_init', array(DefaultServerFactory::class, 'create'));
+        add_action('pys_pro_mcp_adapter_init', array(DefaultServerFactory::class, 'create'));
     }
     /**
      * Register WP-CLI commands if WP-CLI is available
@@ -187,8 +187,8 @@ final class McpAdapter
                 esc_html($observability_handler)
             ));
         }
-        if (!doing_action('mcp_adapter_init')) {
-            _doing_it_wrong(__FUNCTION__, esc_html__('MCP Servers must be created during the "mcp_adapter_init" action. Hook into "mcp_adapter_init" to register your server.', 'mcp-adapter'), '0.1.0');
+        if (!doing_action('pys_pro_mcp_adapter_init')) {
+            _doing_it_wrong(__FUNCTION__, esc_html__('MCP Servers must be created during the "pys_pro_mcp_adapter_init" action. Hook into "pys_pro_mcp_adapter_init" to register your server.', 'mcp-adapter'), '0.1.0');
             return new WP_Error('invalid_timing', esc_html__('MCP Server creation must be done during mcp_adapter_init action.', 'mcp-adapter'));
         }
         if (isset($this->servers[$server_id])) {

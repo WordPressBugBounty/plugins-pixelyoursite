@@ -71,8 +71,8 @@ final class RequestGuard {
 	 */
 	public function register(): void {
 		add_filter( 'rest_pre_dispatch', array( $this, 'gateRequest' ), 10, 3 );
-		add_filter( 'mcp_adapter_pre_tool_call', array( $this, 'gateToolCall' ), 10, 4 );
-		add_filter( 'mcp_adapter_tool_call_result', array( $this, 'recordToolResult' ), 10, 5 );
+		add_filter( 'pys_pro_mcp_adapter_pre_tool_call', array( $this, 'gateToolCall' ), 10, 4 );
+		add_filter( 'pys_pro_mcp_adapter_tool_call_result', array( $this, 'recordToolResult' ), 10, 5 );
 		add_filter( 'rest_post_dispatch', array( $this, 'addAuthHeaders' ), 10, 3 );
 	}
 

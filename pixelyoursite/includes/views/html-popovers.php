@@ -376,6 +376,22 @@
 		event has for your business.</p>
 </div>
 
+<div id="pys-woo_initiate_checkout_event_value_1" style="display: none; visibility: hidden">
+    <p>To enable Checkout Behavior reports on Google Analytics, you need to configure the funnel steps. Inside your Google Analytics, go on Settings > Ecommerce Settings.</p>
+    <p>Make sure you have "Enable Ecommerce" and "Enable Enhanced Ecommerce Reporting" turned ON.</p>
+    <p>Under "Checkout labeling" create 5 funnel steps:</p>
+    <ul>
+        <li>Initiate Checkout</li>
+        <li>First Name</li>
+        <li>Last Name</li>
+        <li>Email</li>
+        <li>Click Place Order</li>
+    </ul>
+    <p>You can find this report under Conversions > Ecommerce > Checkout Behaviour.</p>
+    <p>For more details,</p>
+    <p>visit our <a href="https://www.pixelyoursite.com/documentation/checkout-behaviour-analysis" target="_blank" class="link">help page</a> </p>
+</div>
+
 <div id="pys-woo_add_to_cart_event_value" style="display: none; visibility: hidden">
 	<p>Value is not mandatory for this event. If you want, you can enable and configure it to reflect the value this
 	event has for your business.</p>

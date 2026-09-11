@@ -13,7 +13,8 @@ class ConditionalEvent extends SettingsCustomEvent {
         'user_role' => 'User role',
         'url_parameters' => 'URL parameters PRO',
         'landing_page' => 'Landing page PRO',
-        'source' => 'Source PRO'
+        'source' => 'Source PRO',
+        'product_id' => 'Product ID PRO'
     );
 
     private $condition_type = 'url_filters';
@@ -22,6 +23,10 @@ class ConditionalEvent extends SettingsCustomEvent {
     private $device = 'Desktop';
 
     private $user_role = array();
+
+    private $product_ids = array();
+
+    private $product_match_mode = 'includes';
 
     private $index = 0;
 
@@ -178,6 +183,9 @@ class ConditionalEvent extends SettingsCustomEvent {
                 break;
             case 'user_role':
                 $condition = $this->checkUserRole($user_role);
+                break;
+            case 'product_id':
+                $condition = true;
                 break;
         }
         return $condition;

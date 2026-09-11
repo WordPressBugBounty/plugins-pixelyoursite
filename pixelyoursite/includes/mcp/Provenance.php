@@ -46,7 +46,7 @@ final class Provenance {
 	 * @return void
 	 */
 	public function register(): void {
-		add_filter( 'mcp_adapter_tool_call_result', array( $this, 'onToolResult' ), 20, 5 );
+		add_filter( 'pys_pro_mcp_adapter_tool_call_result', array( $this, 'onToolResult' ), 20, 5 );
 	}
 
 	/**

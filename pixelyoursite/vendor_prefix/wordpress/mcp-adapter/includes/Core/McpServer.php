@@ -137,7 +137,7 @@ class McpServer
          * @param string    $server_id The server ID being configured.
          * @param \WP\MCP\Core\McpServer $server    The McpServer instance being constructed.
          */
-        $this->mcp_validation_enabled = apply_filters('mcp_adapter_validation_enabled', \false, $this->server_id, $this);
+        $this->mcp_validation_enabled = apply_filters('pys_pro_mcp_adapter_validation_enabled', \false, $this->server_id, $this);
         // Setup handlers and components
         $this->setup_handlers($error_handler, $observability_handler);
         $this->setup_components($tools, $resources, $prompts, $mcp_transports);

@@ -336,6 +336,12 @@ final class PYS extends Settings implements Plugin {
 
         if (is_admin() || PHP_SAPI === 'cli' || session_status() === PHP_SESSION_DISABLED) return;
 
+        // Nothing on these requests renders the PYS front end or reads the visit
+        // data, so a session there would only cost a PHPSESSID cookie — which some
+        // page caches take as a reason to stop serving cached pages — and a session
+        // file nobody ever looks at.
+        if ($this->shouldSkipSession()) return;
+
         // Another plugin already opened the session — reuse it, exactly as before.
         if (session_status() === PHP_SESSION_ACTIVE) {
             $this->populateSessionVisitData();
@@ -402,10 +408,71 @@ final class PYS extends Settings implements Plugin {
     }
 
     /**
+     * Requests that never render the PYS front end, so nothing on them needs the
+     * session at all.
+     *
+     * @return bool
+     */
+    private function shouldSkipSession() {
+
+        $skip = is_robots()
+                || is_feed()
+                || is_trackback()
+                || ( function_exists('is_favicon') && is_favicon() )
+                || (bool) get_query_var('sitemap');
+
+        /**
+         * filter pys_skip_session
+         *
+         * @param bool $skip
+         */
+        return (bool) apply_filters('pys_skip_session', $skip);
+    }
+
+    /**
+     * May this request's URL become the visitor's landing page?
+     *
+     * Only a page the visitor actually navigated to may. The browser fetches
+     * /favicon.ico on its own and WordPress answers it; a broken <img> path falls
+     * through to a WordPress 404; feed readers and oEmbed iframes are not
+     * navigation either. Without this check the first such request won the
+     * LandingPage slot for the whole session — populateSessionVisitData() only ever
+     * writes once — and every server-side event and every order for that visitor
+     * then reported it as the entry point. Verified: a bare /favicon.ico request
+     * was enough to make it the landing page.
+     *
+     * A 404 is excluded on purpose. It is a real navigation, so the URL is not
+     * meaningless, but on a standard WordPress rewrite every missing asset path
+     * also ends up here, and those outnumber the genuine broken inbound links.
+     * Use the filter below to record them anyway.
+     *
+     * @return bool
+     */
+    private function shouldRecordVisitData() {
+
+        $record = ! is_404()
+                  && ! is_embed()
+                  && ! $this->shouldSkipSession()
+                  && ( ! isset($_SERVER['REQUEST_METHOD'])
+                       || strtoupper((string) $_SERVER['REQUEST_METHOD']) === 'GET' );
+
+        /**
+         * filter pys_record_visit_data
+         * Escape hatch for setups where an excluded request type really is an entry
+         * point (a feed-only funnel, a 404 URL used as a campaign landing page).
+         *
+         * @param bool $record
+         */
+        return (bool) apply_filters('pys_record_visit_data', $record);
+    }
+
+    /**
      * Store the visit data we keep in the PHP session.
      * Requires an active, writable session.
      */
     private function populateSessionVisitData() {
+
+        if (!$this->shouldRecordVisitData()) return;
 
         if (empty($_SESSION['TrafficSource'])) {
             $_SESSION['TrafficSource'] = getTrafficSource();
@@ -647,6 +714,42 @@ final class PYS extends Settings implements Plugin {
 
     }
 
+    /**
+     * Open the visitor's session read-only for the dynamic-options request.
+     *
+     * controllSessionStart() cannot do this: it hangs on 'wp', and 'wp' never fires
+     * for a REST request — rest_api_loaded() serves the route and dies inside
+     * parse_request(), before WP::main() gets that far. Without this the endpoint
+     * sees no visit data at all on a site where PYS is the only consumer of the
+     * session, and the landing page it reports comes back empty.
+     *
+     * Read-only on purpose: this request only reads. The visit data is written on the
+     * page view that opened the session, and read_and_close releases the lock at once
+     * instead of holding it for the whole request.
+     *
+     * @return void
+     */
+    private function openSessionForRead() {
+
+        if ( PYS()->getOption( 'session_disable' ) ) {
+            return;
+        }
+
+        if ( PHP_SAPI === 'cli' || session_status() !== PHP_SESSION_NONE || headers_sent() ) {
+            return;
+        }
+
+        // Read an existing session, never start a new one. session_start() would hand
+        // out a PHPSESSID to a visitor who has none — a cookie for nothing, and one
+        // that some page caches treat as a reason to stop serving cached pages.
+        $session_cookie = session_name();
+        if ( empty( $session_cookie ) || empty( $_COOKIE[ $session_cookie ] ) ) {
+            return;
+        }
+
+        @session_start( array( 'read_and_close' => true ) );
+    }
+
     public function register_dynamic_options_route() {
         register_rest_route( 'pys/v1', '/dynamic-options', array(
             'methods'             => \WP_REST_Server::READABLE,
@@ -656,6 +759,10 @@ final class PYS extends Settings implements Plugin {
     }
 
     public function serve_dynamic_options( $request ) {
+
+        // Before anything else, so the visit data below has something to read.
+        $this->openSessionForRead();
+
         nocache_headers();
 
         // WordPress resets the current user to 0 for any REST request that
@@ -683,8 +790,26 @@ final class PYS extends Settings implements Plugin {
             'ajax_event'   => wp_create_nonce( 'ajax-event-nonce' ),
             'cache_bypass' => time(),
 
+            // Landing page, traffic source and UTMs are not returned here either.
+            // The front end owns them (see the note in EventsManager::outputData()),
+            // so this endpoint would only be a second, competing source of truth.
+            // Emptied rather than removed for the same reason as there: the front end
+            // assigns this object wholesale over options.tracking_analytics, and an
+            // older public.js dereferences the inner keys unguarded.
+            /*
+             * These DO travel here, unlike in the HTML, where they stay empty (see the
+             * note in EventsManager::outputData()). This response is per visitor and
+             * carries nocache_headers(), so it is the one channel where the server may
+             * hand over the session copy without a page cache turning it into
+             * everybody's data. It is what gives a visitor whose cookies a consent
+             * manager has blocked any visit data at all. The front end prefers its own
+             * cookie, falls back to these, and only then to the current URL.
+             */
             'tracking_analytics' => array(
-                'TrafficLanding' => sanitize_url( $_COOKIE['pys_landing_page'] ?? $_SESSION['LandingPage'] ?? 'undefined' ),
+                'TrafficLanding' => sanitize_url( explode( '?',
+                    $_SESSION['LandingPage'] ?? $_COOKIE['pys_landing_page'] ?? '' )[0] ),
+                'TrafficSource'  => sanitize_text_field(
+                    $_SESSION['TrafficSource'] ?? $_COOKIE['pysTrafficSource'] ?? '' ),
                 'TrafficUtms'    => getUtms(),
                 'TrafficUtmsId'  => getUtmsId(),
             ),
