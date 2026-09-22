@@ -91,6 +91,7 @@ class FunctionsMigrate {
         $pys_free_version = get_option( 'pys_core_free_version', false );
 
         $migrations = [
+            '11.4.2' => [ $this, 'migrate_11_4_2' ],
             '11.1.0' => [ $this, 'migrate_11_1_0' ],
             '10.1.1.1' => [ $this, 'migrate_10_1_1_1' ],
             '10.0.1' => [ $this, 'migrate_10_0_0' ],
@@ -118,6 +119,68 @@ class FunctionsMigrate {
             }
         }
     }
+    /**
+     * Raw stored core options, before defaults are merged over them.
+     *
+     * maybeLoad() merges the defaults into whatever is stored, so getOption()
+     * cannot tell "never saved" apart from "saved holding the default value".
+     * The data_persistency migration below needs exactly that distinction.
+     *
+     * @return array|null null when this install has never stored core options.
+     */
+    private function getStoredCoreOptions() {
+
+        global $wpdb;
+
+        $table = Settings::storage_table();
+
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table ) {
+
+            $row = $wpdb->get_row(
+                $wpdb->prepare( "SELECT option_value FROM $table WHERE option_name = %s LIMIT 1", 'pys_core' ),
+                ARRAY_A
+            );
+
+            if ( $row ) {
+                $val = maybe_unserialize( $row['option_value'] );
+                if ( is_array( $val ) ) {
+                    return $val;
+                }
+            }
+        }
+
+        $legacy = get_option( 'pys_core', null );
+
+        return is_array( $legacy ) ? $legacy : null;
+    }
+
+    /**
+     * data_persistency now defaults to 'recent_data'.
+     *
+     * Under the old 'keep_data' default a stored value wins over a freshly
+     * entered one, so on a shared computer the first visitor's email keeps
+     * overriding every later buyer's, and that identity is what gets reported
+     * to the ad platforms. New installs get the safer default; an existing
+     * install keeps what it had, because flipping it silently would change the
+     * data that site already reports.
+     */
+    protected function migrate_11_4_2() {
+
+        $stored = $this->getStoredCoreOptions();
+
+        // Nothing stored means a fresh install: let it take the new default.
+        if ( null === $stored ) {
+            return;
+        }
+
+        // An existing choice - default or deliberate - is left untouched.
+        if ( ! empty( $stored['data_persistency'] ) ) {
+            return;
+        }
+
+        PYS()->updateOptions( array( 'data_persistency' => 'keep_data' ) );
+    }
+
     protected function migrate_unify_custom_events(){
         foreach (CustomEventFactory::get() as $event) {
             $event->migrateUnifyGA();

@@ -160,7 +160,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
 
                             if ( $errorMessage != "" ) :?>
                                 <div class="post_type_error mt-16">
-                                    <div class="event_error critical_message"><?= $errorMessage ?>  </div>
+                                    <div class="event_error critical_message"><?= esc_html( $errorMessage ) ?>  </div>
                                 </div>
                             <?php endif;
                         endif; ?>
@@ -1488,7 +1488,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
 
                             <input type="text"
                                    name="pys[event][facebook_params][<?= $field[ 'label' ] ?>]"
-                                   value="<?= $param_value; ?>"
+                                   value="<?= esc_attr( $param_value ); ?>"
                                    class="input-standard"
                                    placeholder=""
                             />
@@ -1667,7 +1667,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
                         foreach ( $event->getMergedGaParams() as $key => $val ) : ?>
                             <div class="mb-24 ga_ads_param">
                                 <div class="mb-8">
-                                    <label class="custom-event-label"><?= $key ?></label>
+                                    <label class="custom-event-label"><?= esc_html( $key ) ?></label>
                                 </div>
 
                                 <?php Events\renderMergedGAParamInput( $key, $val ); ?>
@@ -1914,13 +1914,160 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
         </div>
     </div>
 
-    <?php if ( Pinterest()->enabled() ) : ?>
-        <?php Pinterest()->renderCustomEventOptions( $event ); ?>
-    <?php endif; ?>
+    <?php if ( OpenAI()->enabled() ) :
+        $openai_configured = OpenAI()->enabled() && !empty( OpenAI()->getPixelIDs() );
+        $openai_events     = PYS_Event_Definitions::get_openai_events();
+        $openai_type       = $event->openai_event_type;
+        ?>
+        <div class="card card-style4" data-configured="<?php echo $openai_configured ? '1' : '0'; ?>">
+            <input type="checkbox" class="event-settings-checkbox" id="openai_custom_event_switch"
+                   style="display: none">
 
-    <?php if ( Bing()->enabled() ) : ?>
-        <?php Bing()->renderCustomEventOptions( $event ); ?>
-    <?php endif; ?>
+            <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+                <div class="custom-event-pixel-header">
+                    <img src="<?php echo esc_url( PYS_FREE_URL . '/dist/images/openai-logo.svg' ); ?>" alt="openai-logo"
+                         class="pixel-logo">
+                    <h4 class="font-semibold main-switcher">OpenAI</h4>
+                </div>
+
+                <div class="custom-event-pixel-status">
+					<?php $enabled = $event->openai_enabled && $openai_configured; ?>
+
+                    <div class="pixel-status">
+                        <p class="status pixel-enabled" style="<?php echo $enabled ? '' : 'display: none'; ?>">
+                            Active
+                        </p>
+
+                        <p class="status pixel-disabled" style="<?php echo $enabled ? 'display: none' : ''; ?>">
+                            Inactive
+                        </p>
+                    </div>
+
+                    <label class="card-header-label" for="openai_custom_event_switch">
+						<?php include PYS_FREE_VIEW_PATH . '/UI/properties-button-off.php'; ?>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="openai-not-configured-error mb-24">
+                    <div class="event_error critical_message">Error: OpenAI pixel is not configured</div>
+                </div>
+
+                <div class="d-flex align-items-center mb-24">
+					<?php Events\renderSwitcherInput( $event, 'openai_enabled' ); ?>
+                    <h4 class="switcher-label secondary_heading">Enable on OpenAI</h4>
+                </div>
+
+                <div id="openai_panel" class="pixel_panel">
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Fire for:</label>
+                        </div>
+
+						<?php Events\renderOpenAIEventId( $event, 'openai_pixel_id' ); ?>
+                    </div>
+
+                    <div class="mb-24">
+                        <div class="mb-8">
+                            <label class="custom-event-label">Event type:</label>
+                        </div>
+
+						<?php Events\renderOpenAIEventTypeInput( $event, 'openai_event_type' ); ?>
+
+                        <?php
+						$openai_name_open = CustomEvent::getOpenAIDataType( $openai_type ) === 'custom';
+						?>
+                        <div class="openai-custom-event-type mt-16"<?php echo $openai_name_open ? '' : ' style="display: none;"'; ?>>
+							<?php Events\renderTextInput( $event, 'openai_custom_event_type', 'Enter name' ); ?>
+                            <p class="form-text text-small">1-64 characters: letters, digits, _ and -, starting and
+                                ending with a letter or a digit.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+						<?php Events\renderSwitcherInput( $event, 'openai_params_enabled' ); ?>
+                        <h4 class="switcher-label secondary_heading">Add Parameters</h4>
+                    </div>
+
+                    <?php
+					$openai_params_open = (bool) $event->openai_params_enabled;
+					?>
+                    <div id="openai_params_panel"<?php echo $openai_params_open ? '' : ' style="display: none;"'; ?>>
+						<?php
+						$fields = isset( $openai_events[ $openai_type ] ) ? $openai_events[ $openai_type ] : array();
+
+						foreach ( $fields as $field ) :
+							$param_key   = $field[ 'label' ];
+							$param_value = isset( $event->openai_params[ $param_key ] ) ? $event->openai_params[ $param_key ] : '';
+							$param_value = is_array( $param_value ) ? ( $param_value[ 'value' ] ?? '' ) : $param_value;
+							?>
+                            <div class="mt-24 param-field-wrapper" data-param-key="<?php echo esc_attr( $param_key ); ?>">
+                                <div class="mb-8">
+                                    <label class="custom-event-label"><?php echo esc_html( $field[ 'ui_label' ] ?? $param_key ); ?></label>
+                                </div>
+
+                                <input type="text"
+                                       name="pys[event][openai_params][<?php echo esc_attr( $param_key ); ?>]"
+                                       value="<?php echo esc_attr( $param_value ); ?>"
+                                       class="input-standard"
+                                       placeholder="<?php echo esc_attr( $param_key === 'amount' ? '129.99' : ( $param_key === 'currency' ? 'USD' : '' ) ); ?>"
+									<?php if ( $param_key === 'currency' ) : ?>
+                                       pattern="[A-Za-z]{3}" maxlength="3"
+                                       list="pys-openai-currencies"
+                                       title="Three-letter ISO 4217 code, for example USD"
+									<?php endif; ?>
+                                />
+
+								<?php if ( $param_key === 'currency' ) : ?>
+                                    <datalist id="pys-openai-currencies">
+										<?php foreach ( OpenAI\Helpers\pys_openai_currency_codes() as $iso_code ) : ?>
+                                            <option value="<?php echo esc_attr( $iso_code ); ?>"></option>
+										<?php endforeach; ?>
+                                    </datalist>
+
+                                    <p class="form-text text-small">Three-letter ISO 4217 code, for example
+                                        <code>USD</code>.</p>
+								<?php endif; ?>
+
+								<?php if ( $param_key === 'amount' ) : ?>
+                                    <p class="form-text text-small">Enter the amount as a decimal.</p>
+								<?php endif; ?>
+                            </div>
+						<?php endforeach; ?>
+
+                    </div>
+
+                    <div class="pro-feature-container mb-24 mt-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+				                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce product data on single product pages</h4>
+                            </div>
+			                <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
+                    </div>
+                    <div class="pro-feature-container mb-24">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-start">
+				                <?php renderDummySwitcher(); ?>
+                                <h4 class="switcher-label secondary_heading">Track WooCommerce cart data when possible</h4>
+                            </div>
+			                <?php renderProBadge( 'https://www.pixelyoursite.com/?utm_source=pys-free-plugin&utm_medium=pro-badge&utm_campaign=pro-feature' ); ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+	<?php endif; ?>
+
+	<?php if ( Pinterest()->enabled() ) : ?>
+		<?php Pinterest()->renderCustomEventOptions( $event ); ?>
+	<?php endif; ?>
+
+	<?php if ( Bing()->enabled() ) : ?>
+		<?php Bing()->renderCustomEventOptions( $event ); ?>
+	<?php endif; ?>
 
 	<?php if ( Reddit()->enabled() ) : ?>
 		<?php Reddit()->renderCustomEventOptions( $event ); ?>
@@ -2037,7 +2184,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
                         foreach ( $event->getGTMParams() as $key => $val ) : ?>
                             <div class="mb-24 gtm_param">
                                 <div class="mb-8">
-                                    <label class="custom-event-label"><?= $key ?></label>
+                                    <label class="custom-event-label"><?= esc_html( $key ) ?></label>
                                 </div>
 
                                 <?php Events\renderGTMParamInput( $key, $val ); ?>
@@ -2114,7 +2261,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
                     <p class="primary-heading-color mt-24">
                         When configuring GTM variables for these parameters, use this key: <span
                                 class="event-parameter-list"
-                                id="manual_custom_object_name"><?= $event->getManualCustomObjectName(); ?></span>
+                                id="manual_custom_object_name"><?= esc_html( $event->getManualCustomObjectName() ); ?></span>
                     </p>
 
                     <p class="gtm_woo_info primary-heading-color mt-24">
@@ -2188,7 +2335,7 @@ $serverUrl = pys_get_request_protocol() . "$_SERVER[HTTP_HOST]";
             </p>
 
             <p>Example:</p>
-            <p>This is your URL: <?= $serverUrl ?>?ParameterName=123</p>
+            <p>This is your URL: <?= esc_html( $serverUrl ) ?>?ParameterName=123</p>
             <p class="mb-20">The parameter value will be 123.</p>
 
             <p class="mb-20">

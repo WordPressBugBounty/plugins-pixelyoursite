@@ -151,7 +151,7 @@ final class GetWooEventsConfigAbility extends AbstractAbility {
 			'platform_events'        => EventToggleMap::platformMatrix( 'woo' ),
 			'add_to_cart_triggers'   => self::addToCartTriggers( $pys ),
 			'content_id_by_platform' => self::contentIdByPlatform(),
-			'not_this_tool'          => 'This tool covers the GLOBAL WooCommerce funnel events (ViewContent = "Track product pages", etc.). It does NOT cover the per-platform CUSTOM-EVENT switchers "Track WooCommerce product data on single product pages" (track_single_woo_data) and "Track WooCommerce cart data when possible" (track_cart_woo_data) — those live INSIDE a custom event (get_custom_event / set_custom_event, per platform) and in Free are functional only for reddit (Pro for facebook/pinterest/bing/google_analytics/gtm). If the user asked to enable one of THOSE "for facebook" etc., this is the wrong tool — do not report the ViewContent funnel state; go to the custom event instead.',
+			'not_this_tool'          => 'This tool covers the GLOBAL WooCommerce funnel events (ViewContent = "Track product pages", etc.). It does NOT cover the per-platform CUSTOM-EVENT switchers "Track WooCommerce product data on single product pages" (track_single_woo_data) and "Track WooCommerce cart data when possible" (track_cart_woo_data) — those live INSIDE a custom event (get_custom_event / set_custom_event, per platform) and in Free are functional only for reddit (Pro for facebook/pinterest/bing/openai/google_analytics/gtm). If the user asked to enable one of THOSE "for facebook" etc., this is the wrong tool — do not report the ViewContent funnel state; go to the custom event instead.',
 		);
 	}
 

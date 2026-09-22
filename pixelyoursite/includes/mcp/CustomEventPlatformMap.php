@@ -5,9 +5,9 @@
  * shape, event-type source and custom-type marker. Mirrors the fields Free's
  * CustomEvent `$data` actually carries.
  *
- * Free custom-event platforms: facebook, pinterest, bing, reddit (flat event
- * lists) + google_analytics (`google_tags`) and gtm (GA-grouped). No TikTok, no
- * separate Google Ads / ga_ads.
+ * Free custom-event platforms: facebook, pinterest, bing, reddit, openai (flat
+ * event lists) + google_analytics (`google_tags`) and gtm (GA-grouped). No
+ * TikTok, no separate Google Ads / ga_ads.
  *
  * @package PixelYourSite\MCP
  */
@@ -55,6 +55,13 @@ final class CustomEventPlatformMap {
 			'track_single' => 'reddit_track_single_woo_data', 'track_cart' => 'reddit_track_cart_woo_data', 'conversion_label' => null,
 			'pixel_fns' => array( '\\PixelYourSite\\Reddit' ), 'events_kind' => self::EVENTS_FLAT, 'events_source' => 'reddit',
 		),
+		'openai'           => array(
+			'enabled' => 'openai_enabled', 'pixel' => 'openai_pixel_id', 'pixel_array' => false,
+			'event_type' => 'openai_event_type', 'custom_event_type' => 'openai_custom_event_type', 'custom_values' => array( 'custom' ),
+			'params_enabled' => 'openai_params_enabled', 'params' => 'openai_params', 'custom_params' => null,
+			'track_single' => null, 'track_cart' => null, 'conversion_label' => null,
+			'pixel_fns' => array( '\PixelYourSite\OpenAI' ), 'events_kind' => self::EVENTS_FLAT, 'events_source' => 'openai',
+		),
 		'google_analytics' => array(
 			'enabled' => 'ga_ads_enabled', 'pixel' => 'ga_ads_pixel_id', 'pixel_array' => true,
 			'event_type' => 'ga_ads_event_action', 'custom_event_type' => 'ga_ads_custom_event_action', 'custom_values' => array( '_custom', 'CustomEvent' ),
@@ -70,6 +77,77 @@ final class CustomEventPlatformMap {
 			'pixel_fns' => array( '\\PixelYourSite\\GTM' ), 'events_kind' => self::EVENTS_GA_GROUP, 'events_source' => null,
 		),
 	);
+
+	/**
+	 * Rules a platform's own API adds on top of the common shape. Only OpenAI has
+	 * them: its taxonomy is CLOSED, and unlike every other platform here a field
+	 * it does not know does not merely go unused -- the endpoint answers 400 and
+	 * drops the WHOLE event, so every conversion configured on it is lost.
+	 */
+	private const PLATFORM_RULES = array(
+		'openai' => array(
+			'validators'                        => array(
+				'currency' => array(
+					'fn'      => '\PixelYourSite\OpenAI\Helpers\pys_openai_is_valid_currency',
+					'message' => 'must be an ISO 4217 currency code, e.g. USD or EUR. The endpoint checks the code against that standard, not its shape: BTC is three letters and is still refused, and the refusal fails the whole event.',
+				),
+			),
+			'custom_name'                       => array(
+				'fn'       => '\PixelYourSite\CustomEvent::sanitizeOpenAICustomEventName',
+				'message'  => '1-64 characters: latin letters, digits, `_` and `-`, starting and ending with a letter or a digit.',
+				'reserved' => true,
+			),
+		),
+	);
+
+	/**
+	 * The value rule for one param, as { fn, message }, or null when the platform
+	 * has none for it.
+	 *
+	 * @param string $slug  Platform slug.
+	 * @param string $param Param name.
+	 * @return array<string, string>|null
+	 */
+	public static function paramValidator( string $slug, string $param ): ?array {
+		$rule = self::PLATFORM_RULES[ $slug ][ 'validators' ][ $param ] ?? null;
+
+		return is_array( $rule ) && is_callable( $rule[ 'fn' ] ) ? $rule : null;
+	}
+
+	/**
+	 * The platform's own rule for the free event NAME, as { fn, message, reserved },
+	 * or null when the generic key sanitiser is the rule.
+	 *
+	 * @param string $slug Platform slug.
+	 * @return array<string, mixed>|null
+	 */
+	public static function customNameRule( string $slug ): ?array {
+		$rule = self::PLATFORM_RULES[ $slug ][ 'custom_name' ] ?? null;
+
+		return is_array( $rule ) && is_callable( $rule[ 'fn' ] ) ? $rule : null;
+	}
+
+	/**
+	 * The platform's STANDARD event-type values -- the names a free custom-event
+	 * name may not reuse when the platform reserves them.
+	 *
+	 * @param string $slug Platform slug.
+	 * @return array<int, string>
+	 */
+	public static function reservedCustomNames( string $slug ): array {
+		$rule = self::PLATFORM_RULES[ $slug ][ 'custom_name' ] ?? null;
+
+		if ( empty( $rule[ 'reserved' ] ) ) {
+			return array();
+		}
+
+		$def = self::MAP[ $slug ] ?? null;
+
+		return array_values( array_diff(
+			self::validEventTypes( $slug ),
+			(array) ( $def[ 'custom_values' ] ?? array() )
+		) );
+	}
 
 	/**
 	 * Platform-specific EXTRA event fields (GTM dataLayer options). Keyed by slug

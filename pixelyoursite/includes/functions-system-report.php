@@ -159,9 +159,29 @@ function get_system_report_data( $for_download = false ) {
         
     }
     
+    /**
+     * Tracking cookies
+     *
+     * Without a Public Suffix List PHP waits for the front end to report the
+     * accepted cookie domain; if that script never runs the wait never ends and
+     * server-side `_fbp` stays off silently — hence this section. Escaping is
+     * here because html-report.php echoes values raw.
+     */
+
+    $cookies = array();
+
+    foreach ( pys_cookie_domain_diagnostics() as $label => $row ) {
+        $marker = '';
+        if ( $row['warn'] ) {
+            $marker = $for_download ? TEXT_WARNING : HTML_WARNING;
+        }
+        $cookies[ $label ] = $marker . esc_html( $row['text'] );
+    }
+
     $report = array(
         'WordPress Environment' => $wordpress,
         'Server Environment'    => $server,
+        'Tracking Cookies'      => $cookies,
         'Active Plugins'        => $plugins,
         'Theme'                 => $theme,
     );

@@ -136,6 +136,17 @@ if ( ! class_exists( 'PixelYourSite\\RestAPIGuard' ) ) {
                 }
             }
 
+            // A custom event is never tied to a store order, so no order rule
+            // applies to it — including when it carries an order id or fires a
+            // platform "Purchase". It is still tagged, exactly as it would have
+            // been by the custom-purchase branch below.
+            if ( 'custom_event' === $event_slug ) {
+                if ( $this->matches_ci( $event_name, $this->purchase_names ) ) {
+                    $this->mark_custom_event( $request );
+                }
+                return $result;
+            }
+
             $has_order = ( $woo_order > 0 || $edd_order > 0 );
 
             // Ecommerce purchases are keyed by their PYS slug (woo_purchase /
@@ -159,8 +170,18 @@ if ( ! class_exists( 'PixelYourSite\\RestAPIGuard' ) ) {
             // Purchase without an order reference.
             if ( ! $has_order ) {
                 if ( $is_ecom_purchase ) {
-                    // Store purchase must reference a real order.
-                    if ( apply_filters( 'pys_rest_require_order_for_purchase', true, $event_slug, $request ) ) {
+                    // Store purchase must reference a real order — but only if the
+                    // plugin that would have produced that order is actually here.
+                    // On a site without WooCommerce a `woo_purchase` cannot be held
+                    // to a Woo order; the event is let through unvalidated instead,
+                    // which is the same answer validate_woo() gives for an id.
+                    $owner_active = ( 0 === strpos( $event_slug, 'woo_' ) )
+                        ? $this->woo_available()
+                        : $this->edd_available();
+
+                    if ( $owner_active
+                        && $this->validate_orders_enabled( $request )
+                        && apply_filters( 'pys_rest_require_order_for_purchase', true, $event_slug, $request ) ) {
                         return $this->reject( 'missing_order', 'Purchase event without an order reference.', $request, 0 );
                     }
                 } else {
@@ -176,16 +197,21 @@ if ( ! class_exists( 'PixelYourSite\\RestAPIGuard' ) ) {
                 return $result;
             }
 
-            $order_key = $this->to_key( $request->get_param( 'order_key' ) );
+            // Site owners can turn the real-order check off (Global Settings).
+            // Safe to switch off: every store lookup downstream guards itself,
+            // so an unvalidated order id can only fail to resolve, never fatal.
+            if ( $this->validate_orders_enabled( $request ) ) {
+                $order_key = $this->to_key( $request->get_param( 'order_key' ) );
 
-            if ( $woo_order > 0 ) {
-                $verdict = $this->validate_woo( $woo_order, $order_key, $request );
-            } else {
-                $verdict = $this->validate_edd( $edd_order, $order_key, $request );
-            }
+                if ( $woo_order > 0 ) {
+                    $verdict = $this->validate_woo( $woo_order, $order_key, $request );
+                } else {
+                    $verdict = $this->validate_edd( $edd_order, $order_key, $request );
+                }
 
-            if ( is_wp_error( $verdict ) ) {
-                return $verdict;
+                if ( is_wp_error( $verdict ) ) {
+                    return $verdict;
+                }
             }
 
             // Custom purchase that (unusually) carries an order — still tag it.
@@ -457,6 +483,42 @@ if ( ! class_exists( 'PixelYourSite\\RestAPIGuard' ) ) {
         }
 
         /**
+         * Is the real-order check switched on?
+         *
+         * Gates order existence / status / order_key validation and the
+         * missing-order rejection — nothing else. Slug validation and the
+         * authoritative-value enforcement keep their own switches.
+         *
+         * @param \WP_REST_Request $request
+         * @return bool
+         */
+        private function validate_orders_enabled( $request ) {
+            $enabled = (bool) PYS()->getOption( 'rest_order_validation_enabled' );
+            return (bool) apply_filters( 'pys_rest_validate_orders', $enabled, $request );
+        }
+
+        /**
+         * Is WooCommerce loaded far enough to look an order up?
+         *
+         * class_exists() alone is not enough on an early rest_pre_dispatch, so
+         * the function itself is what gets checked — here and at every call site.
+         *
+         * @return bool
+         */
+        private function woo_available() {
+            return function_exists( 'wc_get_order' );
+        }
+
+        /**
+         * Is EDD loaded far enough to look a payment up?
+         *
+         * @return bool
+         */
+        private function edd_available() {
+            return function_exists( 'edd_get_payment' );
+        }
+
+        /**
          * WooCommerce order validation.
          *
          * @param int              $order_id  Claimed order ID.
@@ -467,7 +529,7 @@ if ( ! class_exists( 'PixelYourSite\\RestAPIGuard' ) ) {
         private function validate_woo( $order_id, $order_key, $request ) {
 
             // Woo not available in this context — nothing to validate against.
-            if ( ! function_exists( 'wc_get_order' ) ) {
+            if ( ! $this->woo_available() ) {
                 return true;
             }
 
@@ -510,7 +572,7 @@ if ( ! class_exists( 'PixelYourSite\\RestAPIGuard' ) ) {
          */
         private function validate_edd( $order_id, $order_key, $request ) {
 
-            if ( ! function_exists( 'edd_get_payment' ) ) {
+            if ( ! $this->edd_available() ) {
                 return true;
             }
 

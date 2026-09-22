@@ -606,6 +606,10 @@ function pysWooResolveOrderIdFromRequest() {
 
     global $wp;
 
+    if ( ! isWooCommerceActive() ) {
+        return -1;
+    }
+
     /*
      * When a key is submitted, resolve through the key itself. That lookup is
      * what ties the key to an order; the old code preferred the URL path

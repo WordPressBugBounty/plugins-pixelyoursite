@@ -43,14 +43,13 @@ class EventsManager {
 
     }
     function add_data_attribute_to_script( $tag, $handle, $src ) {
-        $array_scripts = array('js-cookie-pys', 'jquery-bind-first', 'js-tld', 'pys', 'js-sha256');
+        $array_scripts = array('js-cookie-pys', 'jquery-bind-first', 'pys', 'js-sha256');
 
         // Add defer attribute to all plugin scripts for better performance
         $defer_scripts = array(
                 'jquery-bind-first',
                 'js-cookie-pys',
                 'js-sha256',
-                'js-tld',
                 'pys',
                 'vimeo',
                 'pys-pinterest',
@@ -78,29 +77,37 @@ class EventsManager {
 
         wp_register_script( 'js-cookie-pys', PYS_FREE_URL . '/dist/scripts/js.cookie-2.1.3.min.js', array(), '2.1.3', true );
         wp_register_script( 'js-sha256', PYS_FREE_URL . '/dist/scripts/sha256.js', array(), '0.11.0', true );
-        wp_register_script( 'js-tld', PYS_FREE_URL . '/dist/scripts/tld.min.js', array( 'jquery' ), '2.3.1', true );
+        // tld.min.js is gone. Its bundled Public Suffix List predated ~2018 and
+        // returned the suffix itself for newer entries (app.vercel.app ->
+        // "vercel.app"), so cookies scoped with it were dropped by the browser.
+        // probeCookieDomain() in dist/scripts/public.js asks the browser
+        // instead, which cannot go stale. Also 141 KB off every page load.
 
         // Enqueue core scripts
         wp_enqueue_script( 'jquery-bind-first' );
         wp_enqueue_script( 'js-cookie-pys' );
         wp_enqueue_script( 'js-sha256' );
-        wp_enqueue_script( 'js-tld' );
 
         // Load main plugin script (compressed or uncompressed)
         if ( PYS()->getOption( 'compress_front_js' )){
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.min.js',
-                array( 'jquery', 'js-sha256', 'js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
+                array( 'jquery', 'js-sha256', 'js-cookie-pys', 'jquery-bind-first' ), PYS_FREE_VERSION, true );
         }
         else
         {
             wp_enqueue_script( 'pys', PYS_FREE_URL . '/dist/scripts/public.js',
-                array( 'jquery', 'js-sha256', 'js-cookie-pys', 'jquery-bind-first','js-tld' ), PYS_FREE_VERSION, true );
+                array( 'jquery', 'js-sha256', 'js-cookie-pys', 'jquery-bind-first' ), PYS_FREE_VERSION, true );
         }
 
 
 	}
 
 	public function outputData() {
+
+		// Everything below ends up inside the page HTML, which a full-page
+		// cache may serve to other visitors. Visitor-specific reads are gated
+		// on this for the duration.
+		$previous_render_context = pys_html_render_context( true );
 
 		$data = array(
             'staticEvents'          => $this->staticEvents,
@@ -144,7 +151,8 @@ class EventsManager {
 			// its own Consent Mode update from the visitor's live choice. Utils
 			// .pushGTMConsentState() checks this and stays out of the way: our update
 			// would carry the state as of page render and could overwrite theirs.
-			"consent_mode_cmp_active"          => has_filter( 'cm_google_consent_mode' )
+			"consent_mode_cmp_active"          => has_filter( 'cm_google_consent_mode' ),
+			'data_persistency'                  => PYS()->getOption( 'data_persistency' )
 		);
 
 		$options[ 'gdpr' ] = array(
@@ -213,7 +221,7 @@ class EventsManager {
 		$options[ 'cookie' ] = array(
 			'disabled_all_cookie'                => apply_filters( 'pys_disable_all_cookie', false ),
 			'disabled_start_session_cookie'      => apply_filters( 'pys_disabled_start_session_cookie', false ),
-			'disabled_advanced_form_data_cookie' => apply_filters( 'pys_disable_advanced_form_data_cookie', false ) || apply_filters( 'pys_disable_advance_data_cookie', false ),
+			'disabled_advanced_form_data_cookie' => pys_advanced_form_data_cookie_disabled(),
 			'disabled_landing_page_cookie'       => apply_filters( 'pys_disable_landing_page_cookie', false ),
 			'disabled_first_visit_cookie'        => apply_filters( 'pys_disable_first_visit_cookie', false ),
 			'disabled_trafficsource_cookie'      => apply_filters( 'pys_disable_trafficsource_cookie', false ),
@@ -316,8 +324,10 @@ class EventsManager {
 
 		wp_localize_script( 'pys', 'pysOptions', $data );
 
+		pys_html_render_context( $previous_render_context );
+
 	}
-	
+
 	public function outputNoScriptData() {
         if(!apply_filters( 'pys_disable_by_gdpr', false)) {
             foreach (PYS()->getRegisteredPixels() as $pixel) {

@@ -4,14 +4,14 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, O
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.1
-Stable tag: 11.4.1
+Stable tag: 11.4.2
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Add Meta Pixel with Conversion API, Google Analytics (GA4) + Consent Mode, Google Tag Manager, OpenAI Pixel & API, and Head & Footer scripts.
 
 == Description ==
-**Trusted by 500,000+ websites, PixelYourSite is a complete tracking solution for the Meta Pixel, Google Analytics 4, Google Tag Manager, and now OpenAI and ChatGPT traffic too.**
+**Trusted by 400,000+ websites, PixelYourSite is a complete tracking solution for the Meta Pixel, Google Analytics 4, Google Tag Manager, and now OpenAI and ChatGPT traffic too.**
 
 Set up Meta Pixel with full Conversion API support, Google Analytics 4, and Google Tag Manager on your WordPress site, no coding required. Need to add a custom script somewhere? Our Head & Footer option handles that too. Pinterest, Bing, and Reddit tracking are available as dedicated paid add-ons: [Pinterest Tag](https://www.pixelyoursite.com/pinterest-tag), [Bing Tag](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on), [Reddit Pixel](https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin).
 
@@ -324,6 +324,24 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+
+= PixelYourSite 11.4.2 =
+
+* OpenAI Pixel: configure your own tracking events.
+
+* Improvements to the way we capture and send data with API events. 
+
+* Fix for Payload order id must error on a site without WooCommerce.
+
+* Improvements to pys_advanced_form_data cookie.
+
+* Fix(mcp): require manage_pys in every ability; escape custom event views.
+
+* Feature(external_id): deterministic per-site visitor key.
+
+* Fix: Purchase shares the persisted eventID on the first thank-you view, serialise its creation.
+
 
 = PixelYourSite 11.4.1 =
 

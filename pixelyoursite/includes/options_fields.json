@@ -152,7 +152,6 @@
 
   "send_external_id": "checkbox",
   "external_id_expire": "number",
-  "external_id_use_transient": "checkbox",
   "track_cookie_for_subdomains": "checkbox",
   "server_event_use_ajax" : "checkbox",
   "server_static_event_use_ajax": "checkbox",
@@ -161,6 +160,8 @@
   "use_send_beacon": "checkbox",
   "fetch_user_data_via_rest": "checkbox",
   "pys_check_permission_rate_limit": "number",
+  "rest_order_validation_enabled": "checkbox",
 
+  "enable_advanced_form_data_cookie": "checkbox",
   "data_persistency": "radio"
 }

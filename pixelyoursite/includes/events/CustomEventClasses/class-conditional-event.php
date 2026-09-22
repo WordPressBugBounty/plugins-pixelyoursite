@@ -42,6 +42,31 @@ class ConditionalEvent extends SettingsCustomEvent {
         $this->user_role = array('guest');
     }
 
+    /**
+     * Condition types this plugin is able to decide.
+     *
+     * The others are PixelYourSite Pro types. Free never stores them — update() has no
+     * case for them — but they can still arrive in the post meta, because custom events
+     * and their conditions live in the same post type and survive a Pro deactivation.
+     * Two of them, landing_page and source, read the visitor's own session or cookies;
+     * deciding those here would bake one visitor's answer into HTML that a full-page
+     * cache then serves to everybody. Pro evaluates those in the browser for exactly
+     * that reason.
+     *
+     * checkConditions() counts whatever is not in this list as matched, so an
+     * unevaluable condition never blocks an event. That also tracks Pro most closely:
+     * a row of such a type created here is stored with an empty value, and an empty
+     * value matches everything on both sides.
+     */
+    private static $evaluable_types = array( 'url_filters', 'device', 'user_role' );
+
+    /**
+     * @return bool
+     */
+    public function isEvaluable() {
+        return in_array( $this->condition_type, self::$evaluable_types, true );
+    }
+
     public function getConditionIndex() {
         return $this->index;
     }

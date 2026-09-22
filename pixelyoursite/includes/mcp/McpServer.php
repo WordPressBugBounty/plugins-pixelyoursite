@@ -1,16 +1,13 @@
 <?php
 /**
  * Boots the PYS Free MCP server: loads the prefixed wordpress/mcp-adapter and
- * registers the ability category, abilities and (later phases) the request
+ * registers the ability category, abilities and the request
  * guard, provenance log and admin page.
  *
  * NOTE: Free reuses the SAME php-scoper prefix (`PYS_PRO_GLOBAL`) as Pro, so
  * the adapter classes are referenced identically. Pro and Free never run
  * together (Pro deactivates Free), but SERVER_ID / route / ability category
  * are distinct to keep storage and registration cleanly separated.
- *
- * Phase 0: only PingAbility is registered — enough to verify the full
- * initialize → tools/list → tools/call pipeline. Later phases add the rest.
  *
  * @package PixelYourSite\MCP
  */
@@ -299,10 +296,6 @@ class McpServer {
 
 	/**
 	 * Register all abilities owned by PYS Free MCP.
-	 *
-	 * Phases 1–2: ping, usage-guidance, credential-setup-instructions,
-	 * tracking-audit, platform-pixels. Later phases append woo/edd, automatic
-	 * and custom-event abilities.
 	 *
 	 * @return void
 	 */

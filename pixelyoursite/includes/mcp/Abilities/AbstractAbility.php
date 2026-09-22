@@ -17,6 +17,8 @@ if ( !defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+use PixelYourSite\MCP\Capabilities;
+use PixelYourSite\MCP\ErrorEnvelope;
 use PixelYourSite\MCP\McpServer;
 
 abstract class AbstractAbility {
@@ -68,13 +70,21 @@ abstract class AbstractAbility {
 	abstract public static function execute( $input );
 
 	/**
-	 * Permission gate. Default — open (transport Bearer check is enough).
-	 * Write abilities override to consult {@see Capabilities}.
+	 * Permission gate. Every ability requires the current user to hold
+	 * `Capabilities::REQUIRED_CAPABILITY`. The transport Bearer check is NOT
+	 * enough on its own: abilities are published with `meta.mcp.public`, so any
+	 * other MCP server on the site can execute them for whoever it
+	 * authenticated (by default anyone with `read`). Write abilities extend
+	 * this with the read-only gate.
 	 *
 	 * @param mixed $input Tool args (some gates inspect them).
 	 * @return bool|\WP_Error True to allow, or a WP_Error envelope to deny.
 	 */
 	public static function permissionCallback( $input = null ) {
+		if ( !Capabilities::currentUserCanManage() ) {
+			return ErrorEnvelope::forbidden();
+		}
+
 		return true;
 	}
 

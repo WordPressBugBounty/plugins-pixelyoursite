@@ -1903,11 +1903,143 @@ jQuery(document).ready(function($) {
         $( this ).next().html( text );
     } );
 
+    /**
+     * OpenAI Edit Event
+     */
+    if ( $( '#pys_event_openai_event_type' ).length > 0 ) {
+
+        $( '#pys_event_openai_event_type' ).on( 'change', function () {
+            updateOpenAIEventParamsForm();
+        } );
+
+        $( '#pys_event_openai_params_enabled' ).on( 'change', function () {
+            updateOpenAIParamFormVisibility();
+        } );
+
+        updateOpenAICustomEventNameVisibility();
+        updateOpenAIParamFormVisibility();
+    }
+
+    function openAIIsCustomEventType() {
+        return String( $( '#pys_event_openai_event_type' ).find( ':selected' ).data( 'data-type' ) ) === 'custom';
+    }
+
+    /**
+     * The event NAME belongs to the `custom` type alone -- it is what OpenAI
+     * sends as custom_event_name, and the other types have names of their own.
+     */
+    function updateOpenAICustomEventNameVisibility( animate ) {
+        let allowed = openAIIsCustomEventType(),
+            $name = $( '.openai-custom-event-type' ),
+            $input = $name.find( 'input[id*="_custom_event_type"]' );
+
+        if ( allowed ) {
+            $input.attr( 'required', 'required' );
+            animate ? $name.slideDown( 400 ) : $name.show();
+        } else {
+            $input.removeAttr( 'required' );
+            $( '.custom-event-type-error' ).remove();
+            animate ? $name.slideUp( 400 ) : $name.hide();
+        }
+    }
+
+    /**
+     * Rebuild the standard fields for the chosen event type: the previous ones
+     * are removed and the fields of the chosen shape are appended in order.
+     */
+    function updateOpenAIEventParamsForm() {
+        let $select = $( '#pys_event_openai_event_type' );
+
+        if ( $select.length === 0 ) {
+            return;
+        }
+
+        let $panel = $( '#openai_params_panel' ),
+            fields = $select.find( ':selected' ).data( 'fields' ) || [];
+
+        updateOpenAICustomEventNameVisibility( true );
+
+        $panel.find( '.param-field-wrapper' ).remove();
+
+        fields.forEach( function ( item ) {
+            let $field = $( renderOpenAIField( item ) );
+
+            if ( item.label === 'currency' ) {
+                $field.find( 'input' )
+                    .attr( 'pattern', '[A-Za-z]{3}' )
+                    .attr( 'maxlength', '3' )
+                    .attr( 'placeholder', 'USD' )
+                    .attr( 'list', 'pys-openai-currencies' )
+                    .attr( 'title', 'Three-letter ISO 4217 code, for example USD' );
+            }
+
+            if ( item.label === 'amount' ) {
+                $field.find( 'input' ).attr( 'placeholder', '129.99' );
+            }
+
+            $panel.append( $field );
+        } );
+
+        updateOpenAIParamFormVisibility();
+    }
+
+    /** One standard field, in the shape the card renders server-side. */
+    function renderOpenAIField( data ) {
+        return '<div class="mt-24 param-field-wrapper" data-param-key="' + data.label + '">' +
+            '<div class="mb-8">' +
+            '<label class="custom-event-label">' + ( data.ui_label || data.label ) + '</label>' +
+            '</div>' +
+            '<input type="text" name="' + data.name + '" value="" placeholder="" class="input-standard">' +
+            '</div>';
+    }
+
+    function updateOpenAIParamFormVisibility() {
+        if ( $( '#pys_event_openai_params_enabled:checked' ).length > 0 ) {
+            $( '#openai_params_panel' ).slideDown( 400 );
+        } else {
+            $( '#openai_params_panel' ).slideUp( 400 );
+        }
+    }
+
+    function updateOpenAIPanelVisibility() {
+        let openai_enabled = $( '#pys_event_openai_enabled' ),
+            card = openai_enabled.closest( '.card' ),
+            configured = +card.attr( 'data-configured' ) === 1,
+            pixel_status = card.find( '.custom-event-pixel-status .pixel-status' );
+
+        if ( configured ) {
+            $( '.openai-not-configured-error' ).hide();
+
+            if ( openai_enabled.is( ':checked' ) ) {
+                $( '#openai_panel' ).removeClass( 'disabled' );
+                pixel_status.find( '.pixel-enabled' ).show();
+                pixel_status.find( '.pixel-disabled' ).hide();
+            } else {
+                $( '#openai_panel' ).addClass( 'disabled' );
+                pixel_status.find( '.pixel-enabled' ).hide();
+                pixel_status.find( '.pixel-disabled' ).show();
+            }
+        } else {
+            $( '.openai-not-configured-error' ).show();
+            $( '#openai_panel' ).addClass( 'disabled' );
+            openai_enabled.prop( 'checked', false ).prop( 'disabled', true );
+        }
+    }
+
+    if ( $( '#pys_event_openai_enabled' ).length > 0 ) {
+
+        updateOpenAIPanelVisibility();
+
+        $( '#pys_event_openai_enabled' ).on( 'click', function () {
+            updateOpenAIPanelVisibility();
+        } );
+    }
+
     function renderField( data ) {
         if ( data.type === "input" ) {
             return '<div class="mt-24 param-field-wrapper">' +
                 '<div class="mb-8">' +
-                '<label class="custom-event-label">' + data.label + '</label>' +
+                '<label class="custom-event-label">' + ( data.ui_label || data.label ) + '</label>' +
                 '</div>' +
                 '<input type="text" name="' + data.name + '" value="" placeholder="" class="input-standard">' +
                 '</div>';

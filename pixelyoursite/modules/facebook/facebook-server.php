@@ -246,8 +246,10 @@ class FacebookServer {
         $data = isset($_POST['data']) ? $_POST['data'] : array();
         $ids = $_POST['ids'];
         $eventID = $_POST['eventID'];
-        $wooOrder = isset($_POST['woo_order']) ? $_POST['woo_order'] : null;
-        $eddOrder = isset($_POST['edd_order']) ? $_POST['edd_order'] : null;
+        // This handler is reached through admin-ajax, which never passes through
+        // rest_pre_dispatch, so RestAPIGuard never sees this request.
+        $wooOrder = isset($_POST['woo_order']) && is_numeric($_POST['woo_order']) ? (int) $_POST['woo_order'] : null;
+        $eddOrder = isset($_POST['edd_order']) && is_numeric($_POST['edd_order']) ? (int) $_POST['edd_order'] : null;
 
 
         if ( empty( $_REQUEST['ajax_event'] ) || !wp_verify_nonce( $_REQUEST['ajax_event'], 'ajax-event-nonce' ) ) {

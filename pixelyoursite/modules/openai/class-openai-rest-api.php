@@ -74,9 +74,43 @@ class OpenAI_REST_API {
             $source_url
         );
 
-        OpenAIServer()->sendEventsNow( array( $single_event ) );
+        $authenticated = $this->authenticateVisitor();
+
+        try {
+            OpenAIServer()->sendEventsNow( array( $single_event ) );
+        } finally {
+            if ( $authenticated ) {
+                wp_set_current_user( 0 );
+            }
+        }
 
         return new \WP_REST_Response( array( 'success' => true ), 200 );
+    }
+
+    /**
+     * Recognise the visitor this event belongs to.
+     *
+     * @return bool Whether a user was set and has to be unset afterwards.
+     */
+    private function authenticateVisitor() {
+
+        if ( get_current_user_id() > 0 ) {
+            return false; // already recognised; not ours to change or restore
+        }
+
+        if ( ! defined( 'LOGGED_IN_COOKIE' ) || empty( $_COOKIE[ LOGGED_IN_COOKIE ] ) ) {
+            return false;
+        }
+
+        $user_id = wp_validate_auth_cookie( $_COOKIE[ LOGGED_IN_COOKIE ], 'logged_in' );
+
+        if ( ! $user_id ) {
+            return false;
+        }
+
+        wp_set_current_user( (int) $user_id );
+
+        return true;
     }
 
     /**

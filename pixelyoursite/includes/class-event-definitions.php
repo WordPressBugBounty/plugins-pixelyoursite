@@ -71,8 +71,60 @@ class PYS_Event_Definitions {
     }
 
     /**
-     * Get Bing Ads event definitions
-     * 
+     * Get OpenAI Ads event definitions
+     *
+     * @return array Event definitions
+     */
+    public static function get_openai_events() {
+        return self::load_openai_definitions()['events'];
+    }
+
+    /**
+     * Which `data` shape each OpenAI event takes, and whether it may carry
+     * fields of the user's own.
+     *
+     * @return array
+     */
+    public static function get_openai_shapes() {
+        return self::load_openai_definitions()['shapes'];
+    }
+
+    /**
+     * The only keys a contents[] item may carry.
+     *
+     * @return string[]
+     */
+    public static function get_openai_content_item_fields() {
+        return self::load_openai_definitions()['content_item_fields'];
+    }
+
+    /**
+     * The params that take a literal value: no selector, no dynamic value.
+     *
+     * @return string[]
+     */
+    public static function get_openai_static_params() {
+        $definitions = self::load_openai_definitions();
+
+        return isset( $definitions['static_params'] ) ? $definitions['static_params'] : array();
+    }
+
+    /**
+     * The whole OpenAI definition file, cached like the others.
+     *
+     * @return array
+     */
+    private static function load_openai_definitions() {
+        if ( ! isset( self::$cache['openai'] ) ) {
+            self::$cache['openai'] = require PYS_FREE_PATH . '/includes/event-definitions/openai-events.php';
+        }
+
+        return self::$cache['openai'];
+    }
+
+    /**
+     * Get Bing Pixel event definitions
+     *
      * @return array Event definitions
      */
     public static function get_bing_events() {
@@ -143,6 +195,8 @@ class PYS_Event_Definitions {
                 return self::get_reddit_events();
             case 'bing':
                 return self::get_bing_events();
+            case 'openai':
+                return self::get_openai_events();
             case 'pinterest':
                 return self::get_pinterest_events();
             case 'google_analytics':

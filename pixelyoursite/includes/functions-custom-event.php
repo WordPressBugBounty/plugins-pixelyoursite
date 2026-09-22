@@ -504,6 +504,57 @@ function renderCurrencyParamInput( &$event, $key ) {
  * @param CustomEvent $event
  * @param string      $key
  */
+/**
+ * The OpenAI event-type picker.
+ *
+ * @param CustomEvent $event
+ * @param string      $key
+ */
+function renderOpenAIEventTypeInput( &$event, $key ) {
+
+	$events = PixelYourSite\PYS_Event_Definitions::get_openai_events();
+	$shapes = PixelYourSite\PYS_Event_Definitions::get_openai_shapes();
+
+	$attr_name  = "pys[event][$key]";
+	$attr_id    = 'pys_event_' . $key;
+	$attr_value = $event->$key;
+
+	?>
+    <div class="select-standard-wrap">
+        <select id="<?php echo esc_attr( $attr_id ); ?>" name="<?php echo esc_attr( $attr_name ); ?>"
+                autocomplete="off" class="select-standard">
+			<?php foreach ( $events as $option_key => $option_fields ) :
+				$shape  = isset( $shapes[ $option_key ] ) ? $shapes[ $option_key ] : array(); ?>
+
+                <option data-fields="<?php echo esc_attr( wp_json_encode( $option_fields ) ); ?>"
+                        data-data-type="<?php echo esc_attr( isset( $shape[ 'data_type' ] ) ? $shape[ 'data_type' ] : '' ); ?>"
+                        value="<?php echo esc_attr( $option_key ); ?>" <?php selected( $option_key, $attr_value ); ?>>
+					<?php echo esc_html( $option_key ); ?>
+                </option>
+
+			<?php endforeach; ?>
+        </select>
+    </div>
+	<?php
+}
+
+/**
+ * The pixel picker for OpenAI.
+ *
+ * @param CustomEvent $event
+ * @param string      $key
+ */
+function renderOpenAIEventId( &$event, $key ) {
+
+	$options = array( 'all' => 'All pixels' );
+
+	foreach ( (array) PixelYourSite\OpenAI()->getPixelIDs() as $pixel_id ) {
+		$options[ $pixel_id ] = $pixel_id;
+	}
+
+	renderSelectInput( $event, $key, $options );
+}
+
 function renderFacebookEventTypeInput( &$event, $key ) {
     // Get Facebook events from centralized Event Definitions class
     $facebook_events = PixelYourSite\PYS_Event_Definitions::get_facebook_events();

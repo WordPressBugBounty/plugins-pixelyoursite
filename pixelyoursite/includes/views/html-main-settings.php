@@ -26,16 +26,7 @@ include "html-popovers.php";
                         <h4 class="switcher-label secondary_heading"><?php _e('Use external_id', 'pys');?></h4>
                     </div>
                     <p class="text-gray mt-4">
-                        <?php _e('We will store it in cookie called pbid', 'pys');?>
-                    </p>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center">
-                        <?php PYS()->render_switcher_input( 'external_id_use_transient' ); ?>
-                        <h4 class="switcher-label secondary_heading"><?php _e('Use transient WP for storage external_id', 'pys');?></h4>
-                    </div>
-                    <p class="text-gray mt-4">
-                        <?php _e('With this storage method, the data is saved in the WordPress database, for 10 minutes. After the lifetime expires, the data will be deleted or overwritten (the row in the database will be removed).', 'pys');?>
+                        <?php _e('A stable per-browser id sent as external_id. It is derived from the request on the first page view and then kept in a cookie called pbid.', 'pys');?>
                     </p>
                 </div>
                 <div class="d-flex align-items-center number-option-block">
@@ -79,6 +70,16 @@ include "html-popovers.php";
                         <?php _e('This option improves site performance by using the modern sendBeacon API which allows the browser to reliably deliver events in the background while prioritizing resources for the page itself. Falls back to jQuery.ajax if sendBeacon is not supported.', 'pys');?>
                     </p>
                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- REST API -->
+    <div class="card card-style6 card-static">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php _e('REST API', 'pys');?></h4>
+        </div>
+        <div class="card-body">
+            <div class="gap-24">
                 <div>
                     <div class="d-flex align-items-center">
                         <?php PYS()->render_switcher_input( 'fetch_user_data_via_rest' ); ?>
@@ -92,22 +93,25 @@ include "html-popovers.php";
                             <?php _e(
                                 'When active, everything that belongs to one particular visitor is taken out of the '
                                 . 'cached HTML and loaded per page view through a separate REST API call: nonces, the '
-                                . 'Advanced Matching parameters of the Meta pixel (and of the Pinterest and Reddit '
-                                . 'tags when those add-ons are active), and the visit data recorded in the PHP session '
-                                . '(landing page, traffic source, UTM parameters).<br><br>'
-                                . '<strong>Turn it on if you cache pages and Advanced Matching is enabled.</strong> '
-                                . 'That applies to guests as much as to logged-in visitors: for a visitor who is not '
-                                . 'logged in, Advanced Matching is read from the cookie this plugin writes after a '
-                                . 'form submission, so it is printed into the page and a full-page cache would hand '
-                                . 'it to the next visitor.<br><br>'
+                                . 'Advanced Matching parameters of logged-in visitors for the Meta pixel (and the '
+                                . 'Pinterest and Reddit add-ons when active), and the visit data recorded in the PHP '
+                                . 'session (landing page, traffic source, UTM parameters).<br><br>'
+                                . '<strong>Turn it on if your cache serves logged-in visitors a shared copy of the '
+                                . 'page.</strong> Advanced Matching for visitors who are not logged in is already '
+                                . 'cache-safe: the plugin never writes their email, phone or name into the page &mdash; '
+                                . 'the browser supplies them from the visitor\'s own cookie. Logged-in visitors are '
+                                . 'different: their profile and billing data exist only on the server, and this option '
+                                . 'fetches them per visitor instead of rendering them into a page a cache could hand to '
+                                . 'somebody else.<br><br>'
                                 . '<strong>Turn it on also if</strong> you need the visit data of visitors who have '
                                 . 'not accepted cookies yet, because without this call the landing page, the traffic '
                                 . 'source and the UTM parameters come only from the cookies of that visitor and from '
                                 . 'the current URL, and a consent manager that blocks those cookies leaves nothing '
                                 . 'to read.<br><br>'
                                 . 'The landing page, the traffic source and the UTM parameters are kept out of the '
-                                . 'cached HTML at all times, with or without this option, so those never travel from '
-                                . 'one visitor to another.<br><br>'
+                                . 'cached HTML at all times, with or without this option, and so is the Advanced '
+                                . 'Matching of visitors who are not logged in, so those never travel from one visitor '
+                                . 'to another.<br><br>'
                                 . '<strong>The cost:</strong> one extra REST request, with a full WordPress boot, on '
                                 . 'every page view, and the pixel events wait for its answer before they fire. On '
                                 . 'shared hosting that is noticeable.',
@@ -141,6 +145,18 @@ include "html-popovers.php";
                     </div>
                     <p class="text-gray mt-4">
                         <?php _e('Maximum number of server-side tracking requests allowed per minute, per IP address, for each pixel endpoint. Requests over this limit receive an HTTP 429 response. Default is 60 (1 request per second). Increase this value if legitimate fast-browsing customers are being blocked, especially on stores with multiple active pixels firing on every page.', 'pys');?>
+                    </p>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center">
+                        <?php PYS()->render_switcher_input( 'rest_order_validation_enabled' ); ?>
+                        <h4 class="switcher-label secondary_heading"><?php _e( 'Validate orders for server-side purchase events', 'pys' );?></h4>
+                    </div>
+                    <p class="text-gray mt-4">
+                        <?php _e( 'The server-side tracking endpoint is open to anonymous visitors, so anyone can post a purchase event to it. With this on, a purchase event that names an order is accepted only when that order really exists, is not in a status you excluded, and matches the order key when the browser sent one — which stops fabricated purchases from reaching your ad platforms.', 'pys' );?>
+                    </p>
+                    <p class="text-gray mt-4">
+                        <?php _e( 'Turn it off only if your orders are created outside WooCommerce or Easy Digital Downloads — for example a headless checkout or a custom payment flow — and legitimate purchases are being dropped. Turning it off does not affect custom events, and it changes nothing on sites without WooCommerce or EDD: there the order check is skipped in either case.', 'pys' );?>
                     </p>
                 </div>
             </div>
@@ -221,6 +237,15 @@ include "html-popovers.php";
                         <?php PYS()->render_radio_input( 'data_persistency', 'keep_data', __('Keep the data in the browser for as long as possible', 'pys') ); ?>
                         <?php PYS()->render_radio_input( 'data_persistency', 'recent_data', __('Use the most recent data', 'pys') ); ?>
                     </div>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center">
+                        <?php PYS()->render_switcher_input( 'enable_advanced_form_data_cookie' ); ?>
+                        <h4 class="switcher-label secondary_heading"><?php _e( 'Store detected user data in a cookie', 'pys' ); ?></h4>
+                    </div>
+                    <p class="text-gray mt-4">
+                        <?php _e( 'Email, phone and name detected at login or checkout are kept in the <code>pys_advanced_form_data</code> cookie on your own domain, so later events can still be matched to the same visitor. Turn this off to stop storing them. Declare this cookie in your privacy policy if you keep it enabled.', 'pys' ); ?>
+                    </p>
                 </div>
             </div>
         </div>
@@ -380,7 +405,6 @@ pysOptions
 wp-content/plugins/pixelyoursite/dist/scripts/public.js
 wp-content/plugins/pixelyoursite/dist/scripts/js.cookie-2.1.3.min.js
 wp-content/plugins/pixelyoursite/dist/scripts/sha256.js
-wp-content/plugins/pixelyoursite/dist/scripts/tld.min.js
 wp-content/plugins/pixelyoursite/dist/jquery.bind-first-0.2.3.min.js
                             <div class="copy-icon" data-toggle="pys-popover"
                                  data-tippy-trigger="click" data-tippy-placement="bottom"

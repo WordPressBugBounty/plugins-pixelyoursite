@@ -34,6 +34,19 @@ final class ErrorEnvelope {
 	}
 
 	/**
+	 * 403 — the current user lacks the capability every ability requires
+	 * (`Capabilities::REQUIRED_CAPABILITY`). Reached only through a foreign MCP
+	 * transport or a token whose owner has since lost the capability.
+	 *
+	 * @return \WP_Error
+	 */
+	public static function forbidden(): \WP_Error {
+		return new \WP_Error(
+			'pys_mcp_forbidden', 'You are not allowed to do that.', array( 'status' => 403 )
+		);
+	}
+
+	/**
 	 * 403 — write tool called on PYS Free or with read-only mode toggled on.
 	 *
 	 * @return \WP_Error

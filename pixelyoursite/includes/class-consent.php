@@ -140,6 +140,10 @@ class Consent {
 				$restricted = (bool) apply_filters( 'pys_reddit_ldu_mode', false );
 				break;
 
+			case 'openai':
+				$restricted = (bool) apply_filters( 'pys_openai_consent_mode', false );
+				break;
+
 			case 'ga':
 			case 'gtm':
 			case 'google_ads':

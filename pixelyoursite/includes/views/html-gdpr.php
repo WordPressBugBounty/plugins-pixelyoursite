@@ -405,6 +405,13 @@ if ( !defined( 'ABSPATH' ) ) {
                         <span class="event-parameter-list">add_filter('pys_reddit_ldu_mode','__return_true');</span>
                     </p>
                 </div>
+                <div>
+                    <p class="mb-8">The filter turn ON/OFF the OpenAI restricted mode (the event is sent with <span class="event-parameter-list">opt_out: true</span> and stays out of user-level personalization):</p>
+                    <p>
+                        Example:<br>
+                        <span class="event-parameter-list">add_filter('pys_openai_consent_mode','__return_true');</span>
+                    </p>
+                </div>
             </div>
         </div>
     </div>

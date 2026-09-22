@@ -10,9 +10,117 @@
     let gtm_variables = {};
     let gtm_datalayername = "dynamicVariable";
 
-    var domain = '';
-    if(options.hasOwnProperty("track_cookie_for_subdomains") && options.track_cookie_for_subdomains) {
-        domain = getRootDomain(true);
+    // Resolved by cookieDomain() on first use, not here.
+    var probedCookieDomain = null;
+
+    /**
+     * Domain attribute for cookies we write. Probed once, on first use (not
+     * at load) so the probe's own write lands behind whatever consent gate
+     * the caller is behind.
+     *
+     * Not suppressed by options.cookie.disabled_all_cookie: deleting a
+     * cookie needs the same domain it was written on, so suppressing here
+     * would leave parent-scoped cookies in place while appearing removed.
+     *
+     * Memoised only after the probe runs, so a disabled_all_cookie or option
+     * arriving later over REST is still honored.
+     */
+    function cookieDomain() {
+        if (probedCookieDomain !== null) {
+            return probedCookieDomain;
+        }
+        if (!options || !options.hasOwnProperty("track_cookie_for_subdomains")
+            || !options.track_cookie_for_subdomains) {
+            return '';
+        }
+        probedCookieDomain = probeCookieDomain();
+        return probedCookieDomain;
+    }
+
+    /**
+     * Find the broadest domain this browser will actually accept a cookie
+     * on, walking from the broadest candidate inward.
+     *
+     * We used to rely on tldjs.getDomain(), but its bundled Public Suffix
+     * List predates ~2018 and returns the public suffix itself for newer
+     * domains (vercel.app, pages.dev, wpcomstaging.com), so cookies scoped
+     * there were silently dropped. Asking the browser instead keeps us in
+     * sync with its own current PSL.
+     *
+     * The probe cookie is written and removed synchronously, carries no
+     * data, and never outlives this call. If a consent tool blocks the
+     * write, cookieDomainAccepted() reports it rejected and we fall through
+     * to host-only — the correct outcome.
+     *
+     * Returns '' when nothing works (IP/single-label host, or all writes
+     * blocked); host-only is never rejected, so it's the safe floor.
+     */
+    function probeCookieDomain() {
+        var host = '';
+        try { host = String(location.hostname || ''); } catch (e) { return ''; }
+
+        // No Domain attribute is valid for an IP literal or a dotless host.
+        if (!host || host.indexOf('.') === -1) return '';
+        if (host.indexOf(':') !== -1) return '';          // IPv6 literal
+        if (/^[\d.]+$/.test(host)) return '';             // IPv4 literal
+
+        var labels = host.split('.');
+        // Broadest first: last two labels, then three, ... up to the full host.
+        for (var take = 2; take <= labels.length; take++) {
+            var candidate = '.' + labels.slice(labels.length - take).join('.');
+            if (cookieDomainAccepted(candidate)) return candidate;
+        }
+        return '';
+    }
+
+    /**
+     * Write a throwaway cookie at $candidate and report whether it stuck.
+     * A false negative is possible if the jar is at its per-domain limit;
+     * we then fall through to a narrower candidate and ultimately host-only.
+     */
+    function cookieDomainAccepted(candidate) {
+        var name = 'pys_dt' + Math.floor(Math.random() * 1e9);
+        var accepted = false;
+        try {
+            document.cookie = name + '=1; path=/; domain=' + candidate + '; SameSite=Lax';
+            accepted = document.cookie.indexOf(name + '=1') !== -1;
+        } catch (e) {
+            return false;
+        } finally {
+            // Remove either way; deleting an unset cookie is a no-op.
+            try {
+                document.cookie = name + '=; path=/; domain=' + candidate + '; max-age=0';
+            } catch (e) {}
+        }
+        return accepted;
+    }
+
+    /**
+     * Hand PHP the cookie domain that probeCookieDomain() verified, since
+     * PHP has no Public Suffix List and guesses wrong on hosts like
+     * shop.example.co.uk or mysite.github.io — scoping its cookies to a
+     * public suffix the browser then drops.
+     *
+     * Value is the site's registrable domain (no PII, same for every
+     * visitor); PHP validates it against the request host before use (see
+     * pys_cookie_domain_resolve).
+     *
+     * Written from manageCookies() under the same consent gates as every
+     * other cookie, not unconditionally.
+     */
+    function reportCookieDomain(resolved) {
+        if (!resolved) return;
+        var bare = String(resolved).replace(/^\./, '');
+        if (!bare || bare.indexOf('.') === -1) return;
+        try {
+            if (Cookies.get('pys_cd') === bare) return; // already reported
+            Cookies.set('pys_cd', bare, {
+                expires: 365,
+                path: '/',
+                domain: resolved,
+                sameSite: 'Lax'
+            });
+        } catch (e) {}
     }
 
     // Per-page referrer for Facebook CAPI events. Captured once per script
@@ -87,7 +195,7 @@
             && !options.cookie.disabled_all_cookie) {
             var existingCookie = Cookies.get(PYS_SESSION_ENTRY_REFERRER_KEY);
             if (!existingCookie || existingCookie === 'undefined') {
-                Cookies.set(PYS_SESSION_ENTRY_REFERRER_KEY, value, { path: '/', domain: domain });
+                Cookies.set(PYS_SESSION_ENTRY_REFERRER_KEY, value, { path: '/', domain: cookieDomain() });
             }
         }
 
@@ -117,7 +225,7 @@
             return;
         }
         try {
-            Cookies.set(PYS_EVENT_REFERRER_KEY, pageReferrer, { path: '/', domain: domain });
+            Cookies.set(PYS_EVENT_REFERRER_KEY, pageReferrer, { path: '/', domain: cookieDomain() });
         } catch (e) {}
     }
     /**
@@ -336,6 +444,14 @@
         var gtm_consent_state_pushed = false;
 
         let isNewSession = checkSession();
+
+        // In-flight pys_get_pbid request. Several code paths call manageCookies()
+        // before the first reply lands; one request is enough for all of them.
+        var pbidRequest = null;
+        // True once a pixel has waited for that reply (or given up on it), so
+        // the hold in holdForIdentity() happens at most once per page.
+        var pbidSettled = false;
+        var PBID_WAIT_MS = 1000;
 
         var utmTerms = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
@@ -681,6 +797,93 @@
                 return to;
             },
 
+            /**
+             * Ask PHP for this browser's external_id (single-flight).
+             *
+             * The cookie keeps the id across a network change, so it is
+             * requested whenever external_id is on -- not only when server
+             * events go over AJAX. Returns the in-flight jqXHR, or null when no
+             * request is warranted (feature off, cookie already there, no
+             * Meta pixel).
+             */
+            requestPbid: function () {
+                if (!options.send_external_id || Cookies.get('pbid') || !Facebook.isEnabled()) {
+                    return null;
+                }
+
+                if (!pbidRequest) {
+                    pbidRequest = jQuery.ajax({
+                        url: options.ajaxUrl,
+                        dataType: 'json',
+                        data: {
+                            action: 'pys_get_pbid'
+                        },
+                        success: function (res) {
+                            if (res.data && res.data.pbid != false) {
+                                if(!(options.cookie.disabled_all_cookie || options.cookie.externalID_disabled_by_api)){
+                                    var expires = parseInt(options.external_id_expire || 180);
+                                    Cookies.set('pbid', res.data.pbid, { expires: expires, path: '/',domain: cookieDomain() });
+                                }
+
+                                if(options.hasOwnProperty('facebook')) {
+                                    options.facebook.advancedMatching = {
+                                        ...options.facebook.advancedMatching,  // spread current advancedMatching values
+                                        external_id: res.data.pbid
+                                    };
+                                }
+                            }
+                        }
+                    }).always(function () {
+                        pbidRequest = null;
+                    });
+                }
+
+                return pbidRequest;
+            },
+
+            /**
+             * Defer `fn` until this browser's external_id is known, or until a
+             * short ceiling passes. Returns true when `fn` was deferred (it will
+             * be called back), false when the caller may go ahead right now.
+             *
+             * Pixels read external_id when they initialise. On a first visit the
+             * cookie does not exist yet, and the inline value in the page may
+             * belong to whoever rendered a cached copy of it; the reply to
+             * pys_get_pbid is never cached and names this browser, so the first
+             * PageView waits for it. Sites that fetch identity over REST already
+             * have the right value by now and do not wait again.
+             */
+            holdForIdentity: function (fn) {
+                if (pbidSettled || !options.send_external_id || Cookies.get('pbid')) {
+                    return false;
+                }
+
+                if (options.dynamicDataUrl && options.facebook && options.facebook.advancedMatching
+                    && options.facebook.advancedMatching.external_id) {
+                    return false;
+                }
+
+                var request = Utils.requestPbid();
+                if (!request) {
+                    return false;
+                }
+
+                var done = false;
+                var finish = function () {
+                    if (done) {
+                        return;
+                    }
+                    done = true;
+                    pbidSettled = true;
+                    fn();
+                };
+
+                request.always(finish);
+                setTimeout(finish, PBID_WAIT_MS);
+
+                return true;
+            },
+
             manageCookies: function () {
 
                 if ( typeof options.cookie === 'undefined' ) {
@@ -699,41 +902,26 @@
                     }
                 }
 
+                // Hand PHP the browser-verified cookie domain, under the same
+                // consent gates as every cookie written below it.
+                if( !cm_consent_not_expressed && !options.cookie.disabled_all_cookie ) {
+                    reportCookieDomain(cookieDomain());
+                }
+
                 if( !cm_consent_not_expressed && isNewSession && !options.cookie.disabled_all_cookie && !options.cookie.disabled_start_session_cookie) {
                     let duration = options.last_visit_duration * 60000
                     var now = new Date();
                     now.setTime(now.getTime() + duration);
-                    Cookies.set('pys_session_limit', true,{ expires: now, path: '/',domain: domain })
-                    Cookies.set('pys_start_session', true,{path: '/',domain: domain});
+                    Cookies.set('pys_session_limit', true,{ expires: now, path: '/',domain: cookieDomain() })
+                    Cookies.set('pys_start_session', true,{path: '/',domain: cookieDomain()});
                 }
 
-                if (options.ajaxForServerEvent && !Cookies.get('pbid') && Facebook.isEnabled()) {
-                    jQuery.ajax({
-                        url: options.ajaxUrl,
-                        dataType: 'json',
-                        data: {
-                            action: 'pys_get_pbid'
-                        },
-                        success: function (res) {
-                            if (res.data && res.data.pbid != false && options.send_external_id) {
-                                if(!(options.cookie.disabled_all_cookie || options.cookie.externalID_disabled_by_api)){
-                                    var expires = parseInt(options.external_id_expire || 180);
-                                    Cookies.set('pbid', res.data.pbid, { expires: expires, path: '/',domain: domain });
-                                }
-
-                                if(options.hasOwnProperty('facebook')) {
-                                    options.facebook.advancedMatching = {
-                                        ...options.facebook.advancedMatching,  // spread current advancedMatching values
-                                        external_id: res.data.pbid
-                                    };
-                                }
-                            }
-                        }
-                    });
-                } else if (Cookies.get('pbid') && Facebook.isEnabled()){
+                if (!Cookies.get('pbid')) {
+                    Utils.requestPbid();
+                } else if (Facebook.isEnabled()){
                     if(Facebook.advancedMatching() && Facebook.advancedMatching().external_id && !(options.cookie.disabled_all_cookie || options.cookie.externalID_disabled_by_api)){
                         let expires = parseInt(options.external_id_expire || 180);
-                        Cookies.set('pbid', Facebook.advancedMatching().external_id, { expires: expires, path: '/',domain: domain });
+                        Cookies.set('pbid', Facebook.advancedMatching().external_id, { expires: expires, path: '/',domain: cookieDomain() });
                     }
                 }
 
@@ -746,41 +934,41 @@
 
                         if(!options.cookie.disabled_first_visit_cookie)
                         {
-                            Cookies.set('pys_first_visit', true, { expires: expires, path: '/',domain: domain });
+                            Cookies.set('pys_first_visit', true, { expires: expires, path: '/',domain: cookieDomain() });
                         }
                         else {
-                            Cookies.remove('pys_first_visit')
+                            Cookies.remove('pys_first_visit', { path: '/',domain: cookieDomain() })
                         }
 
                         if(!options.cookie.disabled_trafficsource_cookie)
                         {
-                            Cookies.set('pysTrafficSource', getTrafficSource(), { expires: expires,path: '/',domain: domain });
+                            Cookies.set('pysTrafficSource', getTrafficSource(), { expires: expires,path: '/',domain: cookieDomain() });
                         }
                         else {
-                            Cookies.remove('pysTrafficSource')
+                            Cookies.remove('pysTrafficSource', { path: '/',domain: cookieDomain() })
                         }
 
                         if(!options.cookie.disabled_landing_page_cookie)
                         {
-                            Cookies.set('pys_landing_page',landing,{ expires: expires,path: '/',domain: domain });
+                            Cookies.set('pys_landing_page',landing,{ expires: expires,path: '/',domain: cookieDomain() });
                         }
                         else {
-                            Cookies.remove('pys_landing_page')
+                            Cookies.remove('pys_landing_page', { path: '/',domain: cookieDomain() })
                         }
 
                         if(!options.cookie.disabled_utmTerms_cookie)
                         {
                             $.each(utmTerms, function (index, name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
+                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires,path: '/',domain: cookieDomain() });
                                 } else {
-                                    Cookies.remove('pys_' + name)
+                                    Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                                 }
                             });
                         }
                         else {
                             $.each(utmTerms, function (index, name) {
-                                Cookies.remove('pys_' + name)
+                                Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                             });
                         }
 
@@ -788,15 +976,15 @@
                         {
                             $.each(utmId,function(index,name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
+                                    Cookies.set('pys_' + name, queryVars[name], { expires: expires,path: '/',domain: cookieDomain() });
                                 } else {
-                                    Cookies.remove('pys_' + name)
+                                    Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                                 }
                             })
                         }
                         else {
                             $.each(utmId, function (index, name) {
-                                Cookies.remove('pys_' + name)
+                                Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                             });
                         }
                     }
@@ -805,33 +993,33 @@
                     if(isNewSession && (!options.cookie.disabled_all_cookie)) {
                         if(!options.cookie.disabled_trafficsource_cookie)
                         {
-                            Cookies.set('last_pysTrafficSource', getTrafficSource(), { expires: expires,path: '/',domain: domain });
+                            Cookies.set('last_pysTrafficSource', getTrafficSource(), { expires: expires,path: '/',domain: cookieDomain() });
                         }
                         else {
-                            Cookies.remove('last_pysTrafficSource')
+                            Cookies.remove('last_pysTrafficSource', { path: '/',domain: cookieDomain() })
                         }
 
                         if(!options.cookie.disabled_landing_page_cookie)
                         {
-                            Cookies.set('last_pys_landing_page',landing,{ expires: expires,path: '/',domain: domain });
+                            Cookies.set('last_pys_landing_page',landing,{ expires: expires,path: '/',domain: cookieDomain() });
                         }
                         else {
-                            Cookies.remove('last_pys_landing_page')
+                            Cookies.remove('last_pys_landing_page', { path: '/',domain: cookieDomain() })
                         }
 
                         if(!options.cookie.disabled_utmTerms_cookie)
                         {
                             $.each(utmTerms, function (index, name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
+                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires,path: '/',domain: cookieDomain() });
                                 } else {
-                                    Cookies.remove('last_pys_' + name)
+                                    Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                                 }
                             });
                         }
                         else {
                             $.each(utmTerms, function (index, name) {
-                                Cookies.remove('last_pys_' + name)
+                                Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                             });
                         }
 
@@ -839,43 +1027,43 @@
                         {
                             $.each(utmId,function(index,name) {
                                 if (queryVars.hasOwnProperty(name)) {
-                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires,path: '/',domain: domain });
+                                    Cookies.set('last_pys_' + name, queryVars[name], { expires: expires,path: '/',domain: cookieDomain() });
                                 } else {
-                                    Cookies.remove('last_pys_' + name)
+                                    Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                                 }
                             })
                         }
                         else {
                             $.each(utmId, function (index, name) {
-                                Cookies.remove('last_pys_' + name)
+                                Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                             });
                         }
 
                     }
                     if(options.cookie.disabled_start_session_cookie) {
-                        Cookies.remove('pys_start_session')
-                        Cookies.remove('pys_session_limit')
+                        Cookies.remove('pys_start_session', { path: '/',domain: cookieDomain() })
+                        Cookies.remove('pys_session_limit', { path: '/',domain: cookieDomain() })
                     }
                     if(options.cookie.disabled_all_cookie)
                     {
-                        Cookies.remove('pys_first_visit')
-                        Cookies.remove('pysTrafficSource')
-                        Cookies.remove('pys_landing_page')
-                        Cookies.remove('last_pys_landing_page')
-                        Cookies.remove('last_pysTrafficSource')
-                        Cookies.remove('pys_start_session')
-                        Cookies.remove('pys_session_limit')
+                        Cookies.remove('pys_first_visit', { path: '/',domain: cookieDomain() })
+                        Cookies.remove('pysTrafficSource', { path: '/',domain: cookieDomain() })
+                        Cookies.remove('pys_landing_page', { path: '/',domain: cookieDomain() })
+                        Cookies.remove('last_pys_landing_page', { path: '/',domain: cookieDomain() })
+                        Cookies.remove('last_pysTrafficSource', { path: '/',domain: cookieDomain() })
+                        Cookies.remove('pys_start_session', { path: '/',domain: cookieDomain() })
+                        Cookies.remove('pys_session_limit', { path: '/',domain: cookieDomain() })
                         $.each(Utils.utmTerms, function (index, name) {
-                            Cookies.remove('pys_' + name)
+                            Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                         });
                         $.each(Utils.utmId,function(index,name) {
-                            Cookies.remove('pys_' + name)
+                            Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                         })
                         $.each(Utils.utmTerms, function (index, name) {
-                            Cookies.remove('last_pys_' + name)
+                            Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                         });
                         $.each(Utils.utmId,function(index,name) {
-                            Cookies.remove('last_pys_' + name)
+                            Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                         });
                     }
                 } catch (e) {
@@ -1273,6 +1461,11 @@
                     Reddit.fireEvent(event.name, event);
 	            }
 
+                if (events.hasOwnProperty('openai')) {
+                    event = Utils.getFormFilledData(events.openai);
+                    OpenAI.fireEvent(event.name, event);
+                }
+
                 if (events.hasOwnProperty('gtm')) {
                     event = Utils.getFormFilledData(events.gtm);
                     GTM.fireEvent(event.name, event);
@@ -1668,6 +1861,7 @@
                         ( Utils.csModeEnabled( CS_Data.cs_google_consent_mode_enabled ) && ( pixel == 'analytics' || pixel == 'google_ads' ) )
                         || ( Utils.csModeEnabled( CS_Data.cs_meta_ldu_mode ) && pixel == 'facebook' )
                         || ( Utils.csModeEnabled( CS_Data.cs_reddit_ldu_mode ) && pixel == 'reddit' )
+                        || ( Utils.csModeEnabled( CS_Data.cs_openai_opt_out_mode ) && pixel == 'openai' )
                         || ( Utils.csModeEnabled( CS_Data.cs_bing_consent_mode?.ad_storage?.enabled ) && pixel == 'bing' )
                     ) {
                         if ( Number( CS_Data.cs_cache_enabled ) === 0
@@ -1882,6 +2076,10 @@
 	                                if ( ( categoryCookie === CS_Data.cs_script_cat.reddit ) || Utils.csModeEnabled( CS_Data.cs_reddit_ldu_mode ) ) {
 		                                Reddit.loadPixel();
 	                                }
+
+	                                if ( ( categoryCookie === CS_Data.cs_script_cat.openai ) || Utils.csModeEnabled( CS_Data.cs_openai_opt_out_mode ) ) {
+		                                OpenAI.loadPixel();
+	                                }
                                 } else {
                                     if ( ( categoryCookie === CS_Data.cs_script_cat.facebook ) && ! Utils.csModeEnabled( CS_Data.cs_meta_ldu_mode ) ) {
                                         Facebook.disable();
@@ -1906,6 +2104,11 @@
 	                                if ( ( categoryCookie === CS_Data.cs_script_cat.reddit ) && ! Utils.csModeEnabled( CS_Data.cs_reddit_ldu_mode ) ) {
 		                                Reddit.disable();
 		                                consent.reddit = false;
+	                                }
+
+	                                if ( ( categoryCookie === CS_Data.cs_script_cat.openai ) && ! Utils.csModeEnabled( CS_Data.cs_openai_opt_out_mode ) ) {
+		                                OpenAI.disable();
+		                                consent.openai = false;
 	                                }
 
                                     if ( categoryCookie === CS_Data.cs_script_cat?.openai ) {
@@ -2192,7 +2395,7 @@
 
             setupGDPRData: function ( consent ) {
                 consent = window.btoa( JSON.stringify( consent ) );
-                Cookies.set( 'pys_consent', consent, { expires: 365, path: '/', domain: domain } );
+                Cookies.set( 'pys_consent', consent, { expires: 365, path: '/', domain: cookieDomain() } );
             },
 
             /**
@@ -2317,6 +2520,114 @@
                     return JSON.parse(dataStr);
                 }
             },
+
+            /**
+             * Advanced Matching that the server is no longer allowed to render.
+             *
+             * Page HTML can be served out of a shared cache, so the server
+             * leaves the visitor's own email, phone and name out of pysOptions.
+             * The values are on this device in pys_advanced_form_data, so the
+             * browser puts them back just before each pixel initialises.
+             * Normalisation mirrors the PHP side field for field -- if one
+             * moves, both move.
+             */
+            AdvancedMatching: {
+
+                normalizeEmail: function (value) {
+                    if (typeof value !== 'string') {
+                        return '';
+                    }
+                    var email = value.trim().toLowerCase();
+                    if (email.length === 0 || email.length > 254) {
+                        return '';
+                    }
+                    return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email) ? email : '';
+                },
+
+                normalizePhone: function (value) {
+                    if (typeof value !== 'string') {
+                        return '';
+                    }
+                    var digits = value.replace(/[^0-9]/g, '');
+                    return digits.length > 0 ? digits : '';
+                },
+
+                normalizeName: function (value) {
+                    if (typeof value !== 'string' || value.length > 1024) {
+                        return '';
+                    }
+                    return value.trim().toLowerCase();
+                },
+
+                /**
+                 * The identity this device carries, normalised and possibly
+                 * all-empty. Never throws when the cookie is absent or corrupt.
+                 */
+                cookieIdentity: function () {
+                    var data;
+                    try {
+                        data = Utils.getAdvancedFormData() || {};
+                    } catch (e) {
+                        data = {};
+                    }
+                    return {
+                        email: this.normalizeEmail(data.email || ''),
+                        phone: this.normalizePhone(data.phone || ''),
+                        first_name: this.normalizeName(data.first_name || ''),
+                        last_name: this.normalizeName(data.last_name || '')
+                    };
+                },
+
+                /**
+                 * @param {object} target      The pixel's advanced matching object, edited in place.
+                 * @param {object} mapping     {targetKey: {field, hash}}
+                 * @param {object} identity    Optional; defaults to cookieIdentity().
+                 * @param {string} persistency Optional; defaults to options.data_persistency.
+                 */
+                merge: function (target, mapping, identity, persistency) {
+
+                    if (!target || !mapping) {
+                        return target;
+                    }
+
+                    identity = identity || this.cookieIdentity();
+
+                    if (typeof persistency === 'undefined') {
+                        persistency = typeof options !== 'undefined' ? options.data_persistency : '';
+                    }
+
+                    var keepData = persistency === 'keep_data';
+
+                    Object.keys(mapping).forEach(function (targetKey) {
+
+                        var rule = mapping[targetKey];
+                        var value = identity[rule.field];
+
+                        if (typeof value !== 'string' || value.length === 0) {
+                            return;
+                        }
+
+                        var hasServerValue = typeof target[targetKey] === 'string'
+                            && target[targetKey].length > 0;
+
+                        if (hasServerValue && !keepData) {
+                            return;
+                        }
+
+                        if (rule.hash) {
+                            if (typeof sha256 !== 'function') {
+                                return;
+                            }
+                            target[targetKey] = sha256(value);
+                        } else {
+                            target[targetKey] = value;
+                        }
+                    });
+
+                    return target;
+                }
+            },
+
             getFormFilledData: function ( event ) {
                 // First, resolve static/dynamic parameters
                 if (event.params && Object.keys(event.params).length > 0) {
@@ -2362,11 +2673,28 @@
         ];
 
         var initialized = false;
+        /**
+         * The `version.subdomainIndex.` prefix Meta's format calls for.
+         * subdomainIndex is how many labels the cookie's domain has below
+         * the public suffix (com=0, example.com=1, www.example.com=2), so it
+         * must track cookieDomain()/probeCookieDomain() rather than a
+         * hardcoded `fb.1.`. Only new values are affected — an existing
+         * cookie is returned untouched.
+         */
+        var fbValuePrefix = function (){
+            var resolved = cookieDomain();
+            var scope = resolved ? String(resolved).replace(/^\./, '') : '';
+            if (!scope) {
+                try { scope = String(location.hostname || ''); } catch (e) { scope = ''; }
+            }
+            var dots = scope ? scope.split('.').length - 1 : 0;
+            return 'fb.' + dots + '.' + Date.now() + '.';
+        };
         var genereateFbp = function (){
-            return !Cookies.get('_fbp') ? 'fb.1.'+Date.now()+'.'+Math.floor(1000000000 + Math.random() * 9000000000) : Cookies.get('_fbp');
+            return !Cookies.get('_fbp') ? fbValuePrefix()+Math.floor(1000000000 + Math.random() * 9000000000) : Cookies.get('_fbp');
         };
         var genereateFbc = function (){
-            return getUrlParameter('fbclid') ? 'fb.1.'+Date.now()+'.'+getUrlParameter('fbclid') : ''
+            return getUrlParameter('fbclid') ? fbValuePrefix()+getUrlParameter('fbclid') : ''
         };
         // fire server side event gdpr plugin installed
         var isApiDisabled = options.gdpr.all_disabled_by_api ||
@@ -2503,28 +2831,18 @@
             },
             advancedMatching: function () {
                 if(options.facebook.advancedMatchingEnabled) {
-                    let advancedMatchingForm = Utils.getAdvancedFormData();
                     let advancedMatching = {};
                     if(Object.keys(options.facebook.advancedMatching).length > 0) {
                         advancedMatching = options.facebook.advancedMatching;
                     }
 
-                    if(!advancedMatching.hasOwnProperty("em")
-                        && advancedMatchingForm.hasOwnProperty("email") && advancedMatchingForm["email"].length > 0) {
-                        advancedMatching["em"] = advancedMatchingForm["email"];
-                    }
-                    if(!advancedMatching.hasOwnProperty("ph")
-                        && advancedMatchingForm.hasOwnProperty("phone") && advancedMatchingForm["phone"].length > 0) {
-                        advancedMatching["ph"] = advancedMatchingForm["phone"];
-                    }
-                    if(!advancedMatching.hasOwnProperty("fn")
-                        && advancedMatchingForm.hasOwnProperty("first_name") && advancedMatchingForm["first_name"].length > 0) {
-                        advancedMatching["fn"] = advancedMatchingForm["first_name"];
-                    }
-                    if(!advancedMatching.hasOwnProperty("ln")
-                        && advancedMatchingForm.hasOwnProperty("last_name") && advancedMatchingForm["last_name"].length > 0) {
-                        advancedMatching["ln"] = advancedMatchingForm["last_name"];
-                    }
+                    Utils.AdvancedMatching.merge(advancedMatching, {
+                        em: { field: 'email',      hash: false },
+                        ph: { field: 'phone',      hash: false },
+                        fn: { field: 'first_name', hash: false },
+                        ln: { field: 'last_name',  hash: false }
+                    });
+
                     if(!advancedMatching.hasOwnProperty("external_id")){
                         if (Cookies.get('pbid') || (options.hasOwnProperty('pbid') && options.pbid)) {
                             advancedMatching["external_id"] = Cookies.get('pbid') ? Cookies.get('pbid') : options.pbid;
@@ -2549,6 +2867,12 @@
                     return;
                 }
 
+                // First visit: wait (briefly) for this browser's external_id, so
+                // the very first PageView is not sent under the inline value.
+                if (Utils.holdForIdentity(function () { Facebook.loadPixel(); })) {
+                    return;
+                }
+
                 !function (f, b, e, v, n, t, s) {
                     if (f.fbq) return;
                     n = f.fbq = function () {
@@ -2569,13 +2893,28 @@
                 }(window,
                     document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
 
+                // Report the cookie domain here too, not just from
+                // manageCookies(): this runs under the `facebook` pixel's own
+                // consent, which can differ from and outlast the `pys`
+                // script's consent (e.g. under ConsentMagic's separate
+                // category assignments), so PHP might otherwise never learn
+                // the scope for a visitor who only accepted this pixel.
+                //
+                // `pys_cd` only ever appears here alongside a cookie we are
+                // already writing at that scope, so it can never be the first
+                // cookie a visitor receives. disabled_all_cookie is still
+                // honoured, matching the call in manageCookies().
+                if (!options.cookie || !options.cookie.disabled_all_cookie) {
+                    reportCookieDomain(cookieDomain());
+                }
+
                 let expires = parseInt(options.cookie_duration);
                 if(!Cookies.get('_fbp')) {
-                    Cookies.set('_fbp',genereateFbp(),  { expires: expires,path: '/',domain: domain });
+                    Cookies.set('_fbp',genereateFbp(),  { expires: expires,path: '/',domain: cookieDomain() });
                 }
 
                 if(getUrlParameter('fbclid')) {
-                    Cookies.set('_fbc',genereateFbc(),  { expires: expires,path: '/',domain: domain });
+                    Cookies.set('_fbc',genereateFbc(),  { expires: expires,path: '/',domain: cookieDomain() });
                 }
 
                 // Now that Facebook consent is confirmed, mirror the session
@@ -3707,13 +4046,19 @@
                 return;
             }
 
+            let params = {data: data};
+
+            if (allData.params && allData.params.custom_event_name) {
+                params.custom_event_name = allData.params.custom_event_name;
+            }
+
             let json = {
                 action: 'pys_openai_api_event',
                 pixel: 'openai',
                 event: name,
                 event_slug: allData.e_id || '',
                 ids: allData.pixelIds || options.openai.pixelIds,
-                data: {data: data},
+                data: params,
                 url: window.location.href,
                 eventID: eventId,
                 ajax_event: options.ajax_event
@@ -3736,6 +4081,176 @@
             setTimeout(function () {
                 Utils.sendServerAjaxRequest(options.ajaxUrl, json);
             }, wait);
+        }
+
+        /**
+         * Is the pixel in OpenAI's restricted mode?
+         *
+         */
+        function optOutMode() {
+
+            if ( options.openai && options.openai.opt_out ) {
+                return true;
+            }
+
+            return !! ( options.gdpr
+                && options.gdpr.consent_magic_integration_enabled
+                && typeof CS_Data !== 'undefined'
+                && Utils.csModeEnabled( CS_Data.cs_openai_opt_out_mode ) );
+        }
+
+        const SDK_DATA_FIELDS = {
+            contents: ['type', 'amount', 'currency', 'contents'],
+            custom: ['type', 'plan_id', 'amount', 'currency', 'contents'],
+            customer_action: ['type', 'amount', 'currency'],
+            plan_enrollment: ['type', 'plan_id', 'amount', 'currency', 'contents']
+        };
+
+        const SDK_ITEM_FIELDS = ['id', 'name', 'content_type', 'quantity', 'amount', 'currency'];
+
+        function sdkInteger(value) {
+            let number = typeof value === 'string' ? Number(value.trim()) : value;
+
+            return typeof number === 'number' && isFinite(number) ? Math.round(number) : null;
+        }
+
+        function sdkCurrency(value) {
+            return typeof value === 'string' && /^[A-Za-z]{3}$/.test(value) ? value : null;
+        }
+
+        function sdkText(value) {
+            if (typeof value === 'string') {
+                return value === '' ? null : value;
+            }
+
+            return typeof value === 'number' && isFinite(value) ? String(value) : null;
+        }
+
+        /**
+         * One contents[] item, with only the keys the SDK documents.
+         *
+         * @param item              the item as configured or collected
+         * @param eventHasCurrency  true when data.currency is set: an item amount
+         *                          needs a currency, its own or the event's
+         */
+        function sdkSafeItem(item, eventHasCurrency) {
+
+            if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                return null;
+            }
+
+            let safe = {};
+
+            SDK_ITEM_FIELDS.forEach(function (field) {
+                if (item[field] === undefined || item[field] === null || item[field] === '') {
+                    return;
+                }
+
+                if (field === 'quantity' || field === 'amount') {
+                    let number = sdkInteger(item[field]);
+
+                    if (number !== null) {
+                        safe[field] = number;
+                    }
+
+                    return;
+                }
+
+                if (field === 'currency') {
+                    let currency = sdkCurrency(item.currency);
+
+                    if (currency !== null) {
+                        safe.currency = currency;
+                    }
+
+                    return;
+                }
+
+                let text = sdkText(item[field]);
+
+                if (text !== null) {
+                    safe[field] = text;
+                }
+            });
+
+            if (safe.hasOwnProperty('amount') && !safe.hasOwnProperty('currency') && !eventHasCurrency) {
+                delete safe.amount;
+            }
+
+            return Object.keys(safe).length ? safe : null;
+        }
+
+        /**
+         * The event data, with only the fields the SDK documents for its shape.
+         */
+        function sdkSafeData(data) {
+
+            if (!data || typeof data !== 'object') {
+                return {};
+            }
+
+            let allowed = SDK_DATA_FIELDS[data.type];
+
+            if (!allowed) {
+                // An undocumented shape is the module's own bug, not the
+                // payload's: hand it over untouched rather than empty it.
+                return data;
+            }
+
+            let safe = {};
+
+            allowed.forEach(function (field) {
+                if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
+                    safe[field] = data[field];
+                }
+            });
+
+            if (safe.hasOwnProperty('plan_id')) {
+                let planId = sdkText(safe.plan_id);
+
+                if (planId === null) {
+                    delete safe.plan_id;
+                } else {
+                    safe.plan_id = planId;
+                }
+            }
+
+            if (safe.hasOwnProperty('currency')) {
+                let currency = sdkCurrency(safe.currency);
+
+                if (currency === null) {
+                    delete safe.currency;
+                } else {
+                    safe.currency = currency;
+                }
+            }
+
+            if (safe.hasOwnProperty('amount')) {
+                let amount = sdkInteger(safe.amount);
+
+                // The SDK refuses an amount with no currency beside it.
+                if (amount === null || !safe.hasOwnProperty('currency')) {
+                    delete safe.amount;
+                } else {
+                    safe.amount = amount;
+                }
+            }
+
+            if (safe.hasOwnProperty('contents')) {
+                let items = Array.isArray(safe.contents)
+                    ? safe.contents
+                        .map(function (item) { return sdkSafeItem(item, safe.hasOwnProperty('currency')); })
+                        .filter(function (item) { return item !== null; })
+                    : [];
+
+                if (items.length) {
+                    safe.contents = items;
+                } else {
+                    delete safe.contents;
+                }
+            }
+
+            return safe;
         }
 
         function fireEvent(name, allData) {
@@ -3765,14 +4280,24 @@
                 eventOptions.event_id = eventId;
             }
 
-	        if (options.debug) {
-                console.log('[OpenAI] ' + name, data, eventOptions, 'pixel_ids', ids);
+            if (allData.params && allData.params.custom_event_name) {
+                eventOptions.custom_event_name = allData.params.custom_event_name;
             }
 
             sendOpenAIServerEvent(name, allData, data, eventId);
 
+            let browserData = sdkSafeData(data);
+
+            if (optOutMode()) {
+                eventOptions.opt_out = true;
+            }
+
+	        if (options.debug) {
+                console.log('[OpenAI] ' + name, browserData, eventOptions, 'pixel_ids', ids);
+            }
+
             ids.forEach(function (pixelId) {
-                oaiq('measureSingle', pixelId, name, data, eventOptions);
+                oaiq('measureSingle', pixelId, name, browserData, eventOptions);
             });
 
             let customEvent = new CustomEvent('openai_event_sent', {
@@ -3795,6 +4320,68 @@
                 && !! options.dynamicDataUrl;
         }
 
+        const OPENAI_USER_FIELDS = [
+            'email_sha256',
+            'phone_number_sha256',
+            'external_id_sha256',
+            'first_name_sha256',
+            'last_name_sha256',
+            'country',
+            'city',
+            'region',
+            'postal_code'
+        ];
+
+        /**
+         * OpenAI normalises more aggressively than the other pixels: the phone
+         * is reduced to its national digit form (leading +, 00 and zeros
+         * stripped, then length-validated), and names lose every punctuation
+         * and whitespace character. Mirrors pys_openai_normalize_* in
+         * modules/openai/function-helpers.php.
+         */
+        function openaiCookieIdentity() {
+
+            let raw;
+
+            try {
+                raw = Utils.getAdvancedFormData() || {};
+            } catch (e) {
+                raw = {};
+            }
+
+            let phone = typeof raw.phone === 'string'
+                ? raw.phone.trim().replace(/[\s().-]+/g, '')
+                : '';
+
+            if (!/^\+?[0-9]+$/.test(phone) || phone.indexOf('+0') === 0) {
+                phone = '';
+            } else {
+                let international = phone.indexOf('+') === 0 || phone.indexOf('00') === 0;
+                let national = phone.replace(/^\+?0*/, '');
+
+                if (international && national.indexOf('1') === 0 && national.length !== 11) {
+                    national = '';
+                }
+
+                phone = /^[1-9][0-9]{7,14}$/.test(national) ? national : '';
+            }
+
+            let normalizeName = function (value) {
+                if (typeof value !== 'string' || value.length > 1024) {
+                    return '';
+                }
+                let stripped = value.replace(/[!-\/:-@\[-`{-~\s]+/g, '').toLowerCase();
+                return /\D/u.test(stripped) ? stripped : '';
+            };
+
+            return {
+                email: Utils.AdvancedMatching.normalizeEmail(raw.email || ''),
+                phone: phone,
+                first_name: normalizeName(raw.first_name || ''),
+                last_name: normalizeName(raw.last_name || '')
+            };
+        }
+
         /**
          * The identity to hand the SDK, built from whatever is known right now.
          */
@@ -3803,8 +4390,24 @@
             let user = {};
 
             if (options.openai.hasOwnProperty('advanced_matching')) {
-                Utils.copyProperties(options.openai.advanced_matching, user);
+
+                let matching = options.openai.advanced_matching;
+
+                OPENAI_USER_FIELDS.forEach(function (field) {
+                    let value = matching[field];
+
+                    if (typeof value === 'string' && value.length > 0) {
+                        user[field] = value;
+                    }
+                });
             }
+
+            Utils.AdvancedMatching.merge(user, {
+                email_sha256:        { field: 'email',      hash: true },
+                phone_number_sha256: { field: 'phone',      hash: true },
+                first_name_sha256:   { field: 'first_name', hash: true },
+                last_name_sha256:    { field: 'last_name',  hash: true }
+            }, openaiCookieIdentity());
 
             let externalIdAllowed = options.send_external_id
                 && ! ( options.gdpr && options.gdpr.externalID_disabled_by_api )
@@ -4117,47 +4720,70 @@
         {
             if(options.cookie.externalID_disabled_by_api || options.cookie.disabled_all_cookie)
             {
-                Cookies.remove('pbid')
+                Cookies.remove('pbid', { path: '/',domain: cookieDomain() })
             }
             if(options.cookie.disabled_advanced_form_data_cookie || options.cookie.disabled_all_cookie)
             {
-                Cookies.remove('pys_advanced_form_data')
+                // Removed twice on purpose: PHP writes this cookie host-only
+                // until pys_cd is reported (or permanently, on a site whose
+                // front end never reaches manageCookies()), while this script
+                // writes/deletes it at cookieDomain(). A host-only cookie and
+                // a domain-scoped one of the same name are separate jar
+                // entries, and a delete only matches the scope it names — so
+                // both scopes are cleared rather than guessed at.
+                // `domain: ''` is deliberate: js-cookie 2.1.3 treats a falsy
+                // Domain as "omit the attribute" (host-only delete), so it's
+                // written explicitly rather than left off.
+                // In Free this matters more than in Pro: there is no JS
+                // writer for this cookie at all, so PHP is its only writer
+                // and the host-only copy is the only copy a pending site
+                // ever has.
+                Cookies.remove('pys_advanced_form_data', { path: '/',domain: cookieDomain() })
+                Cookies.remove('pys_advanced_form_data', { path: '/',domain: '' })
             }
             if(options.cookie.disabled_landing_page_cookie || options.cookie.disabled_all_cookie)
             {
-                Cookies.remove('pys_landing_page')
-                Cookies.remove('last_pys_landing_page')
+                Cookies.remove('pys_landing_page', { path: '/',domain: cookieDomain() })
+                Cookies.remove('last_pys_landing_page', { path: '/',domain: cookieDomain() })
             }
             if(options.cookie.disabled_trafficsource_cookie || options.cookie.disabled_all_cookie)
             {
-                Cookies.remove('pysTrafficSource')
-                Cookies.remove('last_pysTrafficSource')
+                Cookies.remove('pysTrafficSource', { path: '/',domain: cookieDomain() })
+                Cookies.remove('last_pysTrafficSource', { path: '/',domain: cookieDomain() })
             }
             if(options.cookie.disabled_first_visit_cookie || options.cookie.disabled_all_cookie)
             {
-                Cookies.remove('pys_first_visit')
+                Cookies.remove('pys_first_visit', { path: '/',domain: cookieDomain() })
 
             }
             if(options.cookie.disabled_utmTerms_cookie || options.cookie.disabled_all_cookie)
             {
                 $.each(Utils.utmTerms, function (index, name) {
-                    Cookies.remove('pys_' + name)
+                    Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                 });
                 $.each(Utils.utmTerms, function (index, name) {
-                    Cookies.remove('last_pys_' + name)
+                    Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                 });
             }
             if(options.cookie.disabled_utmId_cookie || options.cookie.disabled_all_cookie)
             {
                 $.each(Utils.utmId,function(index,name) {
-                    Cookies.remove('pys_' + name)
+                    Cookies.remove('pys_' + name, { path: '/',domain: cookieDomain() })
                 })
                 $.each(Utils.utmId,function(index,name) {
-                    Cookies.remove('last_pys_' + name)
+                    Cookies.remove('last_pys_' + name, { path: '/',domain: cookieDomain() })
                 });
             }
         }
 
+
+        // Exactly one manageCookies() per init, and under a consent
+        // integration only once consent is on record. The old fall-through
+        // ran it a second time under CookieYes, racing two pbid requests, and
+        // ran it before any consent when no CookieYes cookie existed yet.
+        // external_id itself does not depend on this: the visitor key is
+        // computed server-side without a cookie.
+        var cookiesManaged = false;
 
         if (options.gdpr.cookie_law_info_integration_enabled) {
             var cli_cookie = Cookies.get('cookieyes-consent') ?? Cookies.get('viewed_cookie_policy');
@@ -4165,20 +4791,24 @@
             if (typeof cli_cookie !== 'undefined') {
                 if (cli_cookie === Cookies.get('cookieyes-consent') && getCookieYes('analytics') == 'yes') {
                     Utils.manageCookies();
+                    cookiesManaged = true;
                 } else if (cli_cookie === Cookies.get('viewed_cookie_policy') && cli_cookie == 'yes') {
                     Utils.manageCookies();
+                    cookiesManaged = true;
                 }
             }
         }
 
-        if ( options.gdpr.consent_magic_integration_enabled && typeof CS_Data !== "undefined" ) {
-            if ( CS_Data.cs_script_cat.pys == CS_Data.cs_necessary_cat_id || CS_Data.cs_script_cat.pys == 0 ) {
-                Utils.manageCookies();
-            } else if ( Cookies.get( 'cs_enabled_cookie_term' + CS_Data.test_prefix + '_' + CS_Data.cs_script_cat.pys ) == 'yes' ) {
+        if ( ! cookiesManaged ) {
+            if ( options.gdpr.consent_magic_integration_enabled && typeof CS_Data !== "undefined" ) {
+                if ( CS_Data.cs_script_cat.pys == CS_Data.cs_necessary_cat_id || CS_Data.cs_script_cat.pys == 0 ) {
+                    Utils.manageCookies();
+                } else if ( Cookies.get( 'cs_enabled_cookie_term' + CS_Data.test_prefix + '_' + CS_Data.cs_script_cat.pys ) == 'yes' ) {
+                    Utils.manageCookies();
+                }
+            } else if ( ! options.gdpr.cookie_law_info_integration_enabled ) {
                 Utils.manageCookies();
             }
-        } else {
-            Utils.manageCookies();
         }
 
         Utils.setupGdprCallbacks();
@@ -4828,7 +5458,20 @@ function getUrlParameter(sParam) {
         sParameterName = sURLVariables[i].split('=');
 
         if (sParameterName[0] === sParam) {
-            return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+            // Twin of ServerEventHelper::getUrlParameter(). A parameter with
+            // no '=' has no value; skip it rather than inventing one, so
+            // ?fbclid&fbclid=REAL still finds the real one.
+            if (sParameterName[1] === undefined) {
+                continue;
+            }
+            try {
+                return decodeURIComponent(sParameterName[1]);
+            } catch (e) {
+                // decodeURIComponent throws on a malformed escape ("%",
+                // "%zz", "a%2"). Return the raw value instead of throwing,
+                // matching PHP's urldecode(), which is lenient about it.
+                return sParameterName[1];
+            }
         }
     }
     return false;

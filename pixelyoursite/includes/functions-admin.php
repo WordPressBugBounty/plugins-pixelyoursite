@@ -292,6 +292,7 @@ function adminRenderNotices() {
     if (pys_meta_pixel_missing_capi()) {
         adminRenderCapiNudgeNotice();
     }
+    adminRenderPageCacheMatchingNotice();
     if ( isPinterestActive( false ) && isPinterestVersionIncompatible() ) {
         adminIncompatibleVersionNotice( 'PixelYourSite Pinterest Add-On', PYS_FREE_PINTEREST_MIN_VERSION );
     } elseif ( isPinterestActive() ) {
@@ -527,6 +528,86 @@ function adminCapiNudgeDismissHandler() {
     }
     update_user_meta($user_id, 'pys_capi_nudge_dismissed', true);
     wp_send_json_success();
+}
+
+/**
+ * True when a known page-cache plugin/feature is active.
+ */
+function pys_page_cache_detected() {
+    return defined( 'WP_ROCKET_VERSION' )
+        || defined( 'WPCACHEHOME' )
+        || defined( 'LSCWP_V' )
+        || defined( 'W3TC' )
+        || function_exists( 'wp_cache_is_enabled' );
+}
+
+/**
+ * True when Advanced Matching is enabled on the Facebook pixel.
+ */
+function pys_any_advanced_matching_enabled() {
+    return ( Facebook()->enabled() && Facebook()->getOption( 'advanced_matching_enabled' ) )
+        || ( OpenAI()->enabled() && OpenAI()->getOption( 'advanced_matching_enabled' ) );
+}
+
+function adminRenderPageCacheMatchingNotice() {
+
+    if ( ! isset( $_GET['page'] ) || strpos( $_GET['page'], 'pixelyoursite' ) !== 0 ) {
+        return;
+    }
+
+    if ( ! pys_page_cache_detected() ) {
+        return;
+    }
+
+    if ( PYS()->getOption( 'fetch_user_data_via_rest' ) ) {
+        return;
+    }
+
+    if ( ! pys_any_advanced_matching_enabled() ) {
+        return;
+    }
+
+    $user_id = get_current_user_id();
+
+    // permanent dismissal; adminNoticeDismissHandler() stores it with update_option()
+    $meta_key = 'pys_page_cache_matching_dismissed_at';
+    $dismissed_at = get_option( $meta_key ) ?? get_user_meta( $user_id, $meta_key );
+    if ( $dismissed_at ) {
+        return;
+    }
+
+    ?>
+
+    <div class="notice notice-info is-dismissible pys_page_cache_matching_notice pys-notice">
+        <p>
+            <?php _e(
+                'A page cache is active. Advanced Matching for visitors who are not logged in is handled in the '
+                . 'browser and is cache-safe. If your cache also serves cached pages to logged-in visitors, enable '
+                . '&ldquo;Fetch visitor data via REST API&rdquo; in PixelYourSite settings so their profile data is '
+                . 'not shared between accounts.',
+                'pys'
+            ); ?>
+        </p>
+    </div>
+
+    <script type="application/javascript">
+        jQuery(document).on('click', '.pys_page_cache_matching_notice .notice-dismiss', function () {
+
+            jQuery.ajax({
+                url: ajaxurl,
+                data: {
+                    action: 'pys_notice_dismiss',
+                    nonce: '<?php echo esc_attr( wp_create_nonce( 'pys_notice_dismiss' ) ); ?>',
+                    user_id: '<?php echo esc_attr( $user_id ); ?>',
+                    addon_slug: 'page_cache',
+                    meta_key: 'matching'
+                }
+            })
+
+        })
+    </script>
+
+    <?php
 }
 
 function adminRenderNotCAPI( $plugin ) {

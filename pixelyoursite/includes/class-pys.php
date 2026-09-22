@@ -73,6 +73,7 @@ final class PYS extends Settings implements Plugin {
          */
         add_action( 'init', array( $this, 'updatePlugin' ), 10 );
 	    add_action( 'admin_init', 'PixelYourSite\manageAdminPermissions' );
+	    add_action( 'admin_init', 'PixelYourSite\pys_add_privacy_policy_content' );
 
 	    // Priority 9 used to keep things same as on PRO version
         add_action( 'wp', array( $this, 'controllSessionStart'), 10);
@@ -170,7 +171,21 @@ final class PYS extends Settings implements Plugin {
         $this->logger = new PYS_Logger();
         $this->containers = new gtmContainers();
         $this->crawlerDetect = new CrawlerDetect();
-        $this->general_domain = $this->get_wp_cookie_domain();
+
+        // $general_domain is kept for backwards compatibility only; internal
+        // callers use pys_cookie_domain() directly. Populated on 'init'
+        // priority 20, not here: it needs
+        // getOption( 'track_cookie_for_subdomains' ), which only has its
+        // default after locateOptions() runs inside init(). Priority 20 also
+        // leaves room for a pys_cookie_domain_override filter on 'init'.
+        add_action( 'init', function () {
+            $this->general_domain = pys_cookie_domain();
+        }, 20 );
+
+        // Meta wants the param builder initialised before fbevents.js, so the
+        // pixel finds _fbp already present instead of minting its own. No-op
+        // unless the pys_use_capi_param_builder filter turns it on.
+        add_action( 'init', array( 'PixelYourSite\ParamBuilderAdapter', 'boot' ), 21 );
     }
 
     public function init() {
@@ -492,34 +507,30 @@ final class PYS extends Settings implements Plugin {
         return $this->externalId;
     }
     function set_pbid() {
-        $pbidCookieName = 'pbid';
-        $isTrackExternalId = EventsManager::isTrackExternalId();
-        $user = wp_get_current_user();
+        if ( ! EventsManager::isTrackExternalId() ) {
+            return;
+        }
 
-        if ($user && $isTrackExternalId) {
-            $userExternalId = $user->get('external_id');
-            if (!empty($userExternalId)) {
+        $user = wp_get_current_user();
+        if ( $user ) {
+            $userExternalId = $user->get( 'external_id' );
+            if ( ! empty( $userExternalId ) ) {
                 $this->externalId = $userExternalId;
                 return;
             }
         }
 
-        if ($isTrackExternalId) {
-
-            if (!empty($_COOKIE[$pbidCookieName])) {
-                $this->externalId = $_COOKIE[$pbidCookieName];
-            } elseif ( PYS()->getOption('external_id_use_transient') && get_transient('externalId-' . PYS()->get_user_ip())) {
-                $this->externalId = get_transient('externalId-' . PYS()->get_user_ip());
-            }
-            else {
-                $uniqueId = bin2hex(random_bytes(16));
-                $encryptedUniqueId = hash('sha256', $uniqueId);
-                $this->externalId = $encryptedUniqueId;
-                if(PYS()->getOption('external_id_use_transient')){
-                    set_transient('externalId-' . PYS()->get_user_ip(), $this->externalId, 60 * 10);
-                }
-            }
+        if ( ! empty( $_COOKIE['pbid'] ) ) {
+            $this->externalId = sanitize_text_field( wp_unslash( $_COOKIE['pbid'] ) );
+            return;
         }
+
+        // No cookie yet (or ever): derive the id from the request itself, so
+        // the page render, the dynamic-options reply, pys_get_pbid and the
+        // server events all name this browser the same way on its first
+        // page view. Replaces the random mint and the IP-keyed transient,
+        // which handed one id to everyone behind one address.
+        $this->externalId = pys_visitor_key();
     }
 
     public function get_pbid_ajax(){
@@ -541,8 +552,7 @@ final class PYS extends Settings implements Plugin {
             wp_send_json_error( array( 'reason' => 'no_external_id' ) );
         }
 
-        $transient = get_transient('externalId-'.PYS()->get_user_ip());
-        wp_send_json_success( array('pbid'=> $this->externalId, 'transient' => !empty($transient) ? $transient : false ));
+        wp_send_json_success( array( 'pbid' => $this->externalId ) );
     }
     public function adminSinglePage()
     {
@@ -622,7 +632,7 @@ final class PYS extends Settings implements Plugin {
         delete_user_meta( $user->ID, 'pys_just_login' );
         add_user_meta( $user->ID, 'pys_just_login', true, true );
 
-		if ( !apply_filters( 'pys_disable_advanced_form_data_cookie', false ) && !apply_filters( 'pys_disable_advance_data_cookie', false ) ) {
+		if ( !pys_advanced_form_data_cookie_disabled() ) {
 			$user_persistence_data = get_persistence_user_data( $user->user_email, $user->first_name, $user->last_name, '' );
 			$userData = array(
 				'first_name' => $user_persistence_data[ 'fn' ],
@@ -630,7 +640,7 @@ final class PYS extends Settings implements Plugin {
 				'email'      => $user_persistence_data[ 'em' ],
 				'phone'      => $user_persistence_data[ 'tel' ]
 			);
-			setcookie( "pys_advanced_form_data", json_encode($userData, JSON_THROW_ON_ERROR), 2147483647, '/', PYS()->general_domain );
+			pys_set_advanced_form_data_cookie( $userData );
 		}
     }
 
@@ -837,8 +847,7 @@ final class PYS extends Settings implements Plugin {
             'cookie' => array(
                 'disabled_all_cookie'                => apply_filters( 'pys_disable_all_cookie', false ),
                 'disabled_start_session_cookie'      => apply_filters( 'pys_disabled_start_session_cookie', false ),
-                'disabled_advanced_form_data_cookie' => apply_filters( 'pys_disable_advanced_form_data_cookie', false )
-                                                        || apply_filters( 'pys_disable_advance_data_cookie', false ),
+                'disabled_advanced_form_data_cookie' => pys_advanced_form_data_cookie_disabled(),
                 'disabled_landing_page_cookie'       => apply_filters( 'pys_disable_landing_page_cookie', false ),
                 'disabled_first_visit_cookie'        => apply_filters( 'pys_disable_first_visit_cookie', false ),
                 'disabled_trafficsource_cookie'      => apply_filters( 'pys_disable_trafficsource_cookie', false ),
@@ -972,17 +981,33 @@ final class PYS extends Settings implements Plugin {
 	    }
     }
 
+    /**
+     * The visitor's address, for local bookkeeping.
+     *
+     * Resolved by pys_resolve_client_ip() (see functions-client-ip.php), which
+     * also dropped HTTP_CLIENT_IP — consulted here before REMOTE_ADDR even
+     * though anyone can send it — and added Pro's header coverage. A private
+     * address is fine here: the caller is blocked_ips. Anything sent to an ad
+     * platform as client_ip_address must use pys_client_ip_for_capi(), which
+     * returns '' instead of an address that cannot match. The visitor id
+     * (pys_visitor_key()) reads pys_resolve_client_ip() directly.
+     *
+     * @return string
+     */
     function get_user_ip() {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+        $ip = pys_resolve_client_ip( $_SERVER, false );
 
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $forwarded_ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $ip = trim($forwarded_ips[0]);
-        } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        if ( '' === $ip ) {
+            return (string) apply_filters( 'pys_client_ip', '127.0.0.1', 'fallback' );
         }
 
-        return filter_var($ip, FILTER_VALIDATE_IP) ?: '0.0.0.0';
+        /**
+         * Filters the resolved client IP address.
+         *
+         * @param string $ip     Resolved IP address.
+         * @param string $header Kept for parity with Pro; now always 'resolved'.
+         */
+        return (string) apply_filters( 'pys_client_ip', $ip, 'resolved' );
     }
 
     function is_user_agent_bot(){
@@ -1058,7 +1083,7 @@ final class PYS extends Settings implements Plugin {
                 'externalID_disabled_by_api' => apply_filters( 'pys_disable_externalID_by_gdpr', false ),
                 'disabled_all_cookie'       => apply_filters( 'pys_disable_all_cookie', false ),
                 'disabled_start_session_cookie' => apply_filters( 'pys_disabled_start_session_cookie', false ),
-                'disabled_advanced_form_data_cookie' => apply_filters( 'pys_disable_advanced_form_data_cookie', false ) || apply_filters( 'pys_disable_advance_data_cookie', false ),
+                'disabled_advanced_form_data_cookie' => pys_advanced_form_data_cookie_disabled(),
                 'disabled_landing_page_cookie'  => apply_filters( 'pys_disable_landing_page_cookie', false ),
                 'disabled_first_visit_cookie'  => apply_filters( 'pys_disable_first_visit_cookie', false ),
                 'disabled_trafficsource_cookie' => apply_filters( 'pys_disable_trafficsource_cookie', false ),
@@ -1576,6 +1601,10 @@ final class PYS extends Settings implements Plugin {
     }
 
     function woo_is_order_received_page() {
+        if ( ! isWooCommerceActive() ) {
+            return false;
+        }
+
         if(is_order_received_page()) return true;
         global $post;
         $ids = PYS()->getOption("woo_checkout_page_ids");
@@ -1641,7 +1670,7 @@ final class PYS extends Settings implements Plugin {
 	}
 
 	public function woo_checkout_process( $order_id, $posted_data, $order ) {
-		if ( !apply_filters( 'pys_disable_advanced_form_data_cookie', false ) && !apply_filters( 'pys_disable_advance_data_cookie', false ) ) {
+		if ( !pys_advanced_form_data_cookie_disabled() ) {
 			$first_name = $order->get_billing_first_name();
 			$last_name = $order->get_billing_last_name();
 			$email = $order->get_billing_email();
@@ -1656,28 +1685,28 @@ final class PYS extends Settings implements Plugin {
 				'phone'      => $user_persistence_data[ 'tel' ]
 			);
 
-			setcookie( "pys_advanced_form_data", json_encode($userData, JSON_THROW_ON_ERROR), 2147483647, '/', PYS()->general_domain );
+			pys_set_advanced_form_data_cookie( $userData );
 		}
 	}
 
 	function edd_recurring_payment( $payment_id ) {
 		EnrichOrder()->edd_save_subscription_meta( $payment_id );
 	}
+    /**
+     * The cookie domain for this request.
+     *
+     * @deprecated Use pys_cookie_domain(). Kept as a thin alias because this
+     *             method is public and may be called from add-ons or site code.
+     *
+     * It used to build a parent domain from the last two host labels, which
+     * yields a public suffix on hosts like shop.example.co.uk (".co.uk"), and
+     * browsers reject those — so PHP's write was dropped while our JS wrote at
+     * a different scope. It also ignored track_cookie_for_subdomains.
+     *
+     * @return string Domain to pass to setcookie(), '' for host-only.
+     */
     public function get_wp_cookie_domain() {
-        // Getting the site URL
-        $site_url = get_site_url();
-
-        // Parse domain from URL
-        $host = parse_url($site_url, PHP_URL_HOST);
-
-        // Remove the subdomain, if there is one, leaving the main domain
-        $parts = explode('.', $host);
-        if (count($parts) > 2) {
-            $domain = '.' . $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
-        } else {
-            $domain = '.' . $host;
-        }
-        return $domain;
+        return pys_cookie_domain();
     }
 	public function saveExternalIDInOrder($order_param) {
 		// Determine whether the WC_Order object or order ID is passed

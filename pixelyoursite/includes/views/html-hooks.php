@@ -419,7 +419,7 @@ add_filter('pys_pixel_disabled',function ($isActive,$pixelSlug) {
         <div class="card-body">
             <div class="flex-column-24gap">
                 <div class="double-line-height">
-                    <p> {pixel} - facebook, ga, gtm, pinterest, bing, openai</p>
+                    <p> {pixel} - facebook, ga, gtm, openai</p>
                     <p>Param: array $ids</p>
                 </div>
                 <div class="example-block">
@@ -521,7 +521,8 @@ add_filter('pys_facebook_ids',function ($ids) {
             <div class="flex-column-24gap">
                 <div class="double-line-height">
                     <p>Used by the JavaScript Pixel and the Conversions API alike, so a change here reaches both channels.</p>
-                    <p>OpenAI accepts only these keys: email_sha256, external_id_sha256, country, city, zip_code. There are no phone or name fields, and one unknown key makes the whole Conversions API request fail.</p>
+                    <p>OpenAI accepts only these keys: email_sha256, phone_number_sha256, external_id_sha256, first_name_sha256, last_name_sha256, country, city, region, postal_code. Anything else is dropped before it is sent.</p>
+                    <p>One value per key here — that is what the browser Pixel takes. The Conversions API accepts several per field; to reach those, filter pys_openai_matching_values instead.</p>
                     <p>Param: array $params</p>
                 </div>
                 <div class="example-block">
@@ -532,6 +533,35 @@ add_filter('pys_openai_advanced_matching',function ($params) {
         unset($params['email_sha256']);
     }
     return $params;
+});<div class="copy-icon" data-toggle="pys-popover"
+        data-tippy-trigger="click" data-tippy-placement="bottom"
+        data-popover_id="copied-popover"></div></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-style3 hook-card">
+        <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+            <div class="disable-card align-items-center">
+                <h4 class="secondary_heading_type2">pys_openai_matching_values - Edit the OpenAI matching values as lists</h4>
+            </div>
+            <?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <div class="flex-column-24gap">
+                <div class="double-line-height">
+                    <p>The same identity as pys_openai_advanced_matching, but before it is reduced to one value per field: each key holds an ORDERED list. The Conversions API takes up to three emails and two phone numbers, and uses them in the order given — the browser Pixel takes only the first of each.</p>
+                    <p>Keys are the same nine; values are arrays of already-normalised, already-hashed strings. Filter this to add a value the plugin cannot know about, or to reorder them; filter pys_openai_advanced_matching to change what the browser sends.</p>
+                    <p>Params: array $values, int|null $wooOrder, int|null $eddOrder</p>
+                </div>
+                <div class="example-block">
+                    <label>Example:</label>
+                    <pre class="copy_text">
+add_filter('pys_openai_matching_values',function ($values) {
+    // A second address for the same customer, tried after the first.
+    $values['email_sha256'][] = hash('sha256', 'billing@example.com');
+    return $values;
 });<div class="copy-icon" data-toggle="pys-popover"
         data-tippy-trigger="click" data-tippy-placement="bottom"
         data-popover_id="copied-popover"></div></pre>
@@ -817,6 +847,35 @@ add_filter('pys_reddit_ldu_mode',function ($status) {
         data-tippy-trigger="click" data-tippy-placement="bottom"
         data-popover_id="copied-popover"></div></pre>
                 </div>
+    <div class="card card-style3 hook-card">
+        <div class="card-header card-header-style2 disable-card-wrap d-flex justify-content-between align-items-center">
+            <div class="disable-card align-items-center">
+                <h4 class="secondary_heading_type2">pys_openai_consent_mode - The filter turn ON/OFF the OpenAI restricted mode (opt_out)</h4>
+            </div>
+			<?php cardCollapseSettings(); ?>
+        </div>
+        <div class="card-body">
+            <div class="flex-column-24gap">
+                <div class="double-line-height">
+                    <p>Param: bool $status</p>
+                    <p>When it returns true, every OpenAI event is sent with <span class="event-parameter-list">opt_out: true</span> &mdash; in OpenAI's words, the event is opted out of future user-level personalization. The conversion is still measured, so this is the counterpart of Meta Limited Data Use, not a way to stop tracking: to stop it, do not give the pixel consent at all.</p>
+                    <p>Both copies of the event follow this filter &mdash; the browser Pixel and the Conversions API &mdash; so a deduplicated pair cannot disagree.</p>
+                </div>
+                <div class="example-block">
+                    <label>Example:</label>
+                    <pre class="copy_text">
+add_filter('pys_openai_consent_mode',function ($status) {
+    if(get_current_user_id() == 0) {
+        return true;
+    }
+    return $status;
+});<div class="copy-icon" data-toggle="pys-popover"
+        data-tippy-trigger="click" data-tippy-placement="bottom"
+        data-popover_id="copied-popover"></div></pre>
+                </div>
+            </div>
+        </div>
+    </div>
             </div>
         </div>
     </div>

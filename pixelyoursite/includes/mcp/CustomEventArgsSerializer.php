@@ -41,10 +41,13 @@ final class CustomEventArgsSerializer {
 	 * snapshotted so a partial write round-trips (not resets) them. Pinterest's
 	 * WooCommerce track-data switchers are Pro (map track = null) yet update()
 	 * unconditionally rebuilds them, so without this a partial write blanks them.
+	 * OpenAI's two are the same case.
 	 */
 	private const PRESERVE_KEYS = array(
 		'pinterest_track_single_woo_data',
 		'pinterest_track_cart_woo_data',
+		'openai_track_single_woo_data',
+		'openai_track_cart_woo_data',
 	);
 
 	/**

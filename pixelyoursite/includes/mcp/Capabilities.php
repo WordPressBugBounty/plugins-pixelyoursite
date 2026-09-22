@@ -26,6 +26,25 @@ final class Capabilities {
 	public const OPTION_READ_ONLY_ENABLED = 'mcp_read_only_enabled';
 
 	/**
+	 * WP capability every ability requires from the current user — the same
+	 * one that gates the PYS admin pages and the site-profile REST routes.
+	 */
+	public const REQUIRED_CAPABILITY = 'manage_pys';
+
+	/**
+	 * Does the current user hold the capability every ability requires?
+	 * On our own endpoint `Auth::verify()` sets the token owner as the current
+	 * user, but abilities are also published to every other MCP server on the
+	 * site (`meta.mcp.public`), and those transports only require `read`. The
+	 * capability therefore has to be enforced here, in the ability itself.
+	 *
+	 * @return bool
+	 */
+	public static function currentUserCanManage(): bool {
+		return is_user_logged_in() && current_user_can( self::REQUIRED_CAPABILITY );
+	}
+
+	/**
 	 * Free is not the Pro variant. Kept so code paths shared with Pro that
 	 * reference `isPro()` still resolve; Free write gating does NOT depend on it.
 	 *

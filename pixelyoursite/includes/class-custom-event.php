@@ -72,6 +72,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @property string reddit_pixel_id
  * @property string reddit_event_type
  * @property bool reddit_params_enabled
+ *
+ * @property bool   openai_enabled
+ * @property string openai_pixel_id
+ * @property string openai_event_type
+ * @property string openai_custom_event_type
+ * @property bool   openai_params_enabled
+ * @property array  openai_params
+ * @property bool   openai_track_single_woo_data
+ * @property bool   openai_track_cart_woo_data
  */
 class CustomEvent {
 
@@ -214,6 +223,15 @@ class CustomEvent {
 		'reddit_enabled'               => false,
 		'reddit_track_single_woo_data' => false,
 		'reddit_track_cart_woo_data'   => false,
+
+		'openai_enabled'               => false,
+		'openai_pixel_id'              => 'all',
+		'openai_event_type'            => 'contents_viewed',
+		'openai_custom_event_type'     => null,
+		'openai_params_enabled'        => false,
+		'openai_params'                => array(),
+		'openai_track_single_woo_data' => false,
+		'openai_track_cart_woo_data'   => false,
 
         'conditions_enabled' => false,
         'conditions_logic' => 'AND'
@@ -668,9 +686,152 @@ class CustomEvent {
             }
         }
 
+		/**
+		 * OPENAI
+		 */
+
+		$this->updateOpenAI( $args );
+
         update_post_meta( $this->post_id, '_pys_event_data', $this->data );
         update_post_meta( $this->post_id, '_pys_event_conditions', addslashes( serialize( $this->conditions ) ) );
         update_post_meta( $this->post_id, '_pys_event_triggers', addslashes( serialize( $this->triggers ) ) );
+	}
+
+	/**
+	 * Read the OpenAI half of a submitted custom event.
+	 *
+	 * @param array $args
+	 * @return void
+	 */
+	private function updateOpenAI( $args ) {
+
+		$event_types = array_keys( PYS_Event_Definitions::get_openai_events() );
+
+		// enabled
+		$this->data[ 'openai_enabled' ] = isset( $args[ 'openai_enabled' ] ) && $args[ 'openai_enabled' ] ? true : false;
+
+		// pixel id -- one pixel in Free, so a scalar with the `all` fallback
+		$pixels = function_exists( '\\PixelYourSite\\OpenAI' ) ? (array) OpenAI()->getPixelIDs() : array();
+
+		$this->data[ 'openai_pixel_id' ] = ! empty( $args[ 'openai_pixel_id' ] )
+			&& in_array( $args[ 'openai_pixel_id' ], $pixels, true )
+				? sanitize_text_field( $args[ 'openai_pixel_id' ] ) : 'all';
+
+		// event type
+		$this->data[ 'openai_event_type' ] = isset( $args[ 'openai_event_type' ] )
+			&& $args[ 'openai_event_type' ] !== ''
+			&& in_array( $args[ 'openai_event_type' ], $event_types, true )
+				? sanitize_text_field( $args[ 'openai_event_type' ] ) : 'contents_viewed';
+
+		// the name of a custom event, which only `custom` has. OpenAI judges the
+		// name itself, so the generic key sanitiser is not enough: it would strip
+		// the dashes OpenAI allows and pass names it refuses.
+		$this->data[ 'openai_custom_event_type' ] = $this->openai_event_type === 'custom'
+			? self::sanitizeOpenAICustomEventName( $args[ 'openai_custom_event_type' ] ?? '' )
+			: null;
+
+		// params
+		$this->data[ 'openai_params_enabled' ] = isset( $args[ 'openai_params_enabled' ] ) && $args[ 'openai_params_enabled' ] ? true : false;
+
+		$this->data[ 'openai_track_single_woo_data' ] = isset( $args[ 'openai_track_single_woo_data' ] ) && $args[ 'openai_track_single_woo_data' ] ? true : false;
+		$this->data[ 'openai_track_cart_woo_data' ]   = isset( $args[ 'openai_track_cart_woo_data' ] ) && $args[ 'openai_track_cart_woo_data' ] ? true : false;
+
+		$this->data[ 'openai_params' ] = array();
+
+		if ( $this->openai_params_enabled && isset( $args[ 'openai_params' ] ) && is_array( $args[ 'openai_params' ] ) ) {
+
+			// Only the fields of the chosen event's shape: anything else would
+			// take the event down with it.
+			foreach ( self::getOpenAIAllowedParams( $this->openai_event_type ) as $allowed ) {
+
+				if ( ! isset( $args[ 'openai_params' ][ $allowed ] ) ) {
+					continue;
+				}
+
+				$param = $args[ 'openai_params' ][ $allowed ];
+
+				// A Pro-shaped payload posts { value, selector, dynamic }; take
+				// the value so the flat store is not blanked.
+				$value = is_array( $param ) ? ( $param[ 'value' ] ?? '' ) : $param;
+				$value = sanitize_text_field( $value );
+
+				// Currency is an ISO 4217 code and nothing else: the endpoint
+				// answers `400 invalid_field_value` to anything outside that
+				// standard -- BTC included, three letters and all -- and that
+				// refusal fails the whole event.
+				if ( $allowed === 'currency' ) {
+					$code  = strtoupper( trim( $value ) );
+					$value = OpenAI\Helpers\pys_openai_is_valid_currency( $code ) ? $code : '';
+				}
+
+				$this->data[ 'openai_params' ][ $allowed ] = $value;
+			}
+		}
+	}
+
+	/**
+	 * The parameters an OpenAI event type may carry, by label.
+	 *
+	 * @param string $event_type
+	 * @return string[]
+	 */
+	public static function getOpenAIAllowedParams( $event_type ) {
+
+		$events = PYS_Event_Definitions::get_openai_events();
+
+		if ( ! isset( $events[ $event_type ] ) ) {
+			return array();
+		}
+
+		$labels = array();
+
+		foreach ( $events[ $event_type ] as $field ) {
+			if ( ! empty( $field[ 'label' ] ) ) {
+				$labels[] = $field[ 'label' ];
+			}
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * The `data` shape an OpenAI event type takes.
+	 *
+	 * @param string $event_type
+	 * @return string One of contents, customer_action, plan_enrollment, custom.
+	 */
+	public static function getOpenAIDataType( $event_type ) {
+
+		$shapes = PYS_Event_Definitions::get_openai_shapes();
+
+		return $shapes[ $event_type ][ 'data_type' ] ?? 'contents';
+	}
+
+	/**
+	 * A name OpenAI will accept for a custom event, or null.
+	 *
+	 * 1-64 characters of latin letters, digits, `_` and `-`, starting and ending
+	 * with a letter or a digit; and never one of OpenAI's own standard event
+	 * names, which its API refuses outright.
+	 *
+	 * @param string $name
+	 * @return string|null
+	 */
+	public static function sanitizeOpenAICustomEventName( $name ) {
+
+		$name = trim( sanitize_text_field( (string) $name ) );
+
+		if ( $name === '' || preg_match( '/^[A-Za-z0-9][A-Za-z0-9_-]{0,62}[A-Za-z0-9]$|^[A-Za-z0-9]$/', $name ) !== 1 ) {
+			return null;
+		}
+
+		$standard = array_keys( PYS_Event_Definitions::get_openai_shapes() );
+
+		if ( in_array( $name, $standard, true ) ) {
+			return null;
+		}
+
+		return $name;
 	}
 
 	public function enable() {
@@ -835,6 +996,36 @@ class CustomEvent {
     public function getMergedAction(){
         return $this->ga_ads_event_action == '_custom' || $this->ga_ads_event_action ==  'CustomEvent' ? $this->ga_ads_custom_event_action : $this->ga_ads_event_action;
     }
+	/**
+	 * Is this event configured to fire to OpenAI?
+	 *
+	 * @return bool
+	 */
+	public function isOpenAIEnabled() {
+		return (bool) $this->openai_enabled;
+	}
+
+	/**
+	 * The event type as the module needs it: for `custom` that is the name the
+	 * user gave, because the wire carries `type: custom` plus that name.
+	 *
+	 * @return string|null
+	 */
+	public function getOpenAIEventType() {
+		return $this->openai_event_type === 'custom'
+			? $this->openai_custom_event_type
+			: $this->openai_event_type;
+	}
+
+	/**
+	 * The standard params, or nothing when the section is switched off.
+	 *
+	 * @return array
+	 */
+	public function getOpenAIParams() {
+		return $this->openai_params_enabled ? (array) $this->openai_params : array();
+	}
+
     public function isBingEnabled() {
         return (bool) $this->bing_enabled;
     }
@@ -1224,14 +1415,26 @@ class CustomEvent {
         if($conditions_enabled && !empty($conditions)){
             $conditions_results = [];
             foreach ($conditions as $condition) {
-                $condition_result = $condition->check();
-                $conditions_results[] = $condition_result;
+                /*
+                 * A condition this plugin cannot decide counts as satisfied: never
+                 * block an event over something we did not check. It also keeps us
+                 * closest to Pro, where such a condition is either empty — and an
+                 * empty needle matches everything — or evaluated in the browser.
+                 * See ConditionalEvent::isEvaluable().
+                 */
+                if ( !$condition->isEvaluable() ) {
+                    $conditions_results[] = true;
+                    continue;
+                }
+                // Cast because checkUserRole() can return the array_intersect() result.
+                $conditions_results[] = (bool) $condition->check();
             }
+
             if($conditions_logic === 'AND'){
-                $check = !in_array(false, $conditions_results);
+                $check = !in_array(false, $conditions_results, true);
             }
             else{
-                $check =  in_array(true, $conditions_results);
+                $check =  in_array(true, $conditions_results, true);
             }
         }
         return $check;

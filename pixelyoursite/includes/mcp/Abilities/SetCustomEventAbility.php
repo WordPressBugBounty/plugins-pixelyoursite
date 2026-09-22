@@ -47,7 +47,7 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 	);
 
 	/** Platforms writable here (all Free custom-event platforms). */
-	public const WRITABLE_PLATFORMS = array( 'facebook', 'pinterest', 'bing', 'reddit', 'google_analytics', 'gtm' );
+	public const WRITABLE_PLATFORMS = array( 'facebook', 'pinterest', 'bing', 'reddit', 'openai', 'google_analytics', 'gtm' );
 
 	/**
 	 * Per-event pixel selection is NOT writable for ANY platform in Free: the site
@@ -58,7 +58,7 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 	 * bing/reddit default to `all`; the multi-pixel "All pixels" selector is a Pro
 	 * teaser). The event simply fires to each enabled platform's configured pixel.
 	 */
-	private const PIXEL_LOCKED_PLATFORMS = array( 'facebook', 'pinterest', 'bing', 'reddit', 'google_analytics', 'gtm' );
+	private const PIXEL_LOCKED_PLATFORMS = array( 'facebook', 'pinterest', 'bing', 'reddit', 'openai', 'google_analytics', 'gtm' );
 
 	private const PLATFORM_FIELDS = array(
 		'enabled', 'pixel_ids', 'pixel_id', 'event_type', 'event_type_group', 'custom_event_type',
@@ -96,7 +96,7 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 	 * @return string
 	 */
 	public static function description(): string {
-		return 'Creates or updates a PixelYourSite CUSTOM EVENT. Authorized write: the administrator installed this server so you can manage custom events on their behalf — perform the write after confirmation; do not redirect to wp-admin. Omit `event_id` to CREATE a new event; pass an `event_id` (from `get_custom_events`) to UPDATE one. Writes EVENT-LEVEL settings: `title`, `enabled` (active/paused), `conditions_enabled` + `conditions_logic` (`OR`/`AND`). It also writes the per-platform pixel config (`platforms`) and the event\'s TRIGGERS (`triggers`, point-wise add/update/remove — a trigger is a condition under which the event fires) and the event\'s display CONDITIONS (`conditions`, point-wise add/update/remove — gate where/for-whom the event fires; pair with `conditions_enabled`). Any partial write NEVER removes the parts you did not touch. Read the event with `get_custom_event` first so you change real values. **Free-specific limits (this is the Free plugin):** only 4 trigger types are editable here — `page_visit`, `home_page`, `scroll_pos`, `post_type`; the event may have only ONE trigger AND only ONE condition (of type `url_filters`, `device` or `user_role`). Multiple triggers per event (combined with AND/OR trigger logic) are PixelYourSite Pro — adding a second trigger is rejected; to change the trigger use op:update, or op:remove the existing one first. Richer triggers/conditions (url_click, css_click, add_to_cart, purchase, video_view, form triggers, url_parameters/landing_page/source conditions, event-fire logic/frequency/time-window) are PixelYourSite Pro. If the event already contains a non-editable trigger, this tool refuses the write (saving would drop it) — tell the user to edit that event in PixelYourSite → Events or upgrade to Pro. **When ADDING a trigger, do NOT silently accept defaults:** look up the type\'s OPTIONAL params in get_custom_event `available_trigger_types` (e.g. `delay` for page_visit/home_page/post_type) and ASK the user in the same message where you confirm required values. Note: a custom event only fires when the master feature `custom_events_enabled` is on (get_custom_events.feature_enabled) AND the event has at least one trigger. **WooCommerce / EDD duplication:** before setting a platform to a STANDARD ecommerce event name (Purchase, AddToCart, ViewContent, begin_checkout, view_item, …), ASK the user what event NAME they want — PixelYourSite very likely already fires that ecommerce event automatically, so a same-named custom event would send it TWICE. The preview `notes` flag this. **Platforms:** writable slugs are `facebook`, `pinterest`, `bing`, `reddit`, `google_analytics` (unified GA4 — Google Ads / TikTok are Pro), `gtm`. Each platform object may set: `enabled` (bool). NOTE: per-event PIXEL selection (`pixel_ids`/`pixel_id`) is NOT available in Free for any platform — the event fires to each enabled platform\'s single configured pixel; choosing specific pixels per event, or firing to multiple pixels, is a SuperPack/Pro feature (passing pixel_ids/pixel_id is rejected). Also settable: `event_type` (must be valid for the platform — see get_custom_event `available_event_types`; type names are platform- and CASE-specific, e.g. AddToCart for facebook/bing/reddit, addtocart for pinterest, add_to_cart for GA/GTM; GA/GTM are grouped GA actions), `event_type_group` (GA/GTM only — the category group; if omitted the first matching group is stored), `custom_event_type` (the free event NAME — REQUIRED when event_type is a custom-name type: facebook `CustomEvent`, pinterest `custom`/`partner_defined`, bing `Custom`, reddit `Custom`, GA/GTM `CustomEvent`/`_custom`), `params_enabled` (bool), `track_single_woo_data` (the custom-event switcher "Track WooCommerce product data on single product pages") / `track_cart_woo_data` ("Track WooCommerce cart data when possible") — these are per-platform CUSTOM-EVENT options and in Free are functional ONLY for `reddit`; for facebook/pinterest/bing/google_analytics/gtm they are Pro (locked switchers) and rejected. Do NOT confuse them with the WooCommerce ViewContent funnel event ("Track product pages" in get_woo_events_config) — different thing. `conversion_label` (gtm). `params` (standard event params): an OBJECT keyed by param name → a STRING value. Free stores flat STATIC string values only; the object/selector shapes AND PixelYourSite dynamic-parameter TOKENS (`[id]`, `[title]`, `[url_*]`, `[field_*]`, `[total]`, …) are PixelYourSite Pro — in Free a token is stored and sent VERBATIM as literal text (e.g. `"[id]"`), NOT substituted, so do NOT set a param to a token expecting substitution (say it requires Pro; see get_custom_event `dynamic_parameters_note`). `params` is a PARTIAL MERGE: only the keys you pass change; to CLEAR a param pass it with an empty string/null. Valid param names depend on the current `event_type` — see get_custom_event `available_event_types`; a custom event_type has no standard params. IMPORTANT: params are OPTIONAL — they are only sent when the platform\'s params toggle is on. Changing `event_type` alone does NOT require you to send params, even for an event whose params are marked `required` (e.g. facebook Purchase value/currency): the `required` flag applies ONLY when the user chooses to send params. Do NOT force the user to provide "required" params just to switch event_type — omit `params` to fire the event with none. `custom_params`: an ARRAY of `{name, value}` (replaces the existing list; facebook/pinterest/bing/GA/GTM — reddit is the only platform with none). Writing params/custom_params auto-enables the platform\'s params toggle. GTM-only extras: `automated_params` (bool), `remove_custom_trigger_object` (bool), `use_custom_object_name` (bool) + `custom_object_name` (string). Only pass what you want to change; the rest is preserved. **Triggers arg:** each item `op` (`add`/`update`/`remove`), `index` (the `trigger_index` from get_custom_event — required for update/remove), `type` (required for add; one of page_visit/home_page/scroll_pos/post_type). `rules`: for page_visit each item `{rule, value}` with `rule` ∈ contains/match ONLY (value `*` matches all pages; the URL-parameter rules `param_contains`/`param_match` — "URL Parameters Contains/Match" — are PixelYourSite Pro and are rejected); for scroll_pos each item `{value}` (scroll percent, no rule). page_visit/scroll_pos need ≥1 rule when added; home_page/post_type need none. Params: `delay` (page_visit/home_page/post_type, in SECONDS), `post_type_value` (post_type) — pass at the op top level or nested under `params`. **Conditions arg:** each item `op`/`index`/`type`. Types: `url_filters` (`rule` ∈ contains/match + `value`), `device` (`device` ∈ Desktop/Mobile), `user_role` (`user_role` = array of role slugs, e.g. `["guest","administrator"]` — get valid slugs from get_custom_event `available_condition_types`). The event keeps a SINGLE condition; adding a second is rejected. Remember to set `conditions_enabled: true` or conditions are ignored. **Two-step write — confirmation FIRST and MANDATORY:** call FIRST without `confirm` to get a `confirmation_required` preview (`pending_changes` shows current→new, `created: true` for a new event). Show it to the user and get explicit go-ahead in a SEPARATE message BEFORE calling again. NEVER call with `confirm: true` in the same turn as the preview, and NEVER self-approve — even for creating a new event. Only after the user replies "yes" do you resend the identical args with `confirm: true`. A call without `confirm: true` never writes. Pass `mcp_note`.';
+		return 'Creates or updates a PixelYourSite CUSTOM EVENT. Authorized write: the administrator installed this server so you can manage custom events on their behalf — perform the write after confirmation; do not redirect to wp-admin. Omit `event_id` to CREATE a new event; pass an `event_id` (from `get_custom_events`) to UPDATE one. Writes EVENT-LEVEL settings: `title`, `enabled` (active/paused), `conditions_enabled` + `conditions_logic` (`OR`/`AND`). It also writes the per-platform pixel config (`platforms`) and the event\'s TRIGGERS (`triggers`, point-wise add/update/remove — a trigger is a condition under which the event fires) and the event\'s display CONDITIONS (`conditions`, point-wise add/update/remove — gate where/for-whom the event fires; pair with `conditions_enabled`). Any partial write NEVER removes the parts you did not touch. Read the event with `get_custom_event` first so you change real values. **Free-specific limits (this is the Free plugin):** only 4 trigger types are editable here — `page_visit`, `home_page`, `scroll_pos`, `post_type`; the event may have only ONE trigger AND only ONE condition (of type `url_filters`, `device` or `user_role`). Multiple triggers per event (combined with AND/OR trigger logic) are PixelYourSite Pro — adding a second trigger is rejected; to change the trigger use op:update, or op:remove the existing one first. Richer triggers/conditions (url_click, css_click, add_to_cart, purchase, video_view, form triggers, url_parameters/landing_page/source conditions, event-fire logic/frequency/time-window) are PixelYourSite Pro. If the event already contains a non-editable trigger, this tool refuses the write (saving would drop it) — tell the user to edit that event in PixelYourSite → Events or upgrade to Pro. **When ADDING a trigger, do NOT silently accept defaults:** look up the type\'s OPTIONAL params in get_custom_event `available_trigger_types` (e.g. `delay` for page_visit/home_page/post_type) and ASK the user in the same message where you confirm required values. Note: a custom event only fires when the master feature `custom_events_enabled` is on (get_custom_events.feature_enabled) AND the event has at least one trigger. **WooCommerce / EDD duplication:** before setting a platform to a STANDARD ecommerce event name (Purchase, AddToCart, ViewContent, begin_checkout, view_item, …), ASK the user what event NAME they want — PixelYourSite very likely already fires that ecommerce event automatically, so a same-named custom event would send it TWICE. The preview `notes` flag this. **Platforms:** writable slugs are `facebook`, `pinterest`, `bing`, `reddit`, `openai` (OpenAI Ads / ChatGPT Ads), `google_analytics` (unified GA4 — Google Ads / TikTok are Pro), `gtm`. Each platform object may set: `enabled` (bool). NOTE: per-event PIXEL selection (`pixel_ids`/`pixel_id`) is NOT available in Free for any platform — the event fires to each enabled platform\'s single configured pixel; choosing specific pixels per event, or firing to multiple pixels, is a SuperPack/Pro feature (passing pixel_ids/pixel_id is rejected). Also settable: `event_type` (must be valid for the platform — see get_custom_event `available_event_types`; type names are platform- and CASE-specific, e.g. AddToCart for facebook/bing/reddit, addtocart for pinterest, add_to_cart for GA/GTM, items_added for openai; GA/GTM are grouped GA actions), `event_type_group` (GA/GTM only — the category group; if omitted the first matching group is stored), `custom_event_type` (the free event NAME — REQUIRED when event_type is a custom-name type: facebook `CustomEvent`, pinterest `custom`/`partner_defined`, bing `Custom`, reddit `Custom`, openai `custom`, GA/GTM `CustomEvent`/`_custom`), `params_enabled` (bool), `track_single_woo_data` (the custom-event switcher "Track WooCommerce product data on single product pages") / `track_cart_woo_data` ("Track WooCommerce cart data when possible") — these are per-platform CUSTOM-EVENT options and in Free are functional ONLY for `reddit`; for facebook/pinterest/bing/google_analytics/gtm they are Pro (locked switchers) and rejected. Do NOT confuse them with the WooCommerce ViewContent funnel event ("Track product pages" in get_woo_events_config) — different thing. `conversion_label` (gtm). `params` (standard event params): an OBJECT keyed by param name → a STRING value. Free stores flat STATIC string values only; the object/selector shapes AND PixelYourSite dynamic-parameter TOKENS (`[id]`, `[title]`, `[url_*]`, `[field_*]`, `[total]`, …) are PixelYourSite Pro — in Free a token is stored and sent VERBATIM as literal text (e.g. `"[id]"`), NOT substituted, so do NOT set a param to a token expecting substitution (say it requires Pro; see get_custom_event `dynamic_parameters_note`). `params` is a PARTIAL MERGE: only the keys you pass change; to CLEAR a param pass it with an empty string/null. Valid param names depend on the current `event_type` — see get_custom_event `available_event_types`; a custom event_type has no standard params. IMPORTANT: params are OPTIONAL — they are only sent when the platform\'s params toggle is on. Changing `event_type` alone does NOT require you to send params, even for an event whose params are marked `required` (e.g. facebook Purchase value/currency): the `required` flag applies ONLY when the user chooses to send params. Do NOT force the user to provide "required" params just to switch event_type — omit `params` to fire the event with none. `custom_params`: an ARRAY of `{name, value}` (replaces the existing list; facebook/pinterest/bing/GA/GTM — reddit and openai have none, openai because its taxonomy is closed and a field it does not document makes its API refuse the whole event). Writing params/custom_params auto-enables the platform\'s params toggle. **OpenAI is the strict one**, because its taxonomy is CLOSED and one field its API does not know makes it reject the WHOLE event rather than that field — which is why it takes no custom_params at all: (a) the params of an OpenAI event type are exactly the fields of its `data` shape, so a param another platform has may simply not exist there; (b) `amount` is a decimal in the shop currency (PixelYourSite converts it to that currency\'s minor unit) and `currency` must be an ISO 4217 code — `BTC` is three letters and is still refused. Writes that break any of these are rejected with an explanation rather than saved. GTM-only extras: `automated_params` (bool), `remove_custom_trigger_object` (bool), `use_custom_object_name` (bool) + `custom_object_name` (string). Only pass what you want to change; the rest is preserved. **Triggers arg:** each item `op` (`add`/`update`/`remove`), `index` (the `trigger_index` from get_custom_event — required for update/remove), `type` (required for add; one of page_visit/home_page/scroll_pos/post_type). `rules`: for page_visit each item `{rule, value}` with `rule` ∈ contains/match ONLY (value `*` matches all pages; the URL-parameter rules `param_contains`/`param_match` — "URL Parameters Contains/Match" — are PixelYourSite Pro and are rejected); for scroll_pos each item `{value}` (scroll percent, no rule). page_visit/scroll_pos need ≥1 rule when added; home_page/post_type need none. Params: `delay` (page_visit/home_page/post_type, in SECONDS), `post_type_value` (post_type) — pass at the op top level or nested under `params`. **Conditions arg:** each item `op`/`index`/`type`. Types: `url_filters` (`rule` ∈ contains/match + `value`), `device` (`device` ∈ Desktop/Mobile), `user_role` (`user_role` = array of role slugs, e.g. `["guest","administrator"]` — get valid slugs from get_custom_event `available_condition_types`). The event keeps a SINGLE condition; adding a second is rejected. Remember to set `conditions_enabled: true` or conditions are ignored. **Two-step write — confirmation FIRST and MANDATORY:** call FIRST without `confirm` to get a `confirmation_required` preview (`pending_changes` shows current→new, `created: true` for a new event). Show it to the user and get explicit go-ahead in a SEPARATE message BEFORE calling again. NEVER call with `confirm: true` in the same turn as the preview, and NEVER self-approve — even for creating a new event. Only after the user replies "yes" do you resend the identical args with `confirm: true`. A call without `confirm: true` never writes. Pass `mcp_note`.';
 	}
 
 	/**
@@ -548,6 +548,32 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 						if ( null === $str ) {
 							return self::badField( $slug, $field );
 						}
+
+						$nameRule = CustomEventPlatformMap::customNameRule( $slug );
+
+						if ( null !== $nameRule ) {
+							if ( in_array( $str, CustomEventPlatformMap::reservedCustomNames( $slug ), true ) ) {
+								return new \WP_Error(
+									'pys_mcp_custom_event_reserved_custom_name',
+									sprintf( '`%s` is one of `%s`\'s own STANDARD event names and cannot be reused as a custom name — its API refuses the event outright. Set `event_type` to `%s` and drop `custom_event_type`, or pick a different name.', $str, $slug, $str ),
+									array( 'status' => 409 )
+								);
+							}
+
+							$name = call_user_func( $nameRule[ 'fn' ], $str );
+
+							if ( null === $name || '' === (string) $name ) {
+								return new \WP_Error(
+									'pys_mcp_custom_event_bad_custom_name',
+									sprintf( 'custom_event_type `%s` is not a name `%s` accepts: %s. Ask the user for a name in that form.', $str, $slug, $nameRule[ 'message' ] ),
+									array( 'status' => 409 )
+								);
+							}
+
+							self::setPlatformField( $merged, $pending, $slug, 'custom_event_type', $def[ 'custom_event_type' ], $name );
+							break;
+						}
+
 						$key = function_exists( '\\PixelYourSite\\sanitizeKey' )
 							? \PixelYourSite\sanitizeKey( $str )
 							: preg_replace( '/[^0-9A-Za-z_]/', '', str_replace( ' ', '_', $str ) );
@@ -579,7 +605,7 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 						break;
 
 					case 'custom_params':
-						$err = self::applyPlatformCustomParams( $merged, $pending, $slug, $def, $val );
+						$err = self::applyPlatformCustomParams( $merged, $pending, $slug, $def, $cfg, $val );
 						if ( $err instanceof \WP_Error ) {
 							return $err;
 						}
@@ -590,7 +616,7 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 						$mapKey = 'track_single_woo_data' === $field ? 'track_single' : 'track_cart';
 						if ( null === $def[ $mapKey ] ) {
 							$label = 'track_single_woo_data' === $field ? 'Track WooCommerce product data on single product pages' : 'Track WooCommerce cart data when possible';
-							return new \WP_Error( 'pys_mcp_custom_event_no_track', sprintf( 'The custom-event switcher "%s" (`%s`) is NOT available for `%s` in Free — it is a locked (Pro) switcher in that platform\'s custom-event block; functional only for `reddit` in Free. NOTE: this is a per-platform CUSTOM-EVENT option, NOT the WooCommerce ViewContent funnel event ("Track product pages" in get_woo_events_config) — do not confuse them.', $label, $field, $slug ), array( 'status' => 409 ) );
+							return new \WP_Error( 'pys_mcp_custom_event_no_track', sprintf( 'The custom-event switcher "%s" (`%s`) is NOT available for `%s` in Free — it is a locked (Pro) switcher in that platform\'s custom-event block; functional only for `reddit` in Free (for `openai` they are Pro as well). NOTE: this is a per-platform CUSTOM-EVENT option, NOT the WooCommerce ViewContent funnel event ("Track product pages" in get_woo_events_config) — do not confuse them.', $label, $field, $slug ), array( 'status' => 409 ) );
 						}
 						$new = self::coerce( 'bool', $val );
 						if ( null === $new ) {
@@ -688,7 +714,19 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 			if ( !is_scalar( $pv ) ) {
 				return new \WP_Error( 'pys_mcp_custom_event_bad_param_value', sprintf( 'Param `%s` must be a plain string value (Free stores flat static values; the object/selector shape is Pro). Dynamic-parameter tokens are Pro too — in Free a value is sent verbatim, not substituted.', $name ), array( 'status' => 400 ) );
 			}
-			$current[ $name ] = sanitize_text_field( (string) $pv );
+			$value = sanitize_text_field( (string) $pv );
+
+			$rule = CustomEventPlatformMap::paramValidator( $slug, $name );
+
+			if ( null !== $rule && !call_user_func( $rule[ 'fn' ], $value ) ) {
+				return new \WP_Error(
+					'pys_mcp_custom_event_bad_param_value',
+					sprintf( 'Param `%s` of `%s` %s Given: `%s`.', $name, $slug, $rule[ 'message' ], $value ),
+					array( 'status' => 409 )
+				);
+			}
+
+			$current[ $name ] = $value;
 			$applied[ $name ] = $current[ $name ];
 		}
 
@@ -706,10 +744,11 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 	 * @param array  $pending Per-platform pending (mutated).
 	 * @param string $slug    Platform slug.
 	 * @param array  $def     Platform map row.
+	 * @param array  $cfg     The platform's full patch (for a same-call event_type).
 	 * @param mixed  $val     The `custom_params` value.
 	 * @return \WP_Error|null
 	 */
-	private static function applyPlatformCustomParams( array &$merged, array &$pending, string $slug, array $def, $val ) {
+	private static function applyPlatformCustomParams( array &$merged, array &$pending, string $slug, array $def, array $cfg, $val ) {
 		if ( null === $def[ 'custom_params' ] ) {
 			return new \WP_Error( 'pys_mcp_custom_event_no_custom_params', sprintf( '`%s` has no custom params.', $slug ), array( 'status' => 400 ) );
 		}
@@ -1458,6 +1497,7 @@ final class SetCustomEventAbility extends AbstractWriteAbility {
 			'addtocart', 'removefromcart', 'addtowishlist', 'viewcart',
 			'initiatecheckout', 'begincheckout', 'checkout', 'addpaymentinfo', 'addshippinginfo',
 			'purchase', 'completepayment', 'placeanorder',
+			'contentsviewed', 'itemsadded', 'checkoutstarted', 'ordercreated',
 		);
 
 		return in_array( $norm, $std, true );

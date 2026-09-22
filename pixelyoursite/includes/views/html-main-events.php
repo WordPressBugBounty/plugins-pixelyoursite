@@ -276,7 +276,7 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
 
                                     if ( $errorMessage != "" ) : ?>
                                         <div class="event_error font-medium">
-                                            <?= $errorMessage ?>
+                                            <?= esc_html( $errorMessage ) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
@@ -297,6 +297,12 @@ $new_event_url = buildAdminUrl( 'pixelyoursite', 'events', 'edit' );
                                         <?php
                                         $disabled = GTM()->enabled() && !empty( GTM()->getPixelIDs() ) && $event->isGTMEnabled() && $event->isGTMPresent(); ?>
                                         <img src="<?php echo PYS_FREE_URL; ?>/dist/images/gtm-logo.svg" alt="gtm logo"
+                                             class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
+
+	                                    <?php
+	                                    $disabled = OpenAI()->enabled() && !empty( OpenAI()->getPixelIDs() ) && $event->isOpenAIEnabled(); ?>
+                                        <img src="<?php echo esc_url( PYS_FREE_URL . '/dist/images/openai-logo.svg' ); ?>"
+                                             alt="openai logo"
                                              class="event-network <?php echo !$disabled ? 'disabled' : ''; ?>">
 
                                         <?php

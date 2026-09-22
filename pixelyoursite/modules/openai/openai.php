@@ -99,6 +99,7 @@ class OpenAI extends Settings implements Pixel {
             'pixelIds'         => $this->getPixelIDs(),
             'serverApiEnabled' => $this->isServerApiEnabled(),
             'debug'            => (bool) $this->getOption( 'debug_enabled' ),
+            'opt_out'          => $this->getConsentMode(),
         );
 
         if ( $this->getOption( 'advanced_matching_enabled' ) ) {
@@ -111,6 +112,17 @@ class OpenAI extends Settings implements Pixel {
         }
 
         return $options;
+    }
+
+
+    /**
+     * Is the pixel in OpenAI's restricted mode -- firing, but opted out of
+     * user-level personalisation?
+     *
+     * @return bool
+     */
+    public function getConsentMode() {
+        return (bool) apply_filters( 'pys_openai_consent_mode', false );
     }
 
     /**
@@ -157,60 +169,207 @@ class OpenAI extends Settings implements Pixel {
         return (bool) $this->getOption( 'server_validate_only' );
     }
 
+    const MATCHING_LIMITS = array(
+        'email_sha256'        => 3,
+        'phone_number_sha256' => 2,
+        'external_id_sha256'  => 1,
+        'first_name_sha256'   => 1,
+        'last_name_sha256'    => 1,
+        'country'             => 1,
+        'city'                => 1,
+        'region'              => 1,
+        'postal_code'         => 1,
+    );
+
     /**
      * Identifying fields for the visitor, in the shape OpenAI documents.
-     *
-     * The schema is closed and short: email_sha256, external_id_sha256, country,
-     * city and zip_code. There are no phone or name fields anywhere in it, so
-     * that data is deliberately never collected here.
-     *
-     * Email and external id are hashed; country, city and zip travel in the
-     * clear, which is what OpenAI asks for.
      *
      * @param int|null $wooOrder Explicit Woo order id, from trusted internal code.
      * @param int|null $eddOrder Explicit EDD payment id, from trusted internal code.
      * @return array
      */
     public function getAdvancedMatchingParams( $wooOrder = null, $eddOrder = null ) {
+        return $this->flattenMatchingValues( $this->getMatchingValues( $wooOrder, $eddOrder ) );
+    }
 
-        $params     = array();
-        $user_email = '';
-        $country    = '';
-        $city       = '';
-        $zip        = '';
+    /**
+     * One value per field, as the Pixel takes them, with the public filter
+     * applied.
+     *
+     * @param array $lists Field => ordered values.
+     * @return array
+     */
+    private function flattenMatchingValues( $lists ) {
 
-        $user = wp_get_current_user();
+        $params = array();
 
-        if ( $user && $user->ID ) {
-            $user_email = $user->get( 'user_email' );
+        foreach ( $lists as $field => $values ) {
+            if ( ! empty( $values ) ) {
+                $params[ $field ] = reset( $values );
+            }
         }
 
-        if ( isEddActive() ) {
+        return apply_filters( 'pys_openai_advanced_matching', $params );
+    }
 
-            $order_id = $eddOrder ? (int) $eddOrder : (int) edd_get_purchase_id_by_key( getEddPaymentKey() );
+    /**
+     * Every matching value this request knows about, normalised, hashed where it
+     * has to be, de-duplicated and capped -- keyed by the Pixel's field name.
+     *
+     * @param int|null $wooOrder Explicit Woo order id, from trusted internal code.
+     * @param int|null $eddOrder Explicit EDD payment id, from trusted internal code.
+     * @return array<string, array<int, string>>
+     */
+    public function getMatchingValues( $wooOrder = null, $eddOrder = null ) {
 
-            // The same access check the events use: an order this request may
-            // not see must not leak its buyer's address either.
-            if ( $order_id > 0 && ! pysEddRequestCanAccessOrder( $order_id ) ) {
-                $order_id = 0;
+        $sources = $this->collectMatchingSources( $wooOrder, $eddOrder );
+
+        $resolved = get_persistence_user_data(
+            $this->firstMatchingValue( $sources['email'] ),
+            $this->firstMatchingValue( $sources['first_name'] ),
+            $this->firstMatchingValue( $sources['last_name'] ),
+            $this->firstMatchingValue( $sources['phone'] )
+        );
+
+        $typed = get_persistence_user_data( '', '', '', '' );
+
+        $candidates = array(
+            'email_sha256'        => array_merge( array( isset( $resolved['em'] ) ? $resolved['em'] : '' ), $sources['email'], array( isset( $typed['em'] ) ? $typed['em'] : '' ) ),
+            'phone_number_sha256' => array_merge( array( isset( $resolved['tel'] ) ? $resolved['tel'] : '' ), $sources['phone'], array( isset( $typed['tel'] ) ? $typed['tel'] : '' ) ),
+            'first_name_sha256'   => array_merge( array( isset( $resolved['fn'] ) ? $resolved['fn'] : '' ), $sources['first_name'], array( isset( $typed['fn'] ) ? $typed['fn'] : '' ) ),
+            'last_name_sha256'    => array_merge( array( isset( $resolved['ln'] ) ? $resolved['ln'] : '' ), $sources['last_name'], array( isset( $typed['ln'] ) ? $typed['ln'] : '' ) ),
+            'external_id_sha256'  => array(),
+            'country'             => $sources['country'],
+            'city'                => $sources['city'],
+            'region'              => $sources['region'],
+            'postal_code'         => $sources['postal_code'],
+        );
+
+        if ( EventsManager::isTrackExternalId() ) {
+
+            $external_id = $this->getExternalId( $wooOrder, $eddOrder );
+
+            if ( ! empty( $external_id ) ) {
+                $candidates['external_id_sha256'] = array( hash( 'sha256', (string) $external_id ) );
             }
+        }
 
-            if ( $order_id > 0 ) {
+        // field => the function that turns a raw value into the wire value, or
+        // null when the value is already final.
+        $rules = array(
+            'email_sha256'        => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_hash_email',
+            'phone_number_sha256' => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_hash_phone',
+            'first_name_sha256'   => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_hash_name',
+            'last_name_sha256'    => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_hash_name',
+            'external_id_sha256'  => null,
+            'country'             => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_normalize_country',
+            'city'                => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_normalize_city',
+            'region'              => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_normalize_region',
+            'postal_code'         => 'PixelYourSite\\OpenAI\\Helpers\\pys_openai_normalize_postal_code',
+        );
 
-                $userEdd = edd_get_payment_meta_user_info( $order_id );
+        $values = array();
 
-                if ( ! empty( $userEdd['email'] ) ) {
-                    $user_email = $userEdd['email'];
+        foreach ( $rules as $field => $rule ) {
+
+            $limit = self::MATCHING_LIMITS[ $field ];
+            $kept  = array();
+
+            foreach ( (array) $candidates[ $field ] as $raw ) {
+
+                if ( count( $kept ) >= $limit ) {
+                    break;
                 }
 
-                $address = isset( $userEdd['address'] ) ? $userEdd['address'] : array();
+                $value = ( null === $rule ) ? (string) $raw : call_user_func( $rule, (string) $raw );
 
-                if ( ! empty( $address['country'] ) ) $country = $address['country'];
-                if ( ! empty( $address['city'] ) )    $city    = $address['city'];
-                if ( ! empty( $address['zip'] ) )     $zip     = $address['zip'];
+                if ( $value !== '' && ! in_array( $value, $kept, true ) ) {
+                    $kept[] = $value;
+                }
+            }
+
+            $values[ $field ] = $kept;
+        }
+
+        return apply_filters( 'pys_openai_matching_values', $values, $wooOrder, $eddOrder );
+    }
+
+    /**
+     * The matching values for the Conversions API copy: lists, reconciled with
+     * whatever `pys_openai_advanced_matching` decided.
+     *
+     * @param int|null $wooOrder Explicit Woo order id, from trusted internal code.
+     * @param int|null $eddOrder Explicit EDD payment id, from trusted internal code.
+     * @return array<string, array<int, string>>
+     */
+    public function getServerMatchingValues( $wooOrder = null, $eddOrder = null ) {
+
+        $lists = $this->getMatchingValues( $wooOrder, $eddOrder );
+        $flat  = $this->flattenMatchingValues( $lists );
+
+        $out = array();
+
+        foreach ( $lists as $field => $values ) {
+
+            // The filter removed the field: it does not travel, in either copy.
+            if ( ! isset( $flat[ $field ] ) || '' === $flat[ $field ] ) {
+                continue;
+            }
+
+            $leading = (string) $flat[ $field ];
+            $values  = array_values( array_diff( $values, array( $leading ) ) );
+
+            array_unshift( $values, $leading );
+
+            $out[ $field ] = array_slice( $values, 0, self::MATCHING_LIMITS[ $field ] );
+        }
+
+        // A field the filter ADDED has no list of its own; it still travels.
+        foreach ( $flat as $field => $value ) {
+            if ( ! isset( $out[ $field ] ) && is_scalar( $value ) && '' !== (string) $value ) {
+                $out[ $field ] = array( (string) $value );
             }
         }
 
+        return $out;
+    }
+
+    /**
+     * The raw values each source has, per dimension, strongest source first.
+     *
+     * @param int|null $wooOrder Explicit Woo order id, from trusted internal code.
+     * @param int|null $eddOrder Explicit EDD payment id, from trusted internal code.
+     * @return array<string, array<int, string>>
+     */
+    private function collectMatchingSources( $wooOrder = null, $eddOrder = null ) {
+
+        $sources = array(
+            'email'       => array(),
+            'phone'       => array(),
+            'first_name'  => array(),
+            'last_name'   => array(),
+            'country'     => array(),
+            'city'        => array(),
+            'region'      => array(),
+            'postal_code' => array(),
+        );
+
+        /**
+         * Append a source's values, skipping the gaps it has.
+         *
+         * @param array $sources
+         * @param array $row Dimension => raw value.
+         * @return void
+         */
+        $add = function ( &$sources, $row ) {
+            foreach ( $row as $dimension => $value ) {
+                if ( is_scalar( $value ) && trim( (string) $value ) !== '' ) {
+                    $sources[ $dimension ][] = (string) $value;
+                }
+            }
+        };
+
+        // --- the WooCommerce order -------------------------------------------
         if ( isWooCommerceActive() ) {
 
             if ( $wooOrder ) {
@@ -230,38 +389,75 @@ class OpenAI extends Settings implements Pixel {
                 $order = wc_get_order( $order_id );
 
                 if ( $order ) {
-                    $user_email = $order->get_billing_email();
-                    $country    = $order->get_billing_country();
-                    $city       = $order->get_billing_city();
-                    $zip        = $order->get_billing_postcode();
+                    $add( $sources, array(
+                        'email'       => $order->get_billing_email(),
+                        'phone'       => $order->get_billing_phone(),
+                        'first_name'  => $order->get_billing_first_name(),
+                        'last_name'   => $order->get_billing_last_name(),
+                        'country'     => $order->get_billing_country(),
+                        'city'        => $order->get_billing_city(),
+                        'region'      => $order->get_billing_state(),
+                        'postal_code' => $order->get_billing_postcode(),
+                    ) );
                 }
             }
         }
 
-        $user_persistence_data = get_persistence_user_data( $user_email, '', '', '' );
+        // --- the EDD payment -------------------------------------------------
+        if ( isEddActive() ) {
 
-        if ( ! empty( $user_persistence_data['em'] ) ) {
-            $params['email_sha256'] = Helpers\pys_openai_hash_email( $user_persistence_data['em'] );
-        }
+            $order_id = $eddOrder ? (int) $eddOrder : (int) edd_get_purchase_id_by_key( getEddPaymentKey() );
 
-        if ( EventsManager::isTrackExternalId() ) {
+            if ( $order_id > 0 && ! pysEddRequestCanAccessOrder( $order_id ) ) {
+                $order_id = 0;
+            }
 
-            $external_id = $this->getExternalId( $wooOrder, $eddOrder );
+            if ( $order_id > 0 ) {
 
-            if ( ! empty( $external_id ) ) {
-                $params['external_id_sha256'] = hash( 'sha256', $external_id );
+                $userEdd = edd_get_payment_meta_user_info( $order_id );
+                $address = isset( $userEdd['address'] ) ? (array) $userEdd['address'] : array();
+
+                // EDD core collects no phone number, so there is nothing to read.
+                $add( $sources, array(
+                    'email'       => isset( $userEdd['email'] ) ? $userEdd['email'] : '',
+                    'first_name'  => isset( $userEdd['first_name'] ) ? $userEdd['first_name'] : '',
+                    'last_name'   => isset( $userEdd['last_name'] ) ? $userEdd['last_name'] : '',
+                    'country'     => isset( $address['country'] ) ? $address['country'] : '',
+                    'city'        => isset( $address['city'] ) ? $address['city'] : '',
+                    'region'      => isset( $address['state'] ) ? $address['state'] : '',
+                    'postal_code' => isset( $address['zip'] ) ? $address['zip'] : '',
+                ) );
             }
         }
 
-        $country = Helpers\pys_openai_normalize_country( $country );
-        $city    = Helpers\pys_openai_normalize_city( $city );
-        $zip     = Helpers\pys_openai_normalize_zip( $zip );
+        // --- the WordPress profile -------------------------------------------
+        $user = wp_get_current_user();
 
-        if ( $country !== '' ) $params['country']  = $country;
-        if ( $city !== '' )    $params['city']     = $city;
-        if ( $zip !== '' )     $params['zip_code'] = $zip;
+        if ( $user && $user->ID ) {
 
-        return apply_filters( 'pys_openai_advanced_matching', $params );
+            $add( $sources, array(
+                'email'       => $user->get( 'user_email' ),
+                'first_name'  => $user->first_name,
+                'last_name'   => $user->last_name,
+                'phone'       => get_user_meta( $user->ID, 'billing_phone', true ),
+                'country'     => get_user_meta( $user->ID, 'billing_country', true ),
+                'city'        => get_user_meta( $user->ID, 'billing_city', true ),
+                'region'      => get_user_meta( $user->ID, 'billing_state', true ),
+                'postal_code' => get_user_meta( $user->ID, 'billing_postcode', true ),
+            ) );
+        }
+
+        return $sources;
+    }
+
+    /**
+     * The first value a dimension has, or an empty string.
+     *
+     * @param array $values
+     * @return string
+     */
+    private function firstMatchingValue( $values ) {
+        return empty( $values ) ? '' : (string) reset( $values );
     }
 
     /**
@@ -293,8 +489,17 @@ class OpenAI extends Settings implements Pixel {
             }
         }
 
-        if ( empty( $external_id ) && ! empty( $_COOKIE['pbid'] ) ) {
-            $external_id = sanitize_text_field( wp_unslash( $_COOKIE['pbid'] ) );
+        if ( empty( $external_id ) ) {
+
+            $user = wp_get_current_user();
+
+            if ( $user && $user->ID && $user->get( 'external_id' ) ) {
+                $external_id = $user->get( 'external_id' );
+            }
+        }
+
+        if ( empty( $external_id ) ) {
+            $external_id = PYS()->get_pbid();
         }
 
         return is_string( $external_id ) ? $external_id : '';
@@ -364,6 +569,10 @@ class OpenAI extends Settings implements Pixel {
                 $isActive = $this->addPageViewParams( $event );
                 break;
 
+            case 'custom_event':
+                $isActive = $this->add_custom_event_params( $event );
+                break;
+
             case 'woo_view_content':
                 $isActive = $this->addWooViewContentParams( $event );
                 break;
@@ -415,6 +624,127 @@ class OpenAI extends Settings implements Pixel {
     }
 
     /**
+     * A user-configured event.
+     *
+     * @param SingleEvent $event
+     * @return bool
+     */
+    private function add_custom_event_params( &$event ) {
+
+        /**
+         * @var CustomEvent $customEvent
+         */
+        $customEvent = $event->args;
+
+        if ( ! $customEvent instanceof CustomEvent || ! $customEvent->isOpenAIEnabled() ) {
+            return false;
+        }
+
+        $name = $customEvent->getOpenAIEventType();
+
+        if ( empty( $name ) ) {
+            PYS()->getLog()->debug( 'OpenAI custom event skipped - no usable event name', array(
+                'event' => $customEvent->getTitle(),
+            ) );
+
+            return false;
+        }
+
+        $event_type = $customEvent->openai_event_type;
+        $data_type  = CustomEvent::getOpenAIDataType( $event_type );
+
+        $params = $customEvent->getOpenAIParams();
+
+        $amount   = $this->customEventValue( $params, 'amount' );
+        $currency = $this->customEventValue( $params, 'currency' );
+
+        $plan_id = in_array( $data_type, array( 'plan_enrollment', 'custom' ), true )
+            ? $this->customEventValue( $params, 'plan_id' )
+            : '';
+
+        $contents = $data_type === 'customer_action'
+            ? array()                       // this shape has no contents[] at all
+            : $this->customEventContents( $params, $currency );
+
+        $attached = $this->attachEvent(
+            $event,
+            $event_type === 'custom' ? 'custom' : $name,
+            $data_type,
+            $amount === '' ? null : $amount,
+            $currency,
+            $contents,
+            $plan_id,
+        );
+
+        if ( $attached && $event_type === 'custom' ) {
+            $event->addParams( array( 'custom_event_name' => $name ) );
+        }
+
+        return $attached;
+    }
+
+    /**
+     * One configured param, as a plain string.
+     *
+     * @param array  $params
+     * @param string $key
+     * @return string
+     */
+    private function customEventValue( $params, $key ) {
+
+        if ( ! isset( $params[ $key ] ) ) {
+            return '';
+        }
+
+        $param = $params[ $key ];
+
+        // A Pro-shaped payload (an import, an older row) posts { value, … }.
+        return is_array( $param ) ? ( $param[ 'value' ] ?? '' ) : (string) $param;
+    }
+
+    /**
+     * The single contents[] item the editor can describe, if any.
+     *
+     * @param array  $params
+     * @param string $currency
+     * @return array
+     */
+    private function customEventContents( $params, $currency ) {
+
+        $fields = array(
+            'id'           => $this->customEventValue( $params, 'content_id' ),
+            'name'         => $this->customEventValue( $params, 'content_name' ),
+            'content_type' => $this->customEventValue( $params, 'content_type' ),
+            'quantity'     => $this->customEventValue( $params, 'quantity' ),
+        );
+
+        $configured = false;
+
+        foreach ( $fields as $value ) {
+            if ( $value !== '' && $value !== null ) {
+                $configured = true;
+                break;
+            }
+        }
+
+        if ( ! $configured ) {
+            return array();
+        }
+
+        return array(
+            Helpers\pys_openai_content_item(
+                $fields['id'],
+                $fields['name'],
+
+                $fields['content_type'],
+                $fields['quantity'],
+                null,
+                $currency
+            ),
+        );
+    }
+
+    /**
      * page_viewed — the OpenAI name for the page view.
      *
      * The get_post_type() gate is deliberate: without it the event also fires on
@@ -451,24 +781,40 @@ class OpenAI extends Settings implements Pixel {
      * @param array       $contents
      * @return bool
      */
-    private function attachEvent( &$event, $name, $type, $amount = null, $currency = '', $contents = array() ) {
+    private function attachEvent( &$event, $name, $type, $amount = null, $currency = '', $contents = array(), $plan_id = '' ) {
 
         $data = array( 'type' => $type );
 
-        $minor_units = Helpers\pys_openai_to_minor_units( $amount, $currency );
-
-        if ( $minor_units !== null && ! empty( $currency ) ) {
-            $data['amount']   = $minor_units;
-            $data['currency'] = $currency;
+        if ( in_array( $type, array( 'plan_enrollment', 'custom' ), true ) && $plan_id !== '' && $plan_id !== null ) {
+            $data[ 'plan_id' ] = (string) $plan_id;
         }
 
-        $contents = array_values( array_filter( (array) $contents ) );
+        $minor_units = Helpers\pys_openai_to_minor_units( $amount, $currency );
+
+        if ( $minor_units !== null ) {
+
+            if ( Helpers\pys_openai_is_valid_currency( $currency ) ) {
+                $data['amount']   = $minor_units;
+                $data['currency'] = $currency;
+            } elseif ( $currency !== '' && $currency !== null ) {
+                PYS()->getLog()->debug( 'OpenAI: the amount was dropped, OpenAI does not accept this currency', array(
+                    'event'    => $name,
+                    'currency' => is_scalar( $currency ) ? (string) $currency : gettype( $currency ),
+                ) );
+            }
+        }
+
+        $item_fields = PYS_Event_Definitions::get_openai_content_item_fields();
+
+        $contents = array_values( array_filter( (array) $contents, function ( $item ) use ( $item_fields ) {
+            return is_array( $item ) && ! empty( array_intersect( array_keys( $item ), $item_fields ) );
+        } ) );
 
         if ( ! empty( $contents ) && $type !== 'customer_action' ) {
             $data['contents'] = $contents;
         }
 
-        $event->addPayload( array( 'name' => $name ) );
+		$event->addPayload( array( 'name' => $name ) );
         $event->addParams( array( 'data' => $data ) );
 
         return true;

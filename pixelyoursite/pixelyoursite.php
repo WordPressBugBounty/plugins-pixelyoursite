@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.4.1' );
+define( 'PYS_FREE_VERSION', '11.4.2' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.0' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
 define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );
@@ -47,6 +47,10 @@ require_once PYS_FREE_PATH.'/includes/functions-system-report.php';
 require_once PYS_FREE_PATH.'/includes/functions-license.php';
 require_once PYS_FREE_PATH.'/includes/functions-update-plugin.php';
 require_once PYS_FREE_PATH.'/includes/functions-gdpr.php';
+require_once PYS_FREE_PATH.'/includes/functions-client-ip.php';
+require_once PYS_FREE_PATH.'/includes/functions-cookie-domain.php';
+require_once PYS_FREE_PATH.'/includes/functions-fb-cookies.php';
+require_once PYS_FREE_PATH.'/includes/class-param-builder-adapter.php';
 require_once PYS_FREE_PATH.'/includes/functions-migrate.php';
 require_once PYS_FREE_PATH.'/includes/class-fixed-notices.php';
 require_once PYS_FREE_PATH.'/includes/class-optin-notices.php';

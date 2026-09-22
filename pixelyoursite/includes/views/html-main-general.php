@@ -391,7 +391,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             <div class="d-flex pixel-wrap align-items-center justify-content-between">
                 <div class="pixel-heading d-flex justify-content-start align-items-center">
                     <img class="tag-logo" alt="openai-logo"
-                         src="<?php echo PYS_FREE_URL; ?>/dist/images/openai-logo.svg">
+                         src="<?php echo esc_url( PYS_FREE_URL . '/dist/images/openai-logo.svg' ); ?>">
                     <div>
                         <h3 class="secondary_heading">Your OpenAI Tag</h3>
                     </div>

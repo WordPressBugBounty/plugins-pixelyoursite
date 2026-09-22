@@ -54,6 +54,17 @@ class EventsCustom extends EventsFactory {
      */
     function isReadyForFire($event)
     {
+        /*
+         * Conditions and triggers are two independent gates and the event fires only
+         * when both pass; conditions_logic combines the conditions with each other and
+         * nothing else. The conditions were configurable, stored and read back
+         * correctly since they were added, but nothing ever consulted them here, so an
+         * event fired whenever its trigger matched — regardless of its condition.
+         */
+        if ( !$event->checkConditions() ) {
+            return false;
+        }
+
         $event_triggers = $event->getTriggers();
         $isReady = array();
         if ( !empty( $event_triggers ) ) {

@@ -1877,6 +1877,175 @@ function isPurchaseConfirmationPage() {
 }
 
 /**
+ * Whether the current code path is building the HTML that goes into the page.
+ *
+ * Page HTML can be stored in a shared full-page cache and replayed to every
+ * other visitor, so anything that identifies the current visitor has to stay
+ * out of it. Server-to-server paths -- CAPI senders, AJAX handlers, the
+ * dynamic-options REST endpoint -- produce a response for one request and are
+ * never inside this context.
+ *
+ * @param bool|null $set Raise or lower the context. Null only reads it.
+ * @return bool The context that was in effect before the call, so a caller can
+ *              restore it instead of assuming it was off.
+ */
+function pys_html_render_context( $set = null ) {
+
+	static $active = false;
+
+	$previous = $active;
+
+	if ( $set !== null ) {
+		$active = (bool) $set;
+	}
+
+	return $previous;
+
+}
+
+/**
+ * Whether the pys_advanced_form_data cookie may be read on this code path.
+ *
+ * The cookie holds the visitor's own email, phone and name. Reading it is right
+ * for anything that answers a single visitor, and wrong while page HTML is
+ * being built: a full-page cache would store that identity and hand it to
+ * everybody else. The browser puts the same values back into the pixels from
+ * its own copy of the cookie, so nothing is lost by leaving them out here.
+ *
+ * Purchase confirmation pages are the exception. They are excluded from caching
+ * by every cache plugin, and their identity comes from the order key in the
+ * request URL rather than from this cookie.
+ */
+function pys_can_read_visitor_cookie_data() {
+
+	if ( pys_advanced_form_data_cookie_disabled() ) {
+		return false;
+	}
+
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return false;
+	}
+
+	if ( ! pys_html_render_context() ) {
+		return true;
+	}
+
+	if ( isPurchaseConfirmationPage() ) {
+		return true;
+	}
+
+	return (bool) apply_filters( 'pys_render_visitor_pii_in_html', false );
+
+}
+
+/**
+ * True when the pys_advanced_form_data cookie must not be written or read.
+ *
+ * The admin toggle is checked first; the two developer filters shipped before
+ * that toggle existed, so sites relying on either keep working unchanged.
+ */
+function pys_advanced_form_data_cookie_disabled() {
+
+	if ( ! PYS()->getOption( 'enable_advanced_form_data_cookie', true ) ) {
+		return true;
+	}
+
+	return (bool) apply_filters( 'pys_disable_advanced_form_data_cookie', false )
+	       || (bool) apply_filters( 'pys_disable_advance_data_cookie', false );
+
+}
+
+/**
+ * Lifetime of the pys_advanced_form_data cookie, in days.
+ *
+ * Attribution windows are measured in days and weeks. This cookie used to be
+ * written with a 2038 expiry, which kept a visitor's email on the device far
+ * longer than anything could use it. Sites with a long sales cycle can raise
+ * it through the filter.
+ */
+function pys_advanced_form_data_cookie_days() {
+
+	$days = (int) apply_filters( 'pys_advanced_form_data_cookie_days', 30 );
+
+	return $days > 0 ? $days : 30;
+
+}
+
+/**
+ * Write the pys_advanced_form_data cookie with the transport flags it needs.
+ *
+ * HttpOnly is deliberately absent: the browser-side pixel code has to read this
+ * value to hand it to Meta's and TikTok's pixels, which hash it themselves.
+ * Secure is derived from pys_is_request_secure() rather than is_ssl() so that
+ * sites behind an SSL-terminating proxy still get the flag.
+ *
+ * @param array $userData
+ */
+function pys_set_advanced_form_data_cookie( $userData ) {
+
+	if ( headers_sent() ) {
+		return;
+	}
+
+	// Until the browser reports the domain it accepts, the scope below would be
+	// host-only while the front end writes the same name on the site domain.
+	// Both copies then coexist, and PHP and js-cookie alike read the older one,
+	// so fresh values get written but are never read back.
+	if ( pys_cookie_domain_pending() ) {
+		return;
+	}
+
+	$domain = pys_cookie_domain();
+	$secure = pys_is_request_secure();
+
+	setcookie( 'pys_advanced_form_data', wp_json_encode( $userData ), array(
+		'expires'  => time() + pys_advanced_form_data_cookie_days() * DAY_IN_SECONDS,
+		'path'     => '/',
+		'domain'   => $domain,
+		'secure'   => $secure,
+		'samesite' => 'Lax',
+	) );
+
+	// Retire a host-only copy an earlier request left behind, for the same
+	// reason. No 'domain' key is what makes this target the host-only cookie.
+	if ( '' !== $domain ) {
+		setcookie( 'pys_advanced_form_data', '', array(
+			'expires'  => time() - YEAR_IN_SECONDS,
+			'path'     => '/',
+			'secure'   => $secure,
+			'samesite' => 'Lax',
+		) );
+	}
+
+}
+
+/**
+ * Suggested privacy-policy wording for the data this plugin keeps on the
+ * visitor's device, so site owners can declare the advanced matching cookie
+ * instead of having to discover it.
+ */
+function pys_add_privacy_policy_content() {
+
+	if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+		return;
+	}
+
+	$content = '<p class="privacy-policy-tutorial">'
+	           . __( 'Suggested text for sites using PixelYourSite advanced matching:', 'pys' )
+	           . '</p><p>'
+	           . sprintf(
+		/* translators: 1: cookie name, 2: number of days the cookie is kept */
+		           __( 'When you enter your email address, phone number or name into a form on this site, we store those values in a cookie named %1$s on your browser, for up to %2$d days. We use them to recognise you when you return, so that conversions can be attributed correctly by our advertising providers. The cookie is set on this site\'s own domain. You can remove it at any time by clearing your browser cookies.', 'pys' ),
+		           '<code>pys_advanced_form_data</code>',
+		           pys_advanced_form_data_cookie_days()
+	           )
+	           . '</p>';
+
+	wp_add_privacy_policy_content( 'PixelYourSite', $content );
+
+}
+
+/**
  * Get persistence user data
  * @param $em
  * @param $fn
@@ -1886,7 +2055,7 @@ function isPurchaseConfirmationPage() {
  */
 function get_persistence_user_data( $em, $fn, $ln, $tel ) {
 
-	if ( !apply_filters( 'pys_disable_advanced_form_data_cookie', false ) && !apply_filters( 'pys_disable_advance_data_cookie', false ) ) {
+	if ( pys_can_read_visitor_cookie_data() ) {
 		if ( isset( $_COOKIE[ "pys_advanced_form_data" ] ) ) {
 			$userData = json_decode( stripslashes( $_COOKIE[ "pys_advanced_form_data" ] ), true );
 			$data_persistence = PYS()->getOption( 'data_persistency' );
@@ -2388,4 +2557,88 @@ function pys_update_option( $option, $value ) {
     }
 
     return true;
+}
+
+/**
+ * Per-site secret that keys the visitor id.
+ *
+ * Standalone option on purpose: the site-profile exporter walks the PYS
+ * options array only, so this never travels with a profile. Deleting the
+ * option re-keys every cookie-less visitor; cookie holders keep their value.
+ *
+ * @return string 64 hex chars
+ */
+function pys_pbid_secret() {
+    static $secret = null;
+
+    if ( is_string( $secret ) ) {
+        return $secret;
+    }
+
+    $stored = get_option( 'pys_pbid_secret', '' );
+
+    if ( is_string( $stored ) && strlen( $stored ) === 64 ) {
+        $secret = $stored;
+        return $secret;
+    }
+
+    // First use. Creation is serialised across concurrent requests: WordPress'
+    // add_option() upserts, so two racing first requests would each keep their
+    // own secret for the duration of the request and hand out ids that never
+    // recur. Under the lock the value is re-read straight from the table, past
+    // this request's option cache, so the loser adopts the winner's secret.
+    global $wpdb;
+
+    $wpdb->query( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', 'pys_pbid_secret' ) );
+
+    $stored = $wpdb->get_var( $wpdb->prepare(
+        "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+        'pys_pbid_secret'
+    ) );
+
+    if ( ! is_string( $stored ) || strlen( $stored ) !== 64 ) {
+        $stored = bin2hex( random_bytes( 32 ) );
+        update_option( 'pys_pbid_secret', $stored, 'yes' );
+    }
+
+    $wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', 'pys_pbid_secret' ) );
+
+    $secret = $stored;
+    return $secret;
+}
+
+/**
+ * Deterministic browser id for a visitor who carries no cookie.
+ *
+ * The same request signals give the same id, so page render, the
+ * dynamic-options endpoint, pys_get_pbid and server events agree on the very
+ * first page view, with no storage and no rotation. Keyed with the site secret
+ * so it cannot be derived from public data and differs per site.
+ *
+ * Two people who share an address AND an identical browser build and language
+ * share an id; that is the price of an id that exists before any cookie does.
+ *
+ * @param array|null $server Request environment; defaults to $_SERVER.
+ * @return string 64 hex chars
+ */
+function pys_visitor_key( $server = null ) {
+    if ( null === $server ) {
+        $server = $_SERVER;
+    }
+
+    $parts = array(
+        'ip'       => pys_resolve_client_ip( $server, false ),
+        'ua'       => isset( $server['HTTP_USER_AGENT'] ) ? (string) $server['HTTP_USER_AGENT'] : '',
+        'language' => isset( $server['HTTP_ACCEPT_LANGUAGE'] ) ? (string) $server['HTTP_ACCEPT_LANGUAGE'] : '',
+    );
+
+    /**
+     * Filters the request signals that make up the visitor id.
+     *
+     * @param array $parts  Ordered name => value map; values are joined with '|'.
+     * @param array $server Request environment the parts were read from.
+     */
+    $parts = apply_filters( 'pys_pbid_fingerprint_parts', $parts, $server );
+
+    return hash_hmac( 'sha256', implode( '|', array_map( 'strval', $parts ) ), pys_pbid_secret() );
 }

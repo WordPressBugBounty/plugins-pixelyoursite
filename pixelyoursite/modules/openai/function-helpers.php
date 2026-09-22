@@ -44,6 +44,53 @@ function pys_openai_currency_exponent( $currency ) {
 }
 
 /**
+ * Every currency code OpenAI accepts: the active ISO 4217 alphabetic codes.
+ *
+ * @return string[] Upper-case codes.
+ */
+function pys_openai_currency_codes() {
+
+	static $codes = null;
+
+	if ( $codes === null ) {
+		$codes = array(
+			'AED', 'AFN', 'ALL', 'AMD', 'AOA', 'ARS', 'AUD', 'AWG', 'AZN',
+			'BAM', 'BBD', 'BDT', 'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BOV',
+			'BRL', 'BSD', 'BTN', 'BWP', 'BYN', 'BZD', 'CAD', 'CDF', 'CHE', 'CHF',
+			'CHW', 'CLF', 'CLP', 'CNY', 'COP', 'COU', 'CRC', 'CUP', 'CVE', 'CZK',
+			'DJF', 'DKK', 'DOP', 'DZD', 'EGP', 'ERN', 'ETB', 'EUR', 'FJD', 'FKP',
+			'GBP', 'GEL', 'GHS', 'GIP', 'GMD', 'GNF', 'GTQ', 'GYD', 'HKD', 'HNL',
+			'HTG', 'HUF', 'IDR', 'ILS', 'INR', 'IQD', 'IRR', 'ISK', 'JMD', 'JOD',
+			'JPY', 'KES', 'KGS', 'KHR', 'KMF', 'KPW', 'KRW', 'KWD', 'KYD', 'KZT',
+			'LAK', 'LBP', 'LKR', 'LRD', 'LSL', 'LYD', 'MAD', 'MDL', 'MGA', 'MKD',
+			'MMK', 'MNT', 'MOP', 'MRU', 'MUR', 'MVR', 'MWK', 'MXN', 'MXV', 'MYR',
+			'MZN', 'NAD', 'NGN', 'NIO', 'NOK', 'NPR', 'NZD', 'OMR', 'PAB', 'PEN',
+			'PGK', 'PHP', 'PKR', 'PLN', 'PYG', 'QAR', 'RON', 'RSD', 'RUB', 'RWF',
+			'SAR', 'SBD', 'SCR', 'SDG', 'SEK', 'SGD', 'SHP', 'SLE', 'SOS', 'SRD',
+			'SSP', 'STN', 'SVC', 'SYP', 'SZL', 'THB', 'TJS', 'TMT', 'TND', 'TOP',
+			'TRY', 'TTD', 'TWD', 'TZS', 'UAH', 'UGX', 'USD', 'USN', 'UYI', 'UYU',
+			'UYW', 'UZS', 'VED', 'VES', 'VND', 'VUV', 'WST', 'XAF', 'XCD', 'XCG',
+			'XOF', 'XPF', 'YER', 'ZAR', 'ZMW', 'ZWG',
+		);
+	}
+
+	return $codes;
+}
+
+/**
+ * Is this a currency the endpoint will accept?
+ *
+ * @param string $currency
+ * @return bool
+ */
+function pys_openai_is_valid_currency( $currency ) {
+
+	$code = strtoupper( trim( (string) $currency ) );
+
+	return $code !== '' && in_array( $code, pys_openai_currency_codes(), true );
+}
+
+/**
  * Convert a normal decimal amount into OpenAI's integer minor units.
  *
  * @param mixed  $amount   Decimal amount as float, int or numeric string.
@@ -259,8 +306,7 @@ function pys_openai_content_item( $id, $name, $content_type, $quantity, $unit_am
 
     $amount = pys_openai_to_minor_units( $unit_amount, $currency );
 
-    // currency is required whenever amount is present, so the two travel together.
-    if ( $amount !== null && ! empty( $currency ) ) {
+    if ( $amount !== null && pys_openai_is_valid_currency( $currency ) ) {
         $item['amount']   = $amount;
         $item['currency'] = $currency;
     }
@@ -287,12 +333,13 @@ function pys_openai_get_click_id() {
 }
 
 /**
- * SHA-256 of an email, normalised the way OpenAI documents.
+ * An email address in the form OpenAI hashes: trimmed, lowercased, and actually
+ * shaped like an address.
  *
  * @param string $email
- * @return string 64 hex characters, or '' when there is nothing to hash.
+ * @return string Empty string when there is nothing usable.
  */
-function pys_openai_hash_email( $email ) {
+function pys_openai_normalize_email( $email ) {
 
     if ( ! is_string( $email ) ) {
         return '';
@@ -300,11 +347,174 @@ function pys_openai_hash_email( $email ) {
 
     $email = trim( $email );
 
-    if ( $email === '' ) {
+    if ( $email === '' || strlen( $email ) > 254 ) {
         return '';
     }
 
-    return hash( 'sha256', function_exists( 'mb_strtolower' ) ? mb_strtolower( $email, 'UTF-8' ) : strtolower( $email ) );
+    $email = function_exists( 'mb_strtolower' ) ? mb_strtolower( $email, 'UTF-8' ) : strtolower( $email );
+
+    $pattern = '/^[\w!#$%&\'*+\/=?^`{|}~-]+(?:\.[\w!#$%&\'*+\/=?^`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i';
+
+    return preg_match( $pattern, $email ) === 1 ? $email : '';
+}
+
+/**
+ * SHA-256 of an email, normalised the way OpenAI documents.
+ *
+ * @param string $email
+ * @return string 64 hex characters, or '' when there is nothing to hash.
+ */
+function pys_openai_hash_email( $email ) {
+
+    $email = pys_openai_normalize_email( $email );
+
+    return $email === '' ? '' : hash( 'sha256', $email );
+}
+
+/**
+ * A phone number in the digits-only form OpenAI hashes.
+ *
+ * @param string $phone
+ * @return string Empty string when the number is not usable.
+ */
+function pys_openai_normalize_phone( $phone ) {
+
+    if ( ! is_string( $phone ) ) {
+        return '';
+    }
+
+    $digits = preg_replace( '/[\s().-]+/', '', trim( $phone ) );
+
+    if ( ! is_string( $digits ) || $digits === '' ) {
+        return '';
+    }
+
+    if ( preg_match( '/^\+?[0-9]+$/', $digits ) !== 1 || strpos( $digits, '+0' ) === 0 ) {
+        return '';
+    }
+
+    $international = ( strpos( $digits, '+' ) === 0 || strpos( $digits, '00' ) === 0 );
+    $national      = preg_replace( '/^\+?0*/', '', $digits );
+
+    if ( ! is_string( $national ) ) {
+        return '';
+    }
+
+    if ( $international && strpos( $national, '1' ) === 0 && strlen( $national ) !== 11 ) {
+        return '';
+    }
+
+    return preg_match( '/^[1-9][0-9]{7,14}$/', $national ) === 1 ? $national : '';
+}
+
+/**
+ * SHA-256 of a phone number.
+ *
+ * @param string $phone
+ * @return string 64 hex characters, or '' when there is nothing to hash.
+ */
+function pys_openai_hash_phone( $phone ) {
+
+    $phone = pys_openai_normalize_phone( $phone );
+
+    return $phone === '' ? '' : hash( 'sha256', $phone );
+}
+
+/**
+ * A person's name in the form OpenAI hashes.
+ *
+ * @param string $name
+ * @return string Empty string when the name is not usable.
+ */
+function pys_openai_normalize_name( $name ) {
+
+    if ( ! is_string( $name ) || strlen( $name ) > 1024 ) {
+        return '';
+    }
+
+    $stripped = preg_replace( '/[\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E\s]+/u', '', $name );
+
+    if ( ! is_string( $stripped ) || $stripped === '' ) {
+        return '';
+    }
+
+    $stripped = function_exists( 'mb_strtolower' ) ? mb_strtolower( $stripped, 'UTF-8' ) : strtolower( $stripped );
+
+    return preg_match( '/\D/u', $stripped ) === 1 ? $stripped : '';
+}
+
+/**
+ * SHA-256 of a first or last name.
+ *
+ * @param string $name
+ * @return string 64 hex characters, or '' when there is nothing to hash.
+ */
+function pys_openai_hash_name( $name ) {
+
+    $name = pys_openai_normalize_name( $name );
+
+    return $name === '' ? '' : hash( 'sha256', $name );
+}
+
+/**
+ * The country names the SDK's own table (`qt`) resolves to a code.
+ */
+const PYS_OPENAI_COUNTRY_NAMES = array(
+    'australia'                => 'au',
+    'brazil'                   => 'br',
+    'canada'                   => 'ca',
+    'france'                   => 'fr',
+    'germany'                  => 'de',
+    'great britain'            => 'gb',
+    'india'                    => 'in',
+    'ireland'                  => 'ie',
+    'italy'                    => 'it',
+    'japan'                    => 'jp',
+    'mexico'                   => 'mx',
+    'new zealand'              => 'nz',
+    'singapore'                => 'sg',
+    'south korea'              => 'kr',
+    'spain'                    => 'es',
+    'switzerland'              => 'ch',
+    'u.k.'                     => 'gb',
+    'uk'                       => 'gb',
+    'u.s.'                     => 'us',
+    'u.s.a.'                   => 'us',
+    'united arab emirates'     => 'ae',
+    'united kingdom'           => 'gb',
+    'united states'            => 'us',
+    'united states of america' => 'us',
+    'usa'                      => 'us',
+);
+
+/**
+ * A place name -- city, region, or a country written out in words.
+ *
+ * @param string $place
+ * @return string
+ */
+function pys_openai_normalize_place( $place ) {
+
+    if ( ! is_string( $place ) ) {
+        return '';
+    }
+
+    $place = trim( $place );
+
+    if ( $place === '' ) {
+        return '';
+    }
+
+    $place = function_exists( 'mb_strtolower' ) ? mb_strtolower( $place, 'UTF-8' ) : strtolower( $place );
+    $place = preg_replace( '/\s+/u', ' ', $place );
+
+    if ( ! is_string( $place ) || $place === '' ) {
+        return '';
+    }
+
+    $length = function_exists( 'mb_strlen' ) ? mb_strlen( $place, 'UTF-8' ) : strlen( $place );
+
+    return $length <= 128 ? $place : '';
 }
 
 /**
@@ -315,59 +525,53 @@ function pys_openai_hash_email( $email ) {
  */
 function pys_openai_normalize_country( $country ) {
 
-    if ( ! is_string( $country ) ) {
+    $country = pys_openai_normalize_place( $country );
+
+    if ( $country === '' ) {
         return '';
     }
 
-    $country = strtolower( trim( $country ) );
+    if ( isset( PYS_OPENAI_COUNTRY_NAMES[ $country ] ) ) {
+        return PYS_OPENAI_COUNTRY_NAMES[ $country ];
+    }
 
-    return preg_match( '/^[a-z]{2}$/', $country ) ? $country : '';
+    return preg_match( '/^[a-z]{2}$/', $country ) === 1 ? $country : '';
 }
 
 /**
- * Lowercased city name, capped at the length the schema allows.
+ * Lowercased city name.
  *
  * @param string $city
  * @return string
  */
 function pys_openai_normalize_city( $city ) {
-
-    if ( ! is_string( $city ) ) {
-        return '';
-    }
-
-    $city = trim( $city );
-
-    if ( $city === '' ) {
-        return '';
-    }
-
-    $city = function_exists( 'mb_strtolower' ) ? mb_strtolower( $city, 'UTF-8' ) : strtolower( $city );
-
-    if ( function_exists( 'mb_substr' ) ) {
-        return mb_substr( $city, 0, 128, 'UTF-8' );
-    }
-
-    return substr( $city, 0, 128 );
+    return pys_openai_normalize_place( $city );
 }
 
 /**
- * Postal code reduced to the characters the schema accepts.
+ * State, province or region. Same rule as a city.
  *
- * @param string $zip
+ * @param string $region
  * @return string
  */
-function pys_openai_normalize_zip( $zip ) {
+function pys_openai_normalize_region( $region ) {
+    return pys_openai_normalize_place( $region );
+}
 
-    if ( ! is_string( $zip ) ) {
+/**
+ * Postal code: letters, digits, spaces and hyphens, starting with a letter or a
+ * digit, at most 32 characters.
+ *
+ * @param string $code
+ * @return string
+ */
+function pys_openai_normalize_postal_code( $code ) {
+
+    $code = pys_openai_normalize_place( $code );
+
+    if ( $code === '' ) {
         return '';
     }
 
-    $zip = preg_replace( '/[^A-Za-z0-9 \-]/', '', trim( $zip ) );
-
-    if ( $zip === '' || $zip === null ) {
-        return '';
-    }
-
-    return substr( strtolower( $zip ), 0, 32 );
+    return preg_match( '/^[a-z0-9][a-z0-9 -]{0,31}$/', $code ) === 1 ? $code : '';
 }

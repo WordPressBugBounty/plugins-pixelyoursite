@@ -238,6 +238,10 @@ class OpenAIServer {
         $serverEvent->action_source = 'web';
         $serverEvent->source_url    = $this->resolveSourceUrl( $event );
 
+        if ( OpenAI()->getConsentMode() ) {
+            $serverEvent->opt_out = true;
+        }
+
         $params = is_array( $eventData['params'] ) ? $eventData['params'] : array();
 
         if ( $serverEvent->type === 'custom' && ! empty( $params['custom_event_name'] ) ) {
@@ -285,6 +289,10 @@ class OpenAIServer {
             $data['currency'] = (string) $data['currency'];
         }
 
+        if ( isset( $data['plan_id'] ) ) {
+            $data['plan_id'] = (string) $data['plan_id'];
+        }
+
         if ( ! empty( $data['contents'] ) && is_array( $data['contents'] ) ) {
 
             $contents = array();
@@ -305,14 +313,33 @@ class OpenAIServer {
                     }
                 }
 
-                $contents[] = $item;
+                if ( ! empty( $item ) ) {
+                    $contents[] = $item;
+                }
             }
 
-            $data['contents'] = $contents;
+            // And an empty list says nothing -- send no key rather than `[]`.
+            if ( empty( $contents ) ) {
+                unset( $data['contents'] );
+            } else {
+                $data['contents'] = $contents;
+            }
         }
 
         return (object) $data;
     }
+
+    const MATCHING_FIELD_NAMES = array(
+        'email_sha256'        => 'emails_sha256',
+        'phone_number_sha256' => 'phone_numbers_sha256',
+        'external_id_sha256'  => 'external_ids_sha256',
+        'first_name_sha256'   => 'first_names_sha256',
+        'last_name_sha256'    => 'last_names_sha256',
+        'country'             => 'countries',
+        'city'                => 'cities',
+        'region'              => 'regions',
+        'postal_code'         => 'postal_codes',
+    );
 
     /**
      * The event's `user` object — every field OpenAI accepts and nothing else.
@@ -348,19 +375,22 @@ class OpenAIServer {
 
         if ( OpenAI()->getOption( 'advanced_matching_enabled' ) ) {
 
-            $matching = OpenAI()->getAdvancedMatchingParams( $wooOrder, $eddOrder );
+            foreach ( OpenAI()->getServerMatchingValues( $wooOrder, $eddOrder ) as $field => $values ) {
 
-            foreach ( array( 'email_sha256', 'external_id_sha256', 'country', 'city', 'zip_code' ) as $field ) {
-                if ( ! empty( $matching[ $field ] ) ) {
-                    $userData->$field = $matching[ $field ];
+                $name = isset( self::MATCHING_FIELD_NAMES[ $field ] ) ? self::MATCHING_FIELD_NAMES[ $field ] : null;
+
+                if ( null === $name || empty( $values ) ) {
+                    continue;
                 }
+
+                $userData->$name = array_values( $values );
             }
 
         } elseif ( EventsManager::isTrackExternalId() ) {
             $external_id = OpenAI()->getExternalId( $wooOrder, $eddOrder );
 
             if ( $external_id !== '' ) {
-                $userData->external_id_sha256 = hash( 'sha256', $external_id );
+                $userData->external_ids_sha256 = array( hash( 'sha256', $external_id ) );
             }
         }
 
@@ -386,7 +416,7 @@ class OpenAIServer {
             return;
         }
 
-        setcookie( '__oppref', $from_url, 2147483647, '/', PYS()->general_domain );
+        setcookie( '__oppref', $from_url, 2147483647, '/', pys_cookie_domain() );
         $_COOKIE['__oppref'] = $from_url;
     }
 
@@ -708,20 +738,11 @@ class OpenAIServer {
      * @return string
      */
     private function getIpAddress() {
-
-        $ip = PYS()->get_user_ip();
-
-        if ( ! is_string( $ip ) || $ip === '' ) {
-            return '';
-        }
-
-        $valid = filter_var(
-            $ip,
-            FILTER_VALIDATE_IP,
-            FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-        );
-
-        return $valid ? $ip : '';
+        // This had the right instinct already — take PYS()->get_user_ip() and
+        // reject anything non-routable. pys_client_ip_for_capi() does exactly
+        // that, and it reads the Cloudflare and nginx headers this plugin
+        // previously ignored.
+        return pys_client_ip_for_capi();
     }
 
     /**

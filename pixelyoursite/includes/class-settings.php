@@ -143,6 +143,22 @@ abstract class Settings {
         }
     }
 
+    /**
+     * Whether locateOptions() has run, so getOption() can return a real value.
+     *
+     * Before it has, a missing option reads as null — indistinguishable from one
+     * deliberately unset, or from a boolean that is off. pys_cookie_domain()
+     * needs that difference, or it memoises a cookie scope guessed from an
+     * option it could not read. `did_action( 'init' )` is no substitute: it is
+     * already 1 through 'init' priorities 0-8, while locateOptions() runs inside
+     * PYS::init() at priority 9.
+     *
+     * @return bool
+     */
+    public function optionsLocated() {
+        return (bool) $this->defaults_located;
+    }
+
     public function resetToDefaults() {
 
         if ( ! file_exists( $this->defaults_json_path ) ) {

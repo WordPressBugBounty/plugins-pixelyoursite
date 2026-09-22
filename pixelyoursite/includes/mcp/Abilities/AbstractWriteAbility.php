@@ -32,13 +32,18 @@ abstract class AbstractWriteAbility extends AbstractAbility {
 	private const MCP_NOTE_MAX_LENGTH = 240;
 
 	/**
-	 * Read-only gate. In Free the only write gate is the admin read-only
+	 * Capability + read-only gate. The capability check is inherited from
+	 * {@see AbstractAbility}; on top of it Free has only the admin read-only
 	 * toggle — there is no Pro requirement.
 	 *
 	 * @param mixed $input Tool args (unused — gate is global).
 	 * @return true|\WP_Error
 	 */
 	public static function permissionCallback( $input = null ) {
+		$base = parent::permissionCallback( $input );
+		if ( true !== $base ) {
+			return $base;
+		}
 		if ( Capabilities::isReadOnly() ) {
 			return ErrorEnvelope::readOnly();
 		}

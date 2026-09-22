@@ -7,7 +7,8 @@
  * settings. Use `get_custom_event` for full per-event detail. The feature master
  * gate (`custom_events_enabled`) is reported too.
  *
- * Free networks: facebook, google_tags (GA), gtm, bing, pinterest, reddit (no
+ * Free networks: facebook, google_tags (GA), gtm, bing, pinterest, reddit,
+ * openai (no
  * TikTok, no separate Google Ads). Reading LABELS every trigger type (even
  * Pro-only ones preserved on an event); WRITING is limited to the Free triggers.
  *
@@ -51,6 +52,7 @@ final class GetCustomEventsAbility extends AbstractAbility {
 		'bing'      => '\\PixelYourSite\\Bing',
 		'pinterest' => '\\PixelYourSite\\Pinterest',
 		'reddit'    => '\\PixelYourSite\\Reddit',
+		'openai'    => '\\PixelYourSite\\OpenAI',
 	);
 
 	private const PLATFORM_EVENT_METHODS = array(
@@ -59,6 +61,7 @@ final class GetCustomEventsAbility extends AbstractAbility {
 		'bing'      => 'isBingEnabled',
 		'pinterest' => 'isPinterestEnabled',
 		'reddit'    => 'isRedditEnabled',
+		'openai'    => 'isOpenAIEnabled',
 	);
 
 	/**
@@ -85,7 +88,7 @@ final class GetCustomEventsAbility extends AbstractAbility {
 	 * @return string
 	 */
 	public static function description(): string {
-		return 'Lists the PixelYourSite CUSTOM EVENTS configured on this site (PixelYourSite Free) — user-defined events that fire to one or more pixels when their triggers match. Lightweight overview (one row per event); call `get_custom_event` with an `event_id` from here for the full per-event detail. Top-level `feature_enabled` reflects the master switch `custom_events_enabled` — when false NO custom event fires regardless of its own `enabled` state, so surface that first. Each `events[]` row has: `event_id` (use it for get_custom_event / set_custom_event / manage_custom_event), `title`, `enabled` (the event\'s own active/paused state), `networks` (the networks this event ACTUALLY fires to: a network is listed only when the platform is globally enabled AND has pixels AND the event targets it. Free networks: facebook, google_tags (Google Analytics `G-…`), gtm, bing, pinterest, reddit — no TikTok, no separate Google Ads), `trigger_count`, `trigger_types` (readable labels, one per trigger in order), `condition_count` and `conditions_enabled`. An event with `trigger_count: 0` never fires. (Trigger logic AND/OR, fire frequency, and the "fire only once in N hours" time window are PixelYourSite Pro and are not reported.) Read-only. Call this when the user asks what custom events exist, or to find an event before editing it.';
+		return 'Lists the PixelYourSite CUSTOM EVENTS configured on this site (PixelYourSite Free) — user-defined events that fire to one or more pixels when their triggers match. Lightweight overview (one row per event); call `get_custom_event` with an `event_id` from here for the full per-event detail. Top-level `feature_enabled` reflects the master switch `custom_events_enabled` — when false NO custom event fires regardless of its own `enabled` state, so surface that first. Each `events[]` row has: `event_id` (use it for get_custom_event / set_custom_event / manage_custom_event), `title`, `enabled` (the event\'s own active/paused state), `networks` (the networks this event ACTUALLY fires to: a network is listed only when the platform is globally enabled AND has pixels AND the event targets it. Free networks: facebook, google_tags (Google Analytics `G-…`), gtm, bing, pinterest, reddit, openai (OpenAI Ads / ChatGPT Ads) — no TikTok, no separate Google Ads), `trigger_count`, `trigger_types` (readable labels, one per trigger in order), `condition_count` and `conditions_enabled`. An event with `trigger_count: 0` never fires. (Trigger logic AND/OR, fire frequency, and the "fire only once in N hours" time window are PixelYourSite Pro and are not reported.) Read-only. Call this when the user asks what custom events exist, or to find an event before editing it.';
 	}
 
 	/**
@@ -210,7 +213,7 @@ final class GetCustomEventsAbility extends AbstractAbility {
 			$nets[] = 'gtm';
 		}
 
-		foreach ( array( 'bing', 'pinterest', 'reddit' ) as $slug ) {
+		foreach ( array( 'bing', 'pinterest', 'reddit', 'openai' ) as $slug ) {
 			if ( self::platformLive( self::PLATFORM_FNS[ $slug ] ) && self::eventOn( $event, self::PLATFORM_EVENT_METHODS[ $slug ] ) ) {
 				$nets[] = $slug;
 			}
