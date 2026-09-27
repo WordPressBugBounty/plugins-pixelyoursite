@@ -67,6 +67,7 @@ class AjaxHookEventManager {
 
 
             if ( PYS()->getOption('woo_add_to_cart_on_button_click')
+                && PYS()->getOption('woo_add_to_cart_enabled')
                 && isEventEnabled('woo_add_to_cart_enabled')
             )
             {

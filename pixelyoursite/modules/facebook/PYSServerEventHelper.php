@@ -47,6 +47,9 @@ class ServerEventHelper {
             $user_data->setClientIpAddress( $client_ip );
         }
 
+		$fbp_withheld      = false;
+		$fbp_withheld_note = '';
+
 		if ( ParamBuilderAdapter::is_enabled() ) {
 			// Meta's param builder already minted and persisted these on 'init',
 			// in the correct format: a millisecond creation time, a derived
@@ -68,18 +71,17 @@ class ServerEventHelper {
 
 			// `_fbp` needs both answers to agree: its payload is random, so a
 			// value sent but not stored is a browser id that exists nowhere.
-			// Logged when withheld, because otherwise a site whose front end
-			// never reports the domain loses server-side `_fbp` silently and
-			// permanently.
+			// Withholding is noted here and logged further down, once the
+			// order's stored value has had its turn: a webhook or cron request
+			// has no cookies but usually does have the order, and an `_fbp`
+			// that reaches Meta from there was not withheld from anyone.
 			if ( !self::getFbp() && ( !isset( $eventParams[ '_fbp' ] ) || !$eventParams[ '_fbp' ] ) ) {
 				if ( $can_write ) {
 					self::setFbp( $fb_prefix . rand( 1000000000, 9999999999 ) );
 					setcookie( "_fbp", self::getFbp(), 2147483647, '/', pys_cookie_domain() );
 				} else {
-					pys_cookie_domain_log_deferral(
-						'_fbp',
-						headers_sent() ? 'the response headers were already sent' : ''
-					);
+					$fbp_withheld      = true;
+					$fbp_withheld_note = headers_sent() ? 'the response headers were already sent' : '';
 				}
 			}
 
@@ -126,6 +128,12 @@ class ServerEventHelper {
 // placed and describe that visitor, which a value read now may no longer do.
         if ( empty( $fbp ) && ParamBuilderAdapter::is_enabled() ) {
             $fbp = ParamBuilderAdapter::for_request()->get_fbp() ?? '';
+            // The adapter withholds `_fbp` while the cookie domain is pending
+            // and says nothing about it: whether that is a loss depends on the
+            // fallbacks below, so the note is taken here and logged at the end.
+            if ( '' === $fbp && pys_cookie_domain_pending() ) {
+                $fbp_withheld = true;
+            }
         }
         if ( empty( $fbc ) && ParamBuilderAdapter::is_enabled() ) {
             $fbc = ParamBuilderAdapter::for_request()->get_fbc() ?? '';
@@ -135,6 +143,14 @@ class ServerEventHelper {
         }
         if (empty($fbc)) {
             $fbc = self::getFbc() ?? $eventParams['_fbc'] ?? '';
+        }
+
+        // Only now is "withheld" a loss: nothing above could supply an `_fbp`
+        // either, so this event reaches Meta without one. Logged because a
+        // site whose front end never reports the domain would otherwise lose
+        // server-side `_fbp` silently and permanently.
+        if ( ! empty( $fbp_withheld ) && empty( $fbp ) ) {
+            pys_cookie_domain_log_deferral( '_fbp', $fbp_withheld_note );
         }
 
         if(!empty($fbp)) { $user_data->setFbp($fbp); }

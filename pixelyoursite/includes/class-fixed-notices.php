@@ -48,7 +48,14 @@ class NoticesFixed {
         require_once PYS_FREE_PATH . '/notices/fixed.php';
         $user_id = get_current_user_id();
 
-        $this->isNeedToShow(adminGetFixedNotices(),(array)get_user_meta( $user_id, $this->dismissedKey,true ));
+        // Dismissals are saved in the option (see catchOnCloseNotice()); the
+        // user meta is read too, as whoIsNext() does, for anything stored there.
+        $dismissed = array_merge(
+            (array) get_option( $this->dismissedKey, array() ),
+            (array) get_user_meta( $user_id, $this->dismissedKey, true )
+        );
+
+        $this->isNeedToShow( adminGetFixedNotices(), $dismissed );
     }
 
     function allCloseNotice(){
@@ -144,6 +151,15 @@ class NoticesFixed {
             </div>
 
         </div>
+        <?php
+        // One delegated handler serves every promo notice on the page. Printed
+        // per notice, two notices meant one click sent two dismiss requests.
+        static $dismiss_handler_printed = false;
+        if ( $dismiss_handler_printed ) {
+            return;
+        }
+        $dismiss_handler_printed = true;
+        ?>
         <script type='application/javascript'>
             jQuery(document).on('click', '.pys-promo-fixed-notice .notice-dismiss', function () {
                 _this = jQuery(this);
@@ -185,7 +201,7 @@ class NoticesFixed {
                         <div class="notice-content">
 							<?php foreach ( $group[ 'multiMessage' ] as $key => $notice ) :
 								if ( !$notice ) {
-									return;
+									continue; // a return here left the notice markup unclosed
 								}
 								?>
 
@@ -239,7 +255,6 @@ class NoticesFixed {
                             class="screen-reader-text"><i class="icon-delete"></i></span></button>
             </div>
 
-		<?php endif; ?>
         <script type='application/javascript'>
             jQuery( document ).on( 'click', '.opt_out_dismiss_button', function ( e ) {
                 e.preventDefault();
@@ -307,6 +322,7 @@ class NoticesFixed {
                 });
             });
         </script>
+		<?php endif; ?>
     <?php
     }
     private function isNeedToShow($noticeGroups,$showedNoticesSlug) {

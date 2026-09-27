@@ -226,11 +226,12 @@ class ParamBuilderAdapter {
      */
     public function get_fbp() {
         if ( pys_cookie_domain_pending() ) {
-            // Not bounded — see pys_cookie_domain_pending(). The silence is
-            // bounded instead: leave a trace in the visitor's own request, the
-            // only context that can tell.
-            pys_cookie_domain_log_deferral( '_fbp' );
-
+            // Not bounded — see pys_cookie_domain_pending(). Withheld, not
+            // reported: only the caller knows whether the browser supplied an
+            // `_fbp` of its own (fbevents.js writes one without any pys_cd),
+            // so a loss is logged there, by ServerEventHelper, once every
+            // fallback has had its turn. A report from here made every server
+            // event on a pending site look like a loss when most were not.
             return null;
         }
 

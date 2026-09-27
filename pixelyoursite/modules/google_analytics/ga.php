@@ -314,7 +314,7 @@ class GA extends Settings implements Pixel {
             }break;
 
             case 'woo_add_to_cart_on_button_click': {
-                if (  $this->getOption( 'woo_add_to_cart_enabled' ) && PYS()->getOption( 'woo_add_to_cart_on_button_click' ) ) {
+                if ( PYS()->getOption( 'woo_add_to_cart_enabled' ) && $this->getOption( 'woo_add_to_cart_enabled' ) && PYS()->getOption( 'woo_add_to_cart_on_button_click' ) ) {
                     $isActive = true;
                     if(isset($event->args['productId'])) {
                         $eventData =  $this->getWooAddToCartOnButtonClickEventParams( $event );

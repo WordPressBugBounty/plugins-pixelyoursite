@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, O
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.1
-Stable tag: 11.4.2
+Stable tag: 11.4.2.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -324,6 +324,17 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+
+= PixelYourSite 11.4.2.1 =
+
+* Fix: sets one pys_dt[number] cookie per page
+
+* Fix: render fixed-notice scripts only together with the notice
+
+* Fix: AddToCart via WooCommerce hooks ignored the global Track add to cart switch
+
+* Fix: cookie-domain handshake: JS reports host-only, _fbp withheld logged only on real loss, first-visit vs never-reported wording.
 
 
 = PixelYourSite 11.4.2 =

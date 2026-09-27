@@ -24,6 +24,9 @@
      *
      * Memoised only after the probe runs, so a disabled_all_cookie or option
      * arriving later over REST is still honored.
+     *
+     * An answer already reported to PHP in pys_cd is reused, so the probe
+     * runs once per visitor, not once per page load.
      */
     function cookieDomain() {
         if (probedCookieDomain !== null) {
@@ -33,8 +36,74 @@
             || !options.track_cookie_for_subdomains) {
             return '';
         }
-        probedCookieDomain = probeCookieDomain();
+        probedCookieDomain = reportedCookieDomain();
+        if (probedCookieDomain === null) {
+            probedCookieDomain = probeCookieDomain();
+        }
         return probedCookieDomain;
+    }
+
+    /**
+     * The domain an earlier page load verified and stored in pys_cd, or
+     * null when there is nothing usable and the probe has to run.
+     *
+     * The browser sending us pys_cd scoped to that domain is itself proof
+     * the scope is accepted, so no probe is needed. The value is checked
+     * against the current host on a label boundary; anything else (another
+     * site's value, a tampered one) is ignored and the probe decides.
+     *
+     * A value with the shape of a public suffix (co.uk, github.io) is
+     * test-written before it is trusted: the value is not the cookie's own
+     * scope, so a sibling subdomain can plant one, and reusing it would
+     * make every PYS cookie this visitor gets vanish. PHP validates the
+     * same value only for its own writes; this covers ours. The test costs
+     * one throwaway write, and only for values of that shape — see
+     * suspiciousCookieDomain().
+     *
+     * 'host-only' is deliberately not reused: it may be a false negative
+     * from a full cookie jar, and reportCookieDomain() replaces it once a
+     * probe succeeds, so re-probing lets it self-heal. The other false
+     * negative — a domain narrower than the registrable one, from the same
+     * full jar — is accepted as is: it is reused and stays until pys_cd
+     * expires (365 days) or is cleared, because re-probing it would put the
+     * throwaway write back on every page load for every visitor.
+     */
+    function reportedCookieDomain() {
+        var reported, host;
+        try {
+            reported = Cookies.get('pys_cd');
+            host = String(location.hostname || '').toLowerCase();
+        } catch (e) {
+            return null;
+        }
+        if (!reported || reported === 'host-only') return null;
+        reported = String(reported).toLowerCase();
+        if (reported.indexOf('.') === -1 || !host) return null;
+        if (host !== reported && host.slice(-(reported.length + 1)) !== '.' + reported) {
+            return null;
+        }
+        if (suspiciousCookieDomain(reported) && !cookieDomainAccepted('.' + reported)) {
+            return null;
+        }
+        return '.' + reported;
+    }
+
+    /**
+     * Whether a reported domain has the shape of a public suffix and so
+     * needs a test write before it is reused: two labels that are both
+     * short (co.uk, com.au, net.br, ac.jp), or one of the multi-tenant
+     * hosts whose registrable part is a subdomain (github.io, vercel.app).
+     * A real two-label domain of that shape (hp.com) pays one throwaway
+     * write per page load — what every site paid before pys_cd was reused.
+     */
+    function suspiciousCookieDomain(domain) {
+        var labels = String(domain).split('.');
+        if (labels.length === 2 && labels[0].length <= 3 && labels[1].length <= 3) {
+            return true;
+        }
+        var known = ['github.io', 'vercel.app', 'pages.dev', 'wpcomstaging.com',
+            'appspot.com', 'netlify.app', 'herokuapp.com', 'myshopify.com'];
+        return known.indexOf(domain) !== -1;
     }
 
     /**
@@ -77,13 +146,20 @@
      * Write a throwaway cookie at $candidate and report whether it stuck.
      * A false negative is possible if the jar is at its per-domain limit;
      * we then fall through to a narrower candidate and ultimately host-only.
+     *
+     * The name is fixed: consent scanners (Cookiebot and the like) record
+     * every write, not the jar afterwards, and a random name made each
+     * crawled page a new entry in the site's cookie declaration. The random
+     * part lives in the value instead, which still tells this write apart
+     * from a stale cookie left behind by an earlier, interrupted probe.
      */
     function cookieDomainAccepted(candidate) {
-        var name = 'pys_dt' + Math.floor(Math.random() * 1e9);
+        var name = 'pys_dt';
+        var value = String(Math.floor(Math.random() * 1e9));
         var accepted = false;
         try {
-            document.cookie = name + '=1; path=/; domain=' + candidate + '; SameSite=Lax';
-            accepted = document.cookie.indexOf(name + '=1') !== -1;
+            document.cookie = name + '=' + value + '; path=/; domain=' + candidate + '; SameSite=Lax';
+            accepted = ('; ' + document.cookie + ';').indexOf('; ' + name + '=' + value + ';') !== -1;
         } catch (e) {
             return false;
         } finally {
@@ -107,17 +183,49 @@
      *
      * Written from manageCookies() under the same consent gates as every
      * other cookie, not unconditionally.
+     *
+     * No domain at all is an answer too — see reportHostOnlyCookieDomain().
      */
     function reportCookieDomain(resolved) {
-        if (!resolved) return;
-        var bare = String(resolved).replace(/^\./, '');
-        if (!bare || bare.indexOf('.') === -1) return;
+        var bare = resolved ? String(resolved).replace(/^\./, '') : '';
+        if (!bare || bare.indexOf('.') === -1) {
+            reportHostOnlyCookieDomain();
+            return;
+        }
         try {
             if (Cookies.get('pys_cd') === bare) return; // already reported
+            // A 'host-only' answer from an earlier load is a separate jar
+            // entry (no Domain attribute), and PHP reads whichever the
+            // browser sends first — so it is removed, not outranked.
+            Cookies.remove('pys_cd', { path: '/', domain: '' });
             Cookies.set('pys_cd', bare, {
                 expires: 365,
                 path: '/',
                 domain: resolved,
+                sameSite: 'Lax'
+            });
+        } catch (e) {}
+    }
+
+    /**
+     * Tell PHP that host-only is the scope in use: the option asks for a
+     * Domain attribute, but probeCookieDomain() found none this browser
+     * accepts (a public-suffix host such as example.github.io, or every
+     * candidate write refused). Without this PHP cannot tell "not answered
+     * yet" from "never will", and withholds its own cookies for ever.
+     *
+     * Only with the option on: off, PHP writes host-only already and waits
+     * for nothing. Never overwrites an existing report — a domain accepted
+     * on an earlier load outranks a probe that failed on this one (a full
+     * cookie jar gives a false negative).
+     */
+    function reportHostOnlyCookieDomain() {
+        if (!options || !options.track_cookie_for_subdomains) return;
+        try {
+            if (Cookies.get('pys_cd') !== undefined) return; // an answer exists
+            Cookies.set('pys_cd', 'host-only', {
+                expires: 365,
+                path: '/',
                 sameSite: 'Lax'
             });
         } catch (e) {}

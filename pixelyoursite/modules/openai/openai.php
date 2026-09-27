@@ -878,7 +878,7 @@ class OpenAI extends Settings implements Pixel {
      */
     private function addWooAddToCartParams( &$event ) {
 
-        if ( ! $this->getOption( 'woo_add_to_cart_enabled' ) ) {
+        if ( ! PYS()->getOption( 'woo_add_to_cart_enabled' ) || ! $this->getOption( 'woo_add_to_cart_enabled' ) ) {
             return false;
         }
 

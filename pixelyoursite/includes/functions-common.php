@@ -2582,14 +2582,25 @@ function pys_pbid_secret() {
         return $secret;
     }
 
-    // First use. Creation is serialised across concurrent requests: WordPress'
-    // add_option() upserts, so two racing first requests would each keep their
-    // own secret for the duration of the request and hand out ids that never
-    // recur. Under the lock the value is re-read straight from the table, past
-    // this request's option cache, so the loser adopts the winner's secret.
+    // First use. WordPress' add_option() upserts, so two racing first requests
+    // would each keep their own secret for the duration of the request and hand
+    // out ids that never recur. INSERT IGNORE on the unique option_name lets
+    // exactly one of them win, with no lock to time out or be unsupported; the
+    // value is then re-read straight from the table, past this request's
+    // option cache, so the loser adopts the winner's secret.
     global $wpdb;
 
-    $wpdb->query( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', 'pys_pbid_secret' ) );
+    $wpdb->query( $wpdb->prepare(
+        "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, %s)",
+        'pys_pbid_secret',
+        bin2hex( random_bytes( 32 ) ),
+        'yes'
+    ) );
+
+    // The row was written behind the options API's back.
+    wp_cache_delete( 'pys_pbid_secret', 'options' );
+    wp_cache_delete( 'alloptions', 'options' );
+    wp_cache_delete( 'notoptions', 'options' );
 
     $stored = $wpdb->get_var( $wpdb->prepare(
         "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
@@ -2597,11 +2608,10 @@ function pys_pbid_secret() {
     ) );
 
     if ( ! is_string( $stored ) || strlen( $stored ) !== 64 ) {
+        // A malformed row was already there, which INSERT IGNORE leaves alone.
         $stored = bin2hex( random_bytes( 32 ) );
         update_option( 'pys_pbid_secret', $stored, 'yes' );
     }
-
-    $wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', 'pys_pbid_secret' ) );
 
     $secret = $stored;
     return $secret;
