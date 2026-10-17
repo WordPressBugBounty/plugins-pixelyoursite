@@ -10,6 +10,7 @@
 
   "woo_variable_as_simple": "checkbox",
   "woo_content_id": "select",
+  "woo_content_id_variation_sku": "select",
   "woo_content_id_prefix": "text",
   "woo_content_id_suffix": "text",
   "woo_wpml_unified_id": "checkbox",

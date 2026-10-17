@@ -40,6 +40,10 @@ class EnrichOrder {
     }
 
     function add_edd_order_details($payment_id) {
+        if ( ! current_user_can( 'manage_pys_reports' ) ) {
+            return;
+        }
+
         echo '<div id="edd-payment-notes" class="postbox">
     <h3 class="hndle"><span>PixelYourSite</span></h3>';
         echo "<div style='margin:20px'>
@@ -52,6 +56,10 @@ class EnrichOrder {
     }
 
     function woo_add_order_meta_boxes () {
+        if ( ! current_user_can( 'manage_pys_reports' ) ) {
+            return;
+        }
+
         $screen = isWooUseHPStorage()
             ? wc_get_page_screen_id( 'shop-order' )
             : 'shop_order';
@@ -60,6 +68,10 @@ class EnrichOrder {
     }
 
     function woo_render_order_fields($post) {
+        if ( ! current_user_can( 'manage_pys_reports' ) ) {
+            return;
+        }
+
         if ($post instanceof \WP_Post) {
             $orderId = $post->ID;
         } elseif (method_exists($post, 'get_id')) {
@@ -148,6 +160,8 @@ class EnrichOrder {
     }
 
     /**
+     * Not capability gated: no admin user owns this request; the option controls it.
+     *
      * @param \WC_Order$order
      * @param $sent_to_admin
      * @param $plain_text

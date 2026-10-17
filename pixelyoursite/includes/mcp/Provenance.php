@@ -2,11 +2,14 @@
 /**
  * Append-only audit trail of every write-tool call, surfaced in the
  * Settings tab ("who / what / when changed our pixel config?"). Each row
- * holds `ts`, `tool`, `mcp_note`, `actor_ip`, `result_status`; stored via
- * {@see Storage} keyed by microtime (lex-sort = time-sort), FIFO-trimmed.
- * A call is logged only when the ability's annotations mark it as a write
- * (`readOnlyHint === false` OR `destructiveHint === true`); everything else
- * is treated as read-only and skipped.
+ * holds `ts`, `tool`, `mcp_note`, `actor_ip`, `token`, `result_status` and
+ * `source`; stored via {@see Storage} keyed by microtime (lex-sort =
+ * time-sort), FIFO-trimmed. Calls through our endpoint are logged from the
+ * adapter filter when the tool's annotations mark it as a write
+ * (`readOnlyHint === false` OR `destructiveHint === true`); write calls from
+ * other MCP servers / the core REST API / WP-CLI come in via
+ * {@see recordExternalWrite()}.
+ * Rows written before `source` existed came from our endpoint.
  *
  * @package PixelYourSite\MCP
  */
@@ -27,6 +30,20 @@ final class Provenance {
 	/** Recognised `result_status` values. */
 	public const STATUS_SUCCESS = 'success';
 	public const STATUS_ERROR   = 'error';
+	public const STATUS_PREVIEW = 'preview';
+
+	/** Recognised `source` values. */
+	public const SOURCE_PYS      = 'pys';
+	public const SOURCE_EXTERNAL = 'external';
+
+	/** `token` prefix for external rows; followed by the WP user login. */
+	public const EXTERNAL_TOKEN_PREFIX = 'external:';
+
+	/** `token` of rows written from WP-CLI; followed by the WP user login when there is one. */
+	public const CLI_TOKEN = 'cli';
+
+	/** Set while our server runs a tool; its result filter logs that call. */
+	private static bool $inOurToolCall = false;
 
 	private string $serverId;
 
@@ -46,7 +63,35 @@ final class Provenance {
 	 * @return void
 	 */
 	public function register(): void {
+		add_filter( 'pys_pro_mcp_adapter_pre_tool_call', array( $this, 'onToolCallStart' ), PHP_INT_MAX, 4 );
 		add_filter( 'pys_pro_mcp_adapter_tool_call_result', array( $this, 'onToolResult' ), 20, 5 );
+	}
+
+	/**
+	 * Marks a tool call our server is about to run, so the ability's own
+	 * logging skips it. Runs last: a call another filter refused never starts.
+	 *
+	 * @param mixed  $args      Tool args, or a WP_Error from an earlier filter.
+	 * @param string $toolName  Tool name.
+	 * @param mixed  $mcpTool   Adapter tool wrapper — opaque here.
+	 * @param mixed  $mcpServer Adapter server instance.
+	 * @return mixed
+	 */
+	public function onToolCallStart( $args, $toolName, $mcpTool, $mcpServer ) {
+		if ( !is_wp_error( $args ) && $this->isOurServer( $mcpServer ) ) {
+			self::$inOurToolCall = true;
+		}
+
+		return $args;
+	}
+
+	/**
+	 * Whether our server is running the current tool call.
+	 *
+	 * @return bool
+	 */
+	public static function isInOurToolCall(): bool {
+		return self::$inOurToolCall;
 	}
 
 	/**
@@ -64,6 +109,7 @@ final class Provenance {
 		if ( !$this->isOurServer( $mcpServer ) ) {
 			return $result;
 		}
+		self::$inOurToolCall = false;
 		if ( !self::isWriteTool( $mcpTool ) ) {
 			return $result;
 		}
@@ -78,9 +124,10 @@ final class Provenance {
 				'ts'            => time(),
 				'tool'          => $toolName,
 				'mcp_note'      => $mcpNote,
-				'actor_ip'      => $this->clientIp(),
+				'actor_ip'      => self::clientIp(),
 				'token'         => (string) ( Auth::activeTokenLabel() ?? '' ),
-				'result_status' => self::isErrorResult( $result ) ? self::STATUS_ERROR : self::STATUS_SUCCESS,
+				'result_status' => self::resultStatus( $result ),
+				'source'        => self::SOURCE_PYS,
 			)
 		);
 
@@ -88,11 +135,70 @@ final class Provenance {
 	}
 
 	/**
+	 * Log a write call that reached an ability outside our endpoint (another
+	 * MCP server, the core REST API, WP-CLI). There is no PYS token, so the
+	 * row is attributed to the WP user. Best-effort: never breaks the tool call.
+	 *
+	 * @param string $abilityId Ability ID.
+	 * @param mixed  $input     Tool args.
+	 * @param mixed  $result    Tool execution result.
+	 * @return void
+	 */
+	public static function recordExternalWrite( string $abilityId, $input, $result ): void {
+		try {
+			$mcp_note = '';
+			if ( is_array( $input ) && isset( $input[ 'mcp_note' ] ) && is_string( $input[ 'mcp_note' ] ) ) {
+				$mcp_note = $input[ 'mcp_note' ];
+			}
+
+			self::recordEntry(
+				array(
+					'ts'            => time(),
+					'tool'          => ToolNameMap::resolve( $abilityId ) ?? $abilityId,
+					'mcp_note'      => $mcp_note,
+					'actor_ip'      => self::clientIp(),
+					'token'         => self::externalActor(),
+					'result_status' => self::resultStatus( $result ),
+					'source'        => self::SOURCE_EXTERNAL,
+				)
+			);
+		} catch ( \Throwable $e ) {
+			// Logging must not change the tool result.
+		}
+	}
+
+	/**
+	 * `token` of an external row: `cli:<login>` (or `cli`) from WP-CLI,
+	 * `external:<login>` otherwise.
+	 *
+	 * @return string
+	 */
+	private static function externalActor(): string {
+		$login = (string) wp_get_current_user()->user_login;
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return '' === $login ? self::CLI_TOKEN : self::CLI_TOKEN . ':' . $login;
+		}
+
+		return self::EXTERNAL_TOKEN_PREFIX . $login;
+	}
+
+	/**
+	 * Row source; rows without one predate the field and came from our endpoint.
+	 *
+	 * @param array $entry Log row.
+	 * @return string One of the SOURCE_* values.
+	 */
+	public static function entrySource( array $entry ): string {
+		return self::SOURCE_EXTERNAL === ( $entry[ 'source' ] ?? '' ) ? self::SOURCE_EXTERNAL : self::SOURCE_PYS;
+	}
+
+	/**
 	 * Public manual-record entry point. Used by callers that need to log
 	 * something the adapter filter wouldn't see — e.g. a settings-tab action
 	 * firing outside the MCP request flow.
 	 *
-	 * @param array $entry Entry to append (ts / tool / mcp_note / actor_ip / result_status).
+	 * @param array $entry Entry to append (ts / tool / mcp_note / actor_ip / token / result_status / source).
 	 * @return bool True on successful write.
 	 */
 	public static function recordEntry( array $entry ): bool {
@@ -163,6 +269,24 @@ final class Provenance {
 	}
 
 	/**
+	 * Row status: an error, a preview that wrote nothing (it asks for
+	 * confirmation), or a success.
+	 *
+	 * @param mixed $result Tool execution result.
+	 * @return string One of the STATUS_* values.
+	 */
+	public static function resultStatus( $result ): string {
+		if ( self::isErrorResult( $result ) ) {
+			return self::STATUS_ERROR;
+		}
+		if ( is_array( $result ) && !empty( $result[ 'confirmation_required' ] ) ) {
+			return self::STATUS_PREVIEW;
+		}
+
+		return self::STATUS_SUCCESS;
+	}
+
+	/**
 	 * Failure detection matches RequestGuard::recordToolResult — keep them in sync.
 	 *
 	 * @param mixed $result Tool execution result.
@@ -206,7 +330,7 @@ final class Provenance {
 	 *
 	 * @return string Client IP, or `0.0.0.0` when unknown.
 	 */
-	private function clientIp(): string {
+	private static function clientIp(): string {
 		$ip = isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? (string) $_SERVER[ 'REMOTE_ADDR' ] : '';
 
 		return '' === $ip ? '0.0.0.0' : $ip;

@@ -1,7 +1,34 @@
 # Local deviations from upstream
 
-Vendored from `facebook/capi-param-builder-php` **1.3.1**
-(repo `facebook/capi-param-builder`, ref `66a7eb8`).
+Vendored from `facebook/capi-param-builder-php` **1.3.2**
+(repo `facebook/capi-param-builder`, ref `a934cd6`, 18 Sep 2026).
+
+## What 1.3.2 changed
+
+Only `src/ParamBuilder.php` and `composer.json` differ from 1.3.1; the other 16 files are
+byte-identical after the transformations below, which is itself a check that they reproduced.
+
+* **Appendix validation.** `validateAppendix()` used to accept *any* eight characters. It now
+  base64-decodes the value, requires six bytes, and checks the format byte and the language
+  index. It also became `static`. This matters to us: our own `strip_appendix()` still uses a
+  length-and-charset guess, so an `fbclid` that happens to be eight characters long looks like
+  an appendix to us and does not to them.
+* **Repeated appendices are stripped**, not just the last one — the `_fbi` fix from the
+  changelog.
+* **Host matching against a supplied domain list** is now a real suffix comparison with an
+  apex-host case (`$lastOccurrence === 0`), and hosts are lowercased with trailing dots
+  removed. This is the "cookies scoped to `co.uk` instead of `example.co.uk`" fix in their
+  changelog.
+* `composer.json` gained a `classmap` alongside its PSR-4 autoload. Irrelevant here — our
+  autoloading is the plugin's own classmap over `vendor_prefix/` — but the file is copied
+  verbatim, so the change comes with it.
+
+**The naive eTLD+1 fallback is unchanged and still wrong.** `getEtldPlusOne()` ends in a
+"Backup plan" that strips the first label whenever the host has more than two, so
+`example.co.uk` still resolves to `co.uk` — a scope every browser rejects. The 1.3.2 fix
+applies to the *domain-list* branch above it, not to that fallback. `ETLDPlus1Resolver` is an
+interface, not an implementation, and we inject our own; that remains the reason our cookie
+scope is right and the library's own would not be.
 
 This copy is **not** a verbatim upstream tree and it was **not** produced by php-scoper. Four
 changes are applied on top of the namespace prefix. If you update the library, re-apply all four

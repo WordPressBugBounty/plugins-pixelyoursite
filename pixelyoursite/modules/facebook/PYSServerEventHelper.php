@@ -36,21 +36,41 @@ class ServerEventHelper {
 
         if(!$eventId) return null;
 
+        // Loaded once: the order supplies the customer's IP and user agent.
+        // Guarded like getFbStatFromOrder(): $wooOrder can arrive from the
+        // client payload on a site that has no WooCommerce at all.
+        $order = null;
+        if ( $wooOrder && function_exists( 'wc_get_order' ) && PixelYourSite\isWooCommerceActive() ) {
+            $order = wc_get_order( $wooOrder ) ?: null;
+        }
+        // An EDD order is not loaded here, but its event is order-bound all the
+        // same: a gateway webhook carries no browser to mint a browser id for.
+        $order_bound = $order || !empty( $eddOrder );
+
+        // The request this runs in is not always the customer's: an admin
+        // changing an order's status, a gateway webhook, cron. IP and user
+        // agent therefore come from the order when it has them, and the
+        // request's own cookies are read only when the request is a visitor's.
+        // See includes/functions-event-signals.php.
+        $signals = pys_event_client_signals( $order, self::getIpAddress(), self::getHttpUserAgent(), pys_is_admin_page_request() );
+
         $user_data = ServerEventHelper::getUserData($wooOrder,$eddOrder)
-            ->setClientUserAgent(self::getHttpUserAgent());
+            ->setClientUserAgent( $signals['user_agent'] );
 
         // Set only when we have a routable address. An empty client_ip_address
         // is not a neutral value: it occupies the field Meta weighs most with
         // something that cannot match.
-        $client_ip = self::getIpAddress();
-        if ( '' !== $client_ip ) {
-            $user_data->setClientIpAddress( $client_ip );
+        if ( '' !== $signals['ip'] ) {
+            $user_data->setClientIpAddress( $signals['ip'] );
         }
 
 		$fbp_withheld      = false;
 		$fbp_withheld_note = '';
 
-		if ( ParamBuilderAdapter::is_enabled() ) {
+		if ( ! $signals['request_cookies'] ) {
+			// A wp-admin request: its cookies are the administrator's, and a
+			// cookie minted here would land in the administrator's browser.
+		} elseif ( ParamBuilderAdapter::is_enabled() ) {
 			// Meta's param builder already minted and persisted these on 'init',
 			// in the correct format: a millisecond creation time, a derived
 			// subdomain_index, an fbclid recovered from the referrer when the
@@ -58,60 +78,11 @@ class ServerEventHelper {
 			// integration. Nothing to do here but read the result.
 			ParamBuilderAdapter::for_request()->flush_cookies();
 		} elseif ( Consent()->checkConsent( 'facebook' ) ) {
-			// Meta's format is `version.subdomainIndex.creationTime.payload`,
-			// creationTime in MILLISECONDS; $fb_prefix supplies both.
-			//
-			// Writing needs headers unsent AND the domain settled: a host-only
-			// write while pending stakes a claim the next request contradicts.
-			// Whether a value may be PRODUCED is answered per cookie below.
-			$can_write = ! headers_sent() && ! pys_cookie_domain_pending();
+			$withheld = self::mintBrowserCookies( $eventParams, $order_bound );
 
-			$fb_prefix = 'fb.' . pys_cookie_subdomain_index_for_request() . '.'
-				. (int) round( microtime( true ) * 1000 ) . '.';
-
-			// `_fbp` needs both answers to agree: its payload is random, so a
-			// value sent but not stored is a browser id that exists nowhere.
-			// Withholding is noted here and logged further down, once the
-			// order's stored value has had its turn: a webhook or cron request
-			// has no cookies but usually does have the order, and an `_fbp`
-			// that reaches Meta from there was not withheld from anyone.
-			if ( !self::getFbp() && ( !isset( $eventParams[ '_fbp' ] ) || !$eventParams[ '_fbp' ] ) ) {
-				if ( $can_write ) {
-					self::setFbp( $fb_prefix . rand( 1000000000, 9999999999 ) );
-					setcookie( "_fbp", self::getFbp(), 2147483647, '/', pys_cookie_domain() );
-				} else {
-					$fbp_withheld      = true;
-					$fbp_withheld_note = headers_sent() ? 'the response headers were already sent' : '';
-				}
-			}
-
-			// `_fbc` is produced even when it cannot be stored: its payload is
-			// the request's `fbclid`, not an invented id, so there is no phantom
-			// identity. The domain is pending on the landing request of every
-			// paid click, and withholding there loses the click on a bounce.
-			// The cost: Meta may see two `_fbc` strings for one click, ours and
-			// our JS's, differing in creation time.
-			//
-			// The referrer is consulted only when the URL carries no fbclid:
-			// server events POST to /wp-json/..., whose Referer is the landing
-			// page.
-			if ( ! self::getFbc() ) {
-				$fbclid = self::getUrlParameter( 'fbclid' );
-
-				if ( ! $fbclid ) {
-					$fbclid = pys_fbclid_from_referrer();
-					// '' is what "no fbclid" looks like here, where
-					// getUrlParameter() says false. Normalise so the test below
-					// keeps reading as one question.
-					$fbclid = '' !== $fbclid ? $fbclid : false;
-				}
-
-				if ( $fbclid ) {
-					self::setFbc( $fb_prefix . $fbclid );
-					if ( $can_write ) {
-						setcookie( "_fbc", self::$fbc, 2147483647, '/', pys_cookie_domain() );
-					}
-				}
+			if ( null !== $withheld ) {
+				$fbp_withheld      = true;
+				$fbp_withheld_note = $withheld;
 			}
 		}
 
@@ -120,29 +91,41 @@ class ServerEventHelper {
 
         if ($wooOrder) {
             $fbp = ServerEventHelper::getFbStatFromOrder('fbp', $wooOrder);
+            // A stored value Meta's library would not keep is not sent.
+            if ( ! pys_fbp_is_valid( $fbp ) ) {
+                $fbp = null;
+            }
             $fbc = ServerEventHelper::getFbStatFromOrder('fbc', $wooOrder);
         }
 
 // Checking that the values are not empty and setting alternative values if they are missing.
 // Order-sourced values keep top priority: they were captured when the order was
 // placed and describe that visitor, which a value read now may no longer do.
-        if ( empty( $fbp ) && ParamBuilderAdapter::is_enabled() ) {
-            $fbp = ParamBuilderAdapter::for_request()->get_fbp() ?? '';
-            // The adapter withholds `_fbp` while the cookie domain is pending
-            // and says nothing about it: whether that is a loss depends on the
-            // fallbacks below, so the note is taken here and logged at the end.
-            if ( '' === $fbp && pys_cookie_domain_pending() ) {
-                $fbp_withheld = true;
+// The request's values stand in only when the request is that visitor's: in
+// wp-admin they are the administrator's, and an order placed without a browser
+// is better sent without a browser id than with the wrong one.
+        if ( $signals['request_cookies'] ) {
+            // Not for an order-bound event or on cron, for the reason `_fbp` is
+            // not minted there: the adapter is a per-request singleton, so a
+            // queue batch would share one invented id between unrelated orders.
+            if ( empty( $fbp ) && ParamBuilderAdapter::is_enabled() && ! $order_bound && ! wp_doing_cron() ) {
+                $fbp = ParamBuilderAdapter::for_request()->get_fbp() ?? '';
+                // The adapter withholds `_fbp` while the cookie domain is pending
+                // and says nothing about it: whether that is a loss depends on the
+                // fallbacks below, so the note is taken here and logged at the end.
+                if ( '' === $fbp && pys_cookie_domain_pending() ) {
+                    $fbp_withheld = true;
+                }
             }
-        }
-        if ( empty( $fbc ) && ParamBuilderAdapter::is_enabled() ) {
-            $fbc = ParamBuilderAdapter::for_request()->get_fbc() ?? '';
-        }
-        if(empty($fbp)) {
-            $fbp = self::getFbp() ?? $eventParams['_fbp'] ?? '';
-        }
-        if (empty($fbc)) {
-            $fbc = self::getFbc() ?? $eventParams['_fbc'] ?? '';
+            if ( empty( $fbc ) && ParamBuilderAdapter::is_enabled() ) {
+                $fbc = ParamBuilderAdapter::for_request()->get_fbc() ?? '';
+            }
+            if(empty($fbp)) {
+                $fbp = self::getFbp() ?? ( isset( $eventParams['_fbp'] ) && pys_fbp_is_valid( $eventParams['_fbp'] ) ? $eventParams['_fbp'] : '' );
+            }
+            if (empty($fbc)) {
+                $fbc = self::getFbc() ?? $eventParams['_fbc'] ?? '';
+            }
         }
 
         // Only now is "withheld" a loss: nothing above could supply an `_fbp`
@@ -153,8 +136,11 @@ class ServerEventHelper {
             pys_cookie_domain_log_deferral( '_fbp', $fbp_withheld_note );
         }
 
-        if(!empty($fbp)) { $user_data->setFbp($fbp); }
-        if(!empty($fbc)) { $user_data->setFbc($fbc); }
+        // Whatever supplied the value — the order snapshot, a cookie, the payload
+        // — it is tagged as unchanged rather than new. A value we minted above
+        // already carries its own token and is returned untouched.
+        if(!empty($fbp)) { $user_data->setFbp( pys_fb_append_appendix( $fbp, false ) ); }
+        if(!empty($fbc)) { $user_data->setFbc( pys_fb_append_appendix( $fbc, false ) ); }
 
         $customData = self::paramsToCustomData($eventParams);
         $uri = self::getRequestUri(PYS()->getOption('enable_remove_source_url_params'));
@@ -187,12 +173,12 @@ class ServerEventHelper {
             }
         }
 
+        // A top-level server event parameter, not a custom_data property.
         $referrer_url = pys_resolve_event_referrer_url( $event );
-        if ( $referrer_url !== '' ) {
-            $customData->addCustomProperty( 'referrer_url', $referrer_url );
-        }
+        self::requireServerSideClasses();
 
-        $event = (new Event())
+        $event = (new PysServerEvent())
+            ->setReferrerUrl($referrer_url)
             ->setEventName($eventName)
             ->setEventTime(time())
             ->setEventId($eventId)
@@ -337,21 +323,22 @@ class ServerEventHelper {
 	/**
 	 * The `_fbp` this request knows about.
 	 *
-	 * Read through pys_fb_cookie(), not $_COOKIE: the Cookie header can carry
-	 * the same name at two scopes, and a value our PHP minted with time()
-	 * claims a creation date in 1970. Duplicate resolution and the
-	 * seconds→milliseconds repair live in includes/functions-fb-cookies.php.
+	 * Read through pys_fb_cookie(), which hands `_fbp` over exactly as $_COOKIE
+	 * holds it (PHP keeps the first of two copies) — no oldest-duplicate pick,
+	 * no repair of a seconds timestamp, as in Meta's own library. What decides
+	 * is pys_fbp_is_valid(), on the RAW value: an invalid cookie counts as
+	 * absent, so the caller mints and overwrites it.
 	 *
 	 * Single choke point on purpose, so "must a value be produced" and "what
 	 * goes into the event" cannot disagree. The static set by setFbp() still
-	 * wins only when the request carries no cookie.
+	 * wins only when the request carries no usable cookie.
 	 */
     public static function getFbp() {
         $fbp = null;
         $resolved = pys_fb_cookie( '_fbp' );
 
-        if ('' !== $resolved) {
-            $fbp = $resolved;
+        if ( '' !== $resolved && pys_fbp_is_valid( $resolved ) ) {
+            $fbp = sanitize_text_field( $resolved );
         }
         elseif (!empty(self::$fbp)){
             $fbp = self::$fbp;
@@ -359,19 +346,167 @@ class ServerEventHelper {
         return $fbp;
     }
 
-	/** The `_fbc` this request knows about. See getFbp(). */
+	/**
+	 * The `_fbc` this request knows about. See getFbp().
+	 * Unlike `_fbp`, a value minted in this request wins over the cookie: it is
+	 * only minted when the request carries a newer click than the stored one.
+	 */
     public static function getFbc() {
         $fbc = null;
         $resolved = pys_fb_cookie( '_fbc' );
 
-        if ('' !== $resolved) {
-            $fbc = $resolved;
-        }
-        elseif (!empty(self::$fbc)){
+        if (!empty(self::$fbc)){
             $fbc = self::$fbc;
+        }
+        elseif ('' !== $resolved) {
+            $fbc = $resolved;
         }
         return $fbc;
     }
+
+	/**
+	 * Produce `_fbp` / `_fbc` for this visitor where they are missing and, when
+	 * cookies may be written, persist them. Consent is the caller's to check.
+	 *
+	 * Shared by the server event and by writeFirstRequestCookies(), so the
+	 * two cannot disagree on format, refresh rules, domain or lifetime.
+	 *
+	 * @param array $eventParams The event's params: a valid `_fbp` there counts as present.
+	 * @param bool  $order_bound An order event: there is no browser to mint `_fbp` for.
+	 * @return string|null Why `_fbp` was withheld ('' when no reason is known), null when it was not.
+	 */
+	public static function mintBrowserCookies( $eventParams = array(), $order_bound = false ) {
+		$withheld = null;
+
+		// Meta's format is `version.subdomainIndex.creationTime.payload`,
+		// creationTime in MILLISECONDS; $fb_prefix supplies both.
+		//
+		// Writing needs headers unsent, cookies not switched off by the
+		// site AND the domain settled: a host-only write while pending
+		// stakes a claim the next request contradicts.
+		// Whether a value may be PRODUCED is answered per cookie below.
+		$can_write = pys_may_write_cookies();
+
+		$fb_prefix = 'fb.' . pys_cookie_subdomain_index_for_request() . '.'
+			. (int) round( microtime( true ) * 1000 ) . '.';
+
+		// `_fbp` needs both answers to agree: its payload is random, so a
+		// value sent but not stored is a browser id that exists nowhere.
+		// Withholding is returned, and the server event logs it once the
+		// order's stored value has had its turn: a webhook or cron request
+		// has no cookies but usually does have the order, and an `_fbp`
+		// that reaches Meta from there was not withheld from anyone.
+		//
+		// Never minted for an order-bound event or on cron: there is no
+		// browser, and the static would hand one invented id to every
+		// order of a batch. That skip is not a withheld loss either.
+		//
+		// A payload `_fbp` counts only when Meta's library would keep it
+		// (pys_fbp_is_valid()); an invalid cookie or payload is as good as
+		// none, and the new value overwrites the cookie once.
+		if ( !$order_bound && !wp_doing_cron() && !self::getFbp() && !( isset( $eventParams[ '_fbp' ] ) && pys_fbp_is_valid( $eventParams[ '_fbp' ] ) ) ) {
+			if ( $can_write ) {
+				self::setFbp( pys_fb_append_appendix( $fb_prefix . mt_rand( 0, 2147483647 ), true ) );
+				setcookie( "_fbp", self::getFbp(), time() + pys_fb_cookie_lifetime(), '/', pys_cookie_domain() );
+				// Readable within this request: the order snapshot taken
+				// later must not store the stale value.
+				$_COOKIE['_fbp'] = self::getFbp();
+			} else {
+				$withheld = headers_sent() ? 'the response headers were already sent' : '';
+			}
+		}
+
+		// `_fbc` is produced even when it cannot be stored: its payload is
+		// the request's `fbclid`, not an invented id, so there is no phantom
+		// identity. The domain is pending on the landing request of every
+		// paid click, and withholding there loses the click on a bounce.
+		// The cost: Meta may see two `_fbc` strings for one click, ours and
+		// our JS's, differing in creation time.
+		//
+		// The referrer is consulted only when the URL carries no fbclid:
+		// server events POST to /wp-json/..., whose Referer is the landing
+		// page.
+		$fbclid = self::getUrlParameter( 'fbclid' );
+
+		if ( ! $fbclid ) {
+			$fbclid = pys_fbclid_from_referrer();
+		}
+
+		// A new click replaces a stored one; the same click id does not,
+		// because re-minting would move creation_time. The URL is read on
+		// every event now, not only when `_fbc` is missing — that is how a
+		// second ad click is noticed at all.
+		if ( pys_fbc_needs_refresh( self::getFbc(), (string) $fbclid ) ) {
+			self::setFbc( pys_fb_append_appendix( $fb_prefix . $fbclid, true ) );
+			if ( $can_write ) {
+				setcookie( "_fbc", self::$fbc, time() + pys_fb_cookie_lifetime(), '/', pys_cookie_domain() );
+				// Readable within this request: the order snapshot taken
+				// later must not store the stale click.
+				$_COOKIE['_fbc'] = self::$fbc;
+			} else {
+				// The value above still reaches Meta; what is lost is the
+				// cookie, and with it every reader of document.cookie on
+				// this page load (a form's hidden field, for one).
+				pys_cookie_domain_log_deferral( '_fbc', headers_sent() ? 'the response headers were already sent' : '' );
+			}
+		}
+
+		return $withheld;
+	}
+
+	/**
+	 * Write `_fbp` / `_fbc` on 'init', before any output, so a new visitor's
+	 * first HTML response already carries them.
+	 *
+	 * Opt-in (Meta setting first_request_cookies). Without it a first visit
+	 * gets these cookies only from public.js, after Facebook.loadPixel() has
+	 * waited for identity, which is too late for anything that reads
+	 * document.cookie as the page loads — a form filling hidden fields on DOM
+	 * ready, for one. Off by default: a full-page cache that stores the
+	 * response with its Set-Cookie would hand one `_fbp` to every visitor.
+	 *
+	 * Front-end page requests only; a value is written only when missing, so a
+	 * returning visitor gets no Set-Cookie. Param builder sites are skipped:
+	 * ParamBuilderAdapter::boot() has written them already.
+	 */
+	public static function writeFirstRequestCookies() {
+		if ( ! Facebook()->getOption( 'first_request_cookies' )
+			|| ! Facebook()->enabled()
+			|| ! Facebook()->configured()
+			|| ParamBuilderAdapter::is_enabled()
+			|| ! self::isFrontEndPageRequest()
+			|| ! pys_may_write_cookies()
+			|| ! Consent()->checkConsent( 'facebook' )
+		) {
+			return;
+		}
+
+		self::mintBrowserCookies();
+	}
+
+	/**
+	 * A visitor's page request: GET or HEAD, not wp-admin, admin-ajax, cron or
+	 * REST. REST_REQUEST is not defined yet on 'init', so the path is checked.
+	 *
+	 * @return bool
+	 */
+	private static function isFrontEndPageRequest() {
+		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) : '';
+
+		if ( 'GET' !== $method && 'HEAD' !== $method ) {
+			return false;
+		}
+
+		if ( is_admin() || wp_doing_ajax() || wp_doing_cron() || isset( $_GET['rest_route'] ) ) {
+			return false;
+		}
+
+		$path = isset( $_SERVER['REQUEST_URI'] )
+			? (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH )
+			: '';
+
+		return false === strpos( trailingslashit( $path ), '/' . rest_get_url_prefix() . '/' );
+	}
 
     private static function getUserData($wooOrder = null,$eddOrder = null) {
         $userData = new UserData();
@@ -411,11 +546,9 @@ class ServerEventHelper {
                     if($order->get_billing_state()) {
                         $userData->setState($order->get_billing_state());
                     }
-                    if($order->get_meta( 'external_id' )){
-                        $external_id = $order->get_meta( 'external_id' );
-                        if (!empty($external_id)) {
-                            $userData->setExternalId($external_id);
-                        }
+                    $external_ids = PixelYourSite\pys_get_order_external_ids($order->get_meta( 'external_id' ), $order->get_user_id());
+                    if (!empty($external_ids)) {
+                        $userData->setExternalIds($external_ids);
                     }
                 } else {
 					$user_firstname = $order->billing_first_name;
@@ -429,11 +562,9 @@ class ServerEventHelper {
                     $userData->setCountryCode(strtolower($order->billing_country));
                     $userData->setCity($order->billing_city);
                     $userData->setState($order->billing_state);
-                    if(get_post_meta( $order_id, 'external_id', true )){
-                        $external_id = get_post_meta( $order_id, 'external_id', true );
-                        if (!empty($external_id)) {
-                            $userData->setExternalId($external_id);
-                        }
+                    $external_ids = PixelYourSite\pys_get_order_external_ids(get_post_meta( $order_id, 'external_id', true ), $order->get_user_id());
+                    if (!empty($external_ids)) {
+                        $userData->setExternalIds($external_ids);
                     }
                 }
 
@@ -486,10 +617,13 @@ class ServerEventHelper {
 				if ( !empty( $user_persistence_data[ 'em' ] ) ) $userData->setEmail( $user_persistence_data[ 'em' ] );
 				if ( !empty( $user_persistence_data[ 'tel' ] ) ) $userData->setPhone( $user_persistence_data[ 'tel' ] );
 
-                // Get external_id from EDD payment meta
-                $external_id = edd_get_payment_meta( $payment_id, 'external_id', true );
-                if ( !empty( $external_id ) ) {
-                    $userData->setExternalId( $external_id );
+                // Browser id saved on the payment, plus the account that owns it
+                $external_ids = PixelYourSite\pys_get_order_external_ids(
+                    edd_get_payment_meta( $payment_id, 'external_id', true ),
+                    isset( $user_info[ 'id' ] ) ? $user_info[ 'id' ] : 0
+                );
+                if ( !empty( $external_ids ) ) {
+                    $userData->setExternalIds( $external_ids );
                 }
 
 				if ( $user_info[ 'id' ] && apply_filters( 'pys_send_meta_id', true ) ) {
@@ -543,10 +677,9 @@ class ServerEventHelper {
                 }
             }
 			$user_persistence_data = get_persistence_user_data( $user->get( 'user_email' ), $user_firstname, $user_lastname, $user_phone );
-            if(PixelYourSite\EventsManager::isTrackExternalId()){
-                if (!empty(PixelYourSite\PYS()->get_pbid())) {
-                    $userData->setExternalId(PixelYourSite\PYS()->get_pbid());
-                }
+            $external_ids = PixelYourSite\pys_get_external_ids();
+            if (!empty($external_ids)) {
+                $userData->setExternalIds($external_ids);
             }
 
 			$login_id = get_user_meta( $user->ID, '_socplug_social_id_Facebook', true );
@@ -555,8 +688,9 @@ class ServerEventHelper {
 			}
         } else {
 			$user_persistence_data = get_persistence_user_data( '', '', '', '' );
-            if (PixelYourSite\EventsManager::isTrackExternalId() && isset($_COOKIE['pbid'])) {
-                $userData->setExternalId($_COOKIE['pbid']);
+            $external_ids = PixelYourSite\pys_get_external_ids();
+            if (!empty($external_ids)) {
+                $userData->setExternalIds($external_ids);
             }
         }
 
@@ -641,6 +775,8 @@ class ServerEventHelper {
                 require_once $path;
             }
         }
+        // After Event.php: it extends it, and queued events unserialize into it.
+        require_once __DIR__ . '/PysServerEvent.php';
     }
 
 }

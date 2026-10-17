@@ -344,9 +344,29 @@ include "html-popovers.php";
         </div>
         <div class="card-body">
             <div class="gap-24">
+                <?php
+                $user_roles = getAvailableUserRoles();
+                $roles_without_access = array_values( array_diff( array_keys( $user_roles ), (array) PYS()->getOption( 'admin_permissions', array( 'administrator' ) ) ) );
+                $permissions_locked = ! PYS()->canEditPermissions();
+                ?>
+                <?php if ( $permissions_locked ) : ?>
+                    <p class="text-gray"><?php esc_html_e('These lists are managed by site administrators only.', 'pys');?></p>
+                <?php endif; ?>
                 <div>
                     <h4 class="primary_heading mb-4"><?php _e('Permissions:', 'pys');?></h4>
-                    <?php PYS()->render_multi_select_input('admin_permissions', getAvailableUserRoles()); ?>
+                    <?php PYS()->render_multi_select_input('admin_permissions', $user_roles, $permissions_locked); ?>
+                    <p class="text-gray mt-4"><?php esc_html_e('Full PixelYourSite access — opens the plugin menu and all of its settings.', 'pys');?></p>
+                </div>
+                <div class="permissions-scoped">
+                    <h4 class="primary_heading mb-4"><?php esc_html_e('WooCommerce/EDD Reports:', 'pys');?></h4>
+                    <?php PYS()->render_multi_select_input('woo_edd_reports_permissions', $user_roles, $permissions_locked, '', $roles_without_access); ?>
+                    <p class="text-gray mt-4"><?php esc_html_e('Order attribution on WooCommerce orders and EDD payments. In Pro, also the WooCommerce/EDD Reports pages.', 'pys');?></p>
+                </div>
+                <div class="permissions-scoped">
+                    <h4 class="primary_heading mb-4"><?php esc_html_e('Customer Data Export:', 'pys');?></h4>
+                    <?php PYS()->render_multi_select_input('woo_edd_export_permissions', $user_roles, $permissions_locked, '', $roles_without_access); ?>
+                    <p class="text-gray mt-4"><?php esc_html_e('Logs, which can contain customer data. In Pro, also the customer data exports.', 'pys');?></p>
+                    <p class="text-gray mt-4"><?php esc_html_e('Only roles already checked under "Permissions" above are selectable here — a role that can\'t open the plugin can\'t be granted report or export access either.', 'pys');?></p>
                 </div>
             </div>
         </div>
@@ -453,6 +473,15 @@ wp-content/plugins/pixelyoursite/dist/jquery.bind-first-0.2.3.min.js
                     </div>
                     <p class="text-gray mt-4">
                         <?php _e('Enable this option if you want unified tracking for our native landing pages, traffic sources, and UTMs data. When there are different installations, this option must be enabled on both the domain and the subdomain.', 'pys');?>
+                    </p>
+                </div>
+                <div>
+                    <h4 class="secondary_heading"><?php _e('Cookie domain', 'pys');?></h4>
+                    <div class="mt-2">
+                        <?php PYS()->render_text_input( 'cookie_domain', 'example.com' ); ?>
+                    </div>
+                    <p class="text-gray mt-4">
+                        <?php _e('The domain our server-side cookies (_fbp, _fbc and others) are written for while the option above is ON. It is detected from your browser and saved automatically when you open this page; clear the field to detect it again. Set it by hand only if your site answers on a different domain than this admin area. Values from the visitor\'s browser always take precedence.', 'pys');?>
                     </p>
                 </div>
             </div>

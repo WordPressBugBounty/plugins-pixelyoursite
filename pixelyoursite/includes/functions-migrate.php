@@ -24,7 +24,7 @@ class FunctionsMigrate {
     {
         $this->pys_free_version = get_option( 'pys_core_free_version', false );
 
-        add_action('plugins_loaded', array($this,'maybeMigrate'), 1);
+        add_action('admin_init', array($this,'maybeMigrate'), 5);
         // Runs on 'admin_init' (i.e. after 'init'), so every options group has
         // already located its defaults by the time we re-save them.
         add_action('admin_init', array($this,'maybeBackfillStoredOptions'), 20);
@@ -91,6 +91,7 @@ class FunctionsMigrate {
         $pys_free_version = get_option( 'pys_core_free_version', false );
 
         $migrations = [
+            '11.4.3' => [ $this, 'migrate_11_4_3' ],
             '11.4.2' => [ $this, 'migrate_11_4_2' ],
             '11.1.0' => [ $this, 'migrate_11_1_0' ],
             '10.1.1.1' => [ $this, 'migrate_10_1_1_1' ],
@@ -152,6 +153,68 @@ class FunctionsMigrate {
         $legacy = get_option( 'pys_core', null );
 
         return is_array( $legacy ) ? $legacy : null;
+    }
+
+    /**
+     * "If a variation has no SKU of its own" (woo_content_id_variation_sku).
+     *
+     * The JSON default is `parent_sku`, which is exactly what every tag did
+     * before this option existed (WooCommerce's get_sku() inherits the parent
+     * SKU), so an existing install keeps its behaviour without any write.
+     * A fresh install gets `variation_id` on every tag that has the option.
+     * Fresh vs. existing is decided by the stored core options row, not by
+     * guessing from other settings.
+     */
+    protected function migrate_variation_sku_default() {
+
+        if ( null !== $this->getStoredCoreOptions() ) {
+            return; // existing install: keep the legacy default
+        }
+
+        $modules = array( Facebook(), GATags(), GTM(), OpenAI() );
+
+        foreach ( $modules as $module ) {
+            if ( method_exists( $module, 'issetOption' ) && $module->issetOption( WOO_CONTENT_ID_VARIATION_SKU_KEY ) ) {
+                $module->updateOptions( array( WOO_CONTENT_ID_VARIATION_SKU_KEY => 'variation_id' ) );
+            }
+        }
+    }
+
+    /**
+     * Seed the scoped permission options from the existing plugin access list.
+     * Reads raw stored options: backfilled defaults look like a deliberate choice.
+     */
+    protected function migrate_11_4_3() {
+
+        // Fresh installs: variations without their own SKU use the variation ID.
+        // Runs before the fresh-install return below.
+        $this->migrate_variation_sku_default();
+
+        $stored = $this->getStoredCoreOptions();
+
+        // fresh install, defaults already apply
+        if ( null === $stored ) {
+            return;
+        }
+
+        $inherited = isset( $stored['admin_permissions'] ) && is_array( $stored['admin_permissions'] )
+            ? $stored['admin_permissions']
+            : array( 'administrator' );
+
+        $options = array();
+
+        foreach ( array( 'woo_edd_reports_permissions', 'woo_edd_export_permissions' ) as $permission_key ) {
+            // an existing value always wins
+            if ( ! isset( $stored[ $permission_key ] ) ) {
+                $options[ $permission_key ] = $inherited;
+            }
+        }
+
+        if ( empty( $options ) ) {
+            return;
+        }
+
+        PYS()->updateOptions( $options );
     }
 
     /**

@@ -29,7 +29,10 @@ class SiteProfileConfig {
         'license_status',
         'license_expires',
         'admin_permissions',
+        'woo_edd_reports_permissions',
+        'woo_edd_export_permissions',
         'mcp_read_only_enabled',
+        'mcp_external_access_enabled',
     );
 
     /**

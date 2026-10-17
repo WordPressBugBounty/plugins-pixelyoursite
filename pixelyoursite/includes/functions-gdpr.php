@@ -123,7 +123,7 @@ function adminGdprAjaxNotEnabledNotice() {
     ) );
 
     $meta_key = 'pys_core_gdpr_ajax_notice_dismissed_at';
-    $dismissed_at = get_user_meta( $user_id, $meta_key );
+    $dismissed_at = get_option( $meta_key );
     if(!$dismissed_at){
         ?>
 

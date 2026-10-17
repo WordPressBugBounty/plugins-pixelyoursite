@@ -560,6 +560,11 @@
         // the hold in holdForIdentity() happens at most once per page.
         var pbidSettled = false;
         var PBID_WAIT_MS = 1000;
+        // A pys_get_pbid reply that arrived before options.cookie was known
+        // (REST mode fills it in, and a consent plugin may call loadPixel()
+        // before that). Applied by the next requestPbid() call instead of
+        // asking the server again.
+        var pbidPendingReply = null;
 
         var utmTerms = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
@@ -920,28 +925,72 @@
                 }
 
                 if (!pbidRequest) {
-                    pbidRequest = jQuery.ajax({
-                        url: options.ajaxUrl,
-                        dataType: 'json',
-                        data: {
-                            action: 'pys_get_pbid'
-                        },
-                        success: function (res) {
-                            if (res.data && res.data.pbid != false) {
-                                if(!(options.cookie.disabled_all_cookie || options.cookie.externalID_disabled_by_api)){
-                                    var expires = parseInt(options.external_id_expire || 180);
-                                    Cookies.set('pbid', res.data.pbid, { expires: expires, path: '/',domain: cookieDomain() });
-                                }
+                    var deferred = jQuery.Deferred();
 
-                                if(options.hasOwnProperty('facebook')) {
-                                    options.facebook.advancedMatching = {
-                                        ...options.facebook.advancedMatching,  // spread current advancedMatching values
-                                        external_id: res.data.pbid
-                                    };
-                                }
+                    var applyReply = function (res) {
+                        if (typeof options.cookie === 'undefined') {
+                            pbidPendingReply = res;
+                            return;
+                        }
+                        pbidPendingReply = null;
+                        if (res && res.success && res.data && res.data.pbid) {
+                            if(!(options.cookie.disabled_all_cookie || options.cookie.externalID_disabled_by_api)){
+                                var expires = parseInt(options.external_id_expire || 180);
+                                Cookies.set('pbid', res.data.pbid, { expires: expires, path: '/',domain: cookieDomain() });
+                            }
+
+                            if(options.hasOwnProperty('facebook')) {
+                                options.facebook.advancedMatching = {
+                                    ...options.facebook.advancedMatching,  // spread current advancedMatching values
+                                    external_id: res.data.pbid
+                                };
                             }
                         }
-                    }).always(function () {
+                    };
+
+                    var settle = function (res) {
+                        try {
+                            applyReply(res);
+                        } catch (e) {
+                            if (options.debug) console.warn('[PYS] pbid reply:', e);
+                        }
+                        deferred.resolve(res);
+                    };
+
+                    var viaAjax = function () {
+                        jQuery.ajax({
+                            url: options.ajaxUrl,
+                            dataType: 'json',
+                            data: {
+                                action: 'pys_get_pbid'
+                            }
+                        }).done(settle).fail(function () {
+                            deferred.reject();
+                        });
+                    };
+
+                    // The head snippet (EventsManager::outputPbidPrefetch()) may
+                    // have started this request before public.js was even
+                    // downloaded; reuse its reply, and only make our own request
+                    // when there is none or it failed.
+                    var prefetch = window.pysPbidPrefetch;
+                    window.pysPbidPrefetch = null;
+
+                    if (pbidPendingReply && typeof options.cookie !== 'undefined') {
+                        applyReply(pbidPendingReply);
+                        if (Cookies.get('pbid')) {
+                            return null;
+                        }
+                    }
+
+                    if (prefetch && typeof prefetch.then === 'function') {
+                        prefetch.then(settle, viaAjax);
+                    } else {
+                        viaAjax();
+                    }
+
+                    pbidRequest = deferred.promise();
+                    pbidRequest.always(function () {
                         pbidRequest = null;
                     });
                 }
@@ -1948,6 +1997,24 @@
 
                             loadPixels();
 
+                        },
+
+                        // Without an answer the values rendered into the page still hold
+
+                        // (the same ones used when this request is switched off); waiting
+
+                        // for it forever used to leave every pixel unloaded, silently.
+
+                        error: function (xhr, status) {
+
+                            if (options.debug) {
+
+                                console.warn('[PYS] pys_get_gdpr_filters_values failed (' + status + '), using page values');
+
+                            }
+
+                            loadPixels();
+
                         }
                     });
 
@@ -2798,11 +2865,57 @@
             var dots = scope ? scope.split('.').length - 1 : 0;
             return 'fb.' + dots + '.' + Date.now() + '.';
         };
+        // Meta's keep-or-replace rule for an _fbp the browser already holds,
+        // as ParamBuilder 1.3.2 applies it: four dot-separated parts are kept
+        // as they are, a fifth only if it is a valid appendix token. Nothing is
+        // appended. PHP twins: pys_fb_valid_appendix() / pys_fbp_is_valid() in
+        // includes/functions-fb-cookies.php.
+        var pysFbValidAppendix = function (suffix) {
+            suffix = String(suffix);
+            var tokens = ['AQ', 'Ag', 'Aw', 'BA', 'BQ', 'Bg'];
+
+            if (suffix.length === 2) {
+                return tokens.indexOf(suffix) !== -1;
+            }
+            if (suffix.length !== 8 || !/^[A-Za-z0-9_-]+$/.test(suffix)) {
+                return false;
+            }
+
+            var decoded;
+            try {
+                decoded = atob(suffix.replace(/-/g, '+').replace(/_/g, '/'));
+            } catch (e) {
+                return false;
+            }
+
+            return decoded.length === 6
+                && decoded.charCodeAt(0) === 1
+                && decoded.charCodeAt(1) >= 1
+                && decoded.charCodeAt(1) <= tokens.length;
+        };
+        var pysFbpIsValid = function (v) {
+            if (!v) return false;
+            var p = String(v).split('.');
+            if (p.length === 4) return true;
+            if (p.length === 5) return pysFbValidAppendix(p[4]);
+            return false;
+        };
         var genereateFbp = function (){
-            return !Cookies.get('_fbp') ? fbValuePrefix()+Math.floor(1000000000 + Math.random() * 9000000000) : Cookies.get('_fbp');
+            var existing = Cookies.get('_fbp');
+            return pysFbpIsValid(existing) ? existing : fbValuePrefix()+Math.floor(Math.random() * 2147483648);
         };
         var genereateFbc = function (){
             return getUrlParameter('fbclid') ? fbValuePrefix()+getUrlParameter('fbclid') : ''
+        };
+
+        // The click id inside an _fbc value: segment 4 of
+        // fb.<subdomain_index>.<creation_time>.<fbclid>[.<appendix>], indexed
+        // from the front so an appendix is never taken for the click id.
+        // PHP twin: pys_fbc_click_id() in includes/functions-fb-cookies.php.
+        var fbcClickId = function (value) {
+            var parts = String(value || '').split('.');
+
+            return parts.length >= 4 && parts[0] === 'fb' ? parts[3] : '';
         };
         // fire server side event gdpr plugin installed
         var isApiDisabled = options.gdpr.all_disabled_by_api ||
@@ -2843,7 +2956,7 @@
                     // send event from server if they was bloc by gdpr or need send with delay
                     allData.eventID = Utils.generateUniqueId(allData);
 
-                    if(Cookies.get('_fbp')){
+                    if(pysFbpIsValid(Cookies.get('_fbp'))){
                         params._fbp = Cookies.get('_fbp');
                     }
                     if(Cookies.get('_fbc')){
@@ -2895,7 +3008,7 @@
 
         function fireEvent(name, allData) {
 
-            if(typeof window.pys_event_data_filter === "function" && window.pys_disable_event_filter(name,'facebook')) {
+            if(typeof window.pys_disable_event_filter === "function" && window.pys_disable_event_filter(name,'facebook')) {
                 return;
             }
 
@@ -3016,12 +3129,23 @@
                     reportCookieDomain(cookieDomain());
                 }
 
-                let expires = parseInt(options.cookie_duration);
-                if(!Cookies.get('_fbp')) {
+                // Meta's cookies keep their own lifetime: cookie_duration is the
+                // "First Visit" attribution window and defaults to 7 days, which
+                // would mint a new browser identity every week. PHP twin:
+                // pys_fb_cookie_lifetime(). The fallback covers a page cached
+                // before the option existed.
+                let expires = parseInt(options.fb_cookie_duration) || 90;
+                if(!pysFbpIsValid(Cookies.get('_fbp'))) {
                     Cookies.set('_fbp',genereateFbp(),  { expires: expires,path: '/',domain: cookieDomain() });
                 }
 
-                if(getUrlParameter('fbclid')) {
+                // A new click replaces the stored value, so a returning visitor
+                // is reported under the ad they just clicked. The same click id
+                // does not: rewriting would move creation_time and tell Meta the
+                // click just happened. PHP twin: pys_fbc_needs_refresh().
+                var urlFbclid = getUrlParameter('fbclid');
+
+                if (urlFbclid && fbcClickId(Cookies.get('_fbc')) !== urlFbclid) {
                     Cookies.set('_fbc',genereateFbc(),  { expires: expires,path: '/',domain: cookieDomain() });
                 }
 
@@ -3126,7 +3250,7 @@
                 if(!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag()))
                     return;
                 var event = options.dynamicEvents.woo_add_to_cart_on_button_click[this.tag()];
-                window.pysWooProductData = window.pysWooProductData || [];
+                window.pysWooProductData = window.pysWooProductData || {};
                 if (window.pysWooProductData.hasOwnProperty(product_id)) {
                     if (window.pysWooProductData[product_id].hasOwnProperty('facebook')) {
                         event = Utils.copyProperties(event, {})
@@ -3138,7 +3262,7 @@
 
             onWooAddToCartOnSingleEvent: function (product_id, qty, product_type, $form) {
 
-                window.pysWooProductData = window.pysWooProductData || [];
+                window.pysWooProductData = window.pysWooProductData || {};
                 if(!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag()))
                     return;
                 var event = Utils.clone(options.dynamicEvents.woo_add_to_cart_on_button_click[this.tag()]);
@@ -3397,7 +3521,7 @@
          */
         function fireEvent(name, data) {
 
-            if(typeof window.pys_event_data_filter === "function" && window.pys_disable_event_filter(name,'ga')) {
+            if(typeof window.pys_disable_event_filter === "function" && window.pys_disable_event_filter(name,'ga')) {
                 return;
             }
 
@@ -3610,7 +3734,7 @@
 
             onWooAddToCartOnSingleEvent: function (product_id, qty, product_type, $form) {
 
-                window.pysWooProductData = window.pysWooProductData || [];
+                window.pysWooProductData = window.pysWooProductData || {};
 
                 if(!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag()))
                     return;
@@ -3738,7 +3862,7 @@
          * @param data
          */
         function fireEvent(name, event) {
-            if(typeof window.pys_event_data_filter === "function" && window.pys_disable_event_filter(name,'gtm')) {
+            if(typeof window.pys_disable_event_filter === "function" && window.pys_disable_event_filter(name,'gtm')) {
                 return;
             }
 
@@ -3990,7 +4114,7 @@
             },
 
             onWooAddToCartOnSingleEvent: function (product_id, qty, product_type, $form) {
-                window.pysWooProductData = window.pysWooProductData || [];
+                window.pysWooProductData = window.pysWooProductData || {};
 
                 if(!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag()))
                     return;
@@ -4363,7 +4487,7 @@
 
         function fireEvent(name, allData) {
 
-            if (typeof window.pys_event_data_filter === "function" && window.pys_disable_event_filter(name, 'openai')) {
+            if (typeof window.pys_disable_event_filter === "function" && window.pys_disable_event_filter(name, 'openai')) {
                 return;
             }
 
@@ -4704,6 +4828,13 @@
 
                 if (!options.dynamicEvents.woo_add_to_cart_on_button_click.hasOwnProperty(this.tag())) {
                     return;
+                }
+                // The click handler passes the parent id from input[name="add-to-cart"];
+                // the selected variation lives in its own hidden input. Without this swap
+                // OpenAI reported the parent while facebook, ga and gtm all reported the
+                // variation, even though wooVariableAsSimple was off.
+                if (product_type === Utils.PRODUCT_VARIABLE && !options.openai.wooVariableAsSimple) {
+                    product_id = parseInt($form.find('input[name="variation_id"]').val());
                 }
                 if (!window.pysWooProductData || !window.pysWooProductData.hasOwnProperty(product_id)) {
                     return;
@@ -5459,6 +5590,16 @@
             } )
                 .then( function(r) { return r.ok ? r.json() : Promise.reject(r.status); } )
                 .then( function(dynamic) {
+                    // An empty reply ([] for bots, and in Pro for user roles the
+                    // plugin is disabled for) means "do not track this visitor".
+                    // Going on would set options.cookie to undefined and throw in
+                    // pysNormalInit().
+                    if ( ! dynamic || ! dynamic.cookie ) {
+                        options.dynamicDataApplied = true;
+                        if ( options.debug ) console.warn( '[PYS] dynamic-options: tracking is disabled for this visitor.' );
+                        return;
+                    }
+
                     options.ajax_event         = dynamic.ajax_event;
                     options.cache_bypass       = dynamic.cache_bypass;
                     options.tracking_analytics = dynamic.tracking_analytics;

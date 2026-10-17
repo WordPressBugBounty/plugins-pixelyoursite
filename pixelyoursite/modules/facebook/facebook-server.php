@@ -168,11 +168,7 @@ class FacebookServer {
             PYS()->getLog()->debug('trackAddToCartEvent send fb server with out browser event');
             if( !empty($variation_id)
                 && $variation_id > 0
-                && ( !Facebook()->getOption( 'woo_variable_as_simple' )
-                    || ( Facebook()->getSlug() == "facebook"
-                        && !Facebook\Helpers\isDefaultWooContentIdLogic()
-                    )
-                )
+                && !Facebook\Helpers\facebookVariableAsSimple()
             ) {
                 $_product_id = $variation_id;
             } else {
@@ -325,6 +321,15 @@ class FacebookServer {
                 // connect timeout was skipped unless the SDK had pre-seeded it.
                 $opts->offsetSet(CURLOPT_CONNECTTIMEOUT, pys_server_connect_timeout());
                 $opts->offsetSet(CURLOPT_TIMEOUT, pys_server_request_timeout());
+
+                // Certificate checks stay on. The filter is an opt-in for a
+                // host with a broken CA bundle, and says so in the log.
+                if ( apply_filters( 'pys_fb_insecure_tls', false ) ) {
+                    $opts->offsetSet(CURLOPT_SSL_VERIFYPEER, false);
+                    $opts->offsetSet(CURLOPT_SSL_VERIFYHOST, false);
+                    PYS()->getLog()->error('TLS certificate verification is disabled by the pys_fb_insecure_tls filter');
+                }
+
                 $api->getHttpClient()->getAdapter()->setOpts($opts);
             }
             /**
@@ -359,7 +364,10 @@ class FacebookServer {
     public function saveFbTagsInOrder($order_param) {
         $pysData = [];
         $pysData['fbc'] = ServerEventHelper::getFbc();
-        $pysData['fbp'] = ServerEventHelper::getFbp();
+        // Only a value Meta's own library would keep: an invalid one stored here
+        // would be replayed on the order's later events.
+        $fbp = ServerEventHelper::getFbp();
+        $pysData['fbp'] = pys_fbp_is_valid( $fbp ) ? $fbp : null;
 
         $order = wc_get_order($order_param);
         if (isWooCommerceVersionGte('3.0.0') && !empty($order)) {

@@ -339,7 +339,7 @@ class GTM extends Settings implements Pixel {
             case 'automatic_event_search' :{
                 $event->addPayload(["name" => "search"]);
                 $event->addParams([
-                    "search_term"       =>  empty( $_GET['s'] ) ? null : $_GET['s'],
+                    "search_term"       =>  empty( $_GET['s'] ) ? null : sanitize_text_field( wp_unslash( $_GET['s'] ) ),
                 ]);
                 $isActive = $this->getOption($event->getId().'_enabled');
             } break;
@@ -499,13 +499,15 @@ class GTM extends Settings implements Pixel {
                     $args = array(
                         'v'    => 2,
                         'tid'  => $pixelID,
-                        'cid'  => isset($_COOKIE['_ga']) ? preg_replace('/GA\d+\.\d+\.(\d+\.\d+)/', '$1', $_COOKIE['_ga']) : time() . '.' . rand(100000, 999999), // Generate a random Client ID
+                        // Always a random Client ID, never the visitor's _ga cookie:
+                        // this markup can be stored in a page cache and served to everyone.
+                        'cid'  => time() . '.' . rand(100000, 999999),
                         'en'   => $event['name'], // The name of the event (eg view_item)
                         'ep.eventID'  => $event['eventID'],
                     );
 
-                    $args['dt'] = isset($event['params']['page_title']) ? urlencode($event['params']['page_title']) : '';
-                    $args['dl'] = isset($event['params']['event_url']) ? urlencode($event['params']['event_url']) : '';
+                    $args['dt'] = isset($event['params']['page_title']) ? $event['params']['page_title'] : '';
+                    $args['dl'] = isset($event['params']['event_url']) ? $event['params']['event_url'] : '';
                     // DYNAMICALLY LOOPING THROUGH ALL PARAMETERS EXCEPT "items"
                     foreach ($event['params'] as $key => $value) {
                         if ($key === 'items' || $key === 'page_title' || $key === 'event_url') {
@@ -517,17 +519,15 @@ class GTM extends Settings implements Pixel {
                     // Adding products
                     if (!empty($event['params']['items'])) {
                         foreach ($event['params']['items'] as $key => $item) {
-                            $args["pr" . ($key + 1) . "id"] = urlencode($item['item_id']);
-                            $args["pr" . ($key + 1) . "nm"] = urlencode($item['item_name']);
+                            $args["pr" . ($key + 1) . "id"] = $item['item_id'];
+                            $args["pr" . ($key + 1) . "nm"] = $item['item_name'];
                             $args["pr" . ($key + 1) . "pr"] = (float)$item['price'];
                             $args["pr" . ($key + 1) . "qt"] = (int)$item['quantity'];
-                            $args["pr" . ($key + 1) . "ca"] = urlencode($item['item_category']);
+                            $args["pr" . ($key + 1) . "ca"] = $item['item_category'];
                         }
                     }
 
-                    $src = add_query_arg( $args, 'https://www.google-analytics.com/collect' );
-                    $src = str_replace("[","%5B",$src);
-                    $src = str_replace("]","%5D",$src);
+                    $src = pys_noscript_pixel_src( 'https://www.google-analytics.com/collect', $args );
 
                     // ALT tag used to pass ADA compliance
                     printf( '<noscript><img height="1" width="1" style="display: none;" src="%s" alt="google_gtm"></noscript>',
@@ -834,7 +834,7 @@ class GTM extends Settings implements Pixel {
         $customProductPrice = -1;
 
         global $post;
-        $product = wc_get_product( $post->ID );
+        $product = pysWooGetProduct( $post->ID );
         if(!$product)  return false;
 
         $productId = Helpers\getWooProductContentId($product->get_id());
@@ -847,7 +847,7 @@ class GTM extends Settings implements Pixel {
             'price'    => getWooProductPriceToDisplay($product->get_id(), $quantity, $customProductPrice),
         );
 
-        $category = $this->getCategoryArrayWoo($productId);
+        $category = $this->getCategoryArrayWoo($product->get_id());
         if(!empty($category))
         {
             $general_item = array_merge($general_item, $category);
@@ -857,13 +857,22 @@ class GTM extends Settings implements Pixel {
 // Check if the product has variations
         if ($product->is_type('variable') && !GTM()->getOption( 'woo_variable_as_simple' )) {
 
-            $variations = $product->get_available_variations();
+            // The ids come from get_children(), not get_available_variations(): this loop
+            // reads nothing but the variation id out of that method's result, while the
+            // method itself builds every variation's prices, stock and attachment props
+            // and runs each one through the `woocommerce_available_variation` filter —
+            // where themes attach gallery data. pysWooVariationIsListable() is that
+            // method's own selection, so items[] holds what it held before — minus variations a
+            // plugin removed through the `woocommerce_available_variation` filter, which that
+            // build dropped and this walk cannot see.
+            $variation_ids = array_map('intval', (array) $product->get_children());
+            _prime_post_caches($variation_ids);
 
-            foreach ($variations as $variation) {
-                $variationProduct = wc_get_product($variation['variation_id']);
-                if($variationProduct) continue;
-                $variationProductId = Helpers\getWooProductContentId($variation['variation_id']);
-                $category = $this->getCategoryArrayWoo($variationProductId, true);
+            foreach ($variation_ids as $variation_id) {
+                $variationProduct = pysWooGetProduct($variation_id);
+                if(!pysWooVariationIsListable($variationProduct)) continue;
+                $variationProductId = Helpers\getWooProductContentId($variation_id);
+                $category = $this->getCategoryArrayWoo($variation_id, true);
 
                 $item = array(
                     'item_id'       => $variationProductId,
@@ -918,7 +927,7 @@ class GTM extends Settings implements Pixel {
         {
             foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
 
-                $product = wc_get_product(!empty($cart_item['variation_id'] && !GTM()->getOption('woo_variable_as_simple')) ? $cart_item['variation_id'] : $cart_item['product_id']);
+                $product = pysWooGetProduct(!empty($cart_item['variation_id'] && !GTM()->getOption('woo_variable_as_simple')) ? $cart_item['variation_id'] : $cart_item['product_id']);
 
                 if ($product) {
 
@@ -974,7 +983,7 @@ class GTM extends Settings implements Pixel {
         $price_id = !empty($args->args['priceId']) ? $args->args['priceId'] : $product_id;
         $quantity = $args->args['quantity'];
 
-        $product = wc_get_product( $product_id );
+        $product = pysWooGetProduct( $product_id );
         if(!$product) return false;
 
         $product_ids = array();
@@ -988,7 +997,7 @@ class GTM extends Settings implements Pixel {
         }
 
         foreach ($product_ids as $child_id) {
-            $childProduct = wc_get_product($child_id);
+            $childProduct = pysWooGetProduct($child_id);
             if(!$childProduct || ($childProduct->get_type() == "variable" && $isGrouped)) {
                 continue;
             }
@@ -1079,14 +1088,14 @@ class GTM extends Settings implements Pixel {
         $cart_item = $event->args['item'];
         $product_id = $cart_item['product_id'];
 
-        $product = wc_get_product( $product_id );
+        $product = pysWooGetProduct( $product_id );
         if(!$product) return false;
 
         $name = $product->get_title();
 
 
         if ( ! empty( $cart_item['variation_id'] ) ) {
-            $variation = wc_get_product( $cart_item['variation_id'] );
+            $variation = pysWooGetProduct( $cart_item['variation_id'] );
             if($variation && $variation->get_type() == 'variation'  && !GTM()->getOption( 'woo_variable_as_simple' )) {
                 $variation_name = !GTM()->getOption('woo_variations_use_parent_name') ? implode("/", $variation->get_variation_attributes()) : $product->get_title();
                 $categories = $this->getCategoryArrayWoo($product_id, true);
@@ -1114,7 +1123,7 @@ class GTM extends Settings implements Pixel {
             'currency'        => get_woocommerce_currency(),
             'items'           => array(
                 array(
-                    'item_id'       => $product_id,
+                    'item_id'       => Helpers\getWooProductContentId( Helpers\getWooCartItemId( $cart_item ) ),
                     'item_name'     => $name,
                     'quantity' => $cart_item['quantity'],
                     'price'    => $unit_price,
@@ -1167,9 +1176,9 @@ class GTM extends Settings implements Pixel {
             $product_id = Helpers\getWooCartItemId( $line_item );
             $content_id = Helpers\getWooProductContentId( $product_id );
 
-            $product = wc_get_product( $product_id );
+            $product = pysWooGetProduct( $product_id );
             if ($product && GTM()->getOption('woo_variable_as_simple') && $product->is_type('variation')) {
-                $product = wc_get_product($product->get_parent_id());
+                $product = pysWooGetProduct($product->get_parent_id());
             }
             if(!$product) continue;
             $name = GTM()->getOption('woo_variations_use_parent_name') && $product->is_type('variation') ? $product->get_title() : $product->get_name();
@@ -1177,7 +1186,7 @@ class GTM extends Settings implements Pixel {
 
 
             if ( $line_item['variation_id'] ) {
-                $variation = wc_get_product( $line_item['variation_id'] );
+                $variation = pysWooGetProduct( $line_item['variation_id'] );
                 if($variation && $variation->get_type() == 'variation' && !GTM()->getOption( 'woo_variable_as_simple' )) {
 
                     $variation_name = !GTM()->getOption('woo_variations_use_parent_name') ? implode("/", $variation->get_variation_attributes()) : $product->get_title();
@@ -1288,14 +1297,14 @@ class GTM extends Settings implements Pixel {
             $product_id = Helpers\getWooCartItemId( $cart_item );
             $content_id = Helpers\getWooProductContentId( $product_id );
 
-            $product = wc_get_product( $product_id );
+            $product = pysWooGetProduct( $product_id );
             if(!$product) continue;
 
             $name = GTM()->getOption('woo_variations_use_parent_name') && $product->is_type('variation') ? $product->get_title() : $product->get_name();
 
 
             if ( $cart_item['variation_id'] ) {
-                $variation = wc_get_product( $cart_item['variation_id'] );
+                $variation = pysWooGetProduct( $cart_item['variation_id'] );
                 if($variation && $variation->get_type() == 'variation' && !GTM()->getOption( 'woo_variable_as_simple' )) {
                     $variation_name = !GTM()->getOption('woo_variations_use_parent_name') ? implode("/", $variation->get_variation_attributes()) : $product->get_title();
                     $categories = $this->getCategoryArrayWoo($product_id, true);
@@ -1358,7 +1367,7 @@ class GTM extends Settings implements Pixel {
             $value_option = PYS()->getOption( $value_option_option );
             $global_value = PYS()->getOption( $value_global_option, 0 );
 
-            $params['value']    = getWooEventValueCart( $value_option, $global_value );
+            $params['value']    = getWooEventValueCart( $value_option, $global_value, 100, $context == 'InitiateCheckout' );
 
         }
 

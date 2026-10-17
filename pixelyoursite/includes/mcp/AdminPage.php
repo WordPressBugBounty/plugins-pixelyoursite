@@ -144,6 +144,7 @@ final class AdminPage {
 			'token_max'       => Auth::MAX_TOKENS,
 			'is_pro'          => Capabilities::isPro(),
 			'write_allowed'   => Capabilities::isWriteAllowed(),
+			'external_access' => $this->externalAccessStatus(),
 			'recent_activity' => Provenance::getRecent( 20 ),
 			'log_page_url'    => add_query_arg( array( 'page' => self::LOG_PAGE_SLUG ), admin_url( 'admin.php' ) ),
 			'infra_checks'    => $this->infrastructureChecks(),
@@ -186,6 +187,9 @@ final class AdminPage {
 			if ( '' !== $filters[ 'status' ] && (string) ( $entry[ 'result_status' ] ?? '' ) !== $filters[ 'status' ] ) {
 				return false;
 			}
+			if ( '' !== $filters[ 'source' ] && Provenance::entrySource( $entry ) !== $filters[ 'source' ] ) {
+				return false;
+			}
 			if ( 0 !== $filters[ 'since' ] && (int) ( $entry[ 'ts' ] ?? 0 ) < $filters[ 'since' ] ) {
 				return false;
 			}
@@ -213,6 +217,9 @@ final class AdminPage {
 		}
 		if ( '' !== $filters[ 'status' ] ) {
 			$baseArgs[ 'pys_status' ] = $filters[ 'status' ];
+		}
+		if ( '' !== $filters[ 'source' ] ) {
+			$baseArgs[ 'pys_source' ] = $filters[ 'source' ];
 		}
 		if ( '' !== $filters[ 'period' ] ) {
 			$baseArgs[ 'pys_period' ] = $filters[ 'period' ];
@@ -245,19 +252,23 @@ final class AdminPage {
 	 * Sanitize the log-subpage filter params from `$_GET`. `since` is the
 	 * resolved unix cutoff for the `period` shortcut (0 = no cutoff).
 	 *
-	 * @return array{tool:string, status:string, period:string, since:int, search:string, paged:int}
+	 * @return array{tool:string, status:string, source:string, period:string, since:int, search:string, paged:int}
 	 */
 	private function logFiltersFromRequest(): array {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only filter params
 		$tool   = isset( $_GET[ 'pys_tool' ] ) ? sanitize_text_field( wp_unslash( $_GET[ 'pys_tool' ] ) ) : '';
 		$status = isset( $_GET[ 'pys_status' ] ) ? sanitize_text_field( wp_unslash( $_GET[ 'pys_status' ] ) ) : '';
+		$source = isset( $_GET[ 'pys_source' ] ) ? sanitize_text_field( wp_unslash( $_GET[ 'pys_source' ] ) ) : '';
 		$period = isset( $_GET[ 'pys_period' ] ) ? sanitize_text_field( wp_unslash( $_GET[ 'pys_period' ] ) ) : '';
 		$search = isset( $_GET[ 'pys_search' ] ) ? sanitize_text_field( wp_unslash( $_GET[ 'pys_search' ] ) ) : '';
 		$paged  = isset( $_GET[ 'paged' ] ) ? max( 1, (int) $_GET[ 'paged' ] ) : 1;
 		// phpcs:enable
 
-		if ( !in_array( $status, array( Provenance::STATUS_SUCCESS, Provenance::STATUS_ERROR ), true ) ) {
+		if ( !in_array( $status, array( Provenance::STATUS_SUCCESS, Provenance::STATUS_ERROR, Provenance::STATUS_PREVIEW ), true ) ) {
 			$status = '';
+		}
+		if ( !in_array( $source, array( Provenance::SOURCE_PYS, Provenance::SOURCE_EXTERNAL ), true ) ) {
+			$source = '';
 		}
 
 		$periodMap = array(
@@ -272,6 +283,7 @@ final class AdminPage {
 		return array(
 			'tool'   => $tool,
 			'status' => $status,
+			'source' => $source,
 			'period' => $period,
 			'since'  => '' === $period ? 0 : time() - $periodMap[ $period ],
 			'search' => $search,
@@ -380,11 +392,36 @@ final class AdminPage {
 	}
 
 	/**
-	 * Lightweight server-side checks the Test Connection button surfaces.
-	 * Each entry is `[label, ok(bool), detail(string)]`. Order matters —
-	 * displayed top-down in the UI.
+	 * State of the "Other MCP servers" channels. `WP_MCP_VERSION` is set only
+	 * by the adapter plugin, not by copies bundled in other plugins.
 	 *
-	 * @return array<int, array{label:string, ok:bool, detail:string}>
+	 * @return array{enabled:bool, adapter_detected:bool, adapter_version:string, adapter_path:string, rest_available:bool, rest_path:string}
+	 */
+	private function externalAccessStatus(): array {
+		if ( !function_exists( 'is_plugin_active' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$adapter_detected = defined( 'WP_MCP_VERSION' ) || is_plugin_active( 'mcp-adapter/mcp-adapter.php' );
+		$adapter_version  = defined( 'WP_MCP_VERSION' ) ? (string) WP_MCP_VERSION : '';
+
+		return array(
+			'enabled'          => Capabilities::isExternalAccessAllowed(),
+			'adapter_detected' => $adapter_detected,
+			'adapter_version'  => $adapter_version,
+			'adapter_path'     => '/' . rest_get_url_prefix() . '/mcp/mcp-adapter-default-server',
+			'rest_available'   => function_exists( 'wp_register_ability' ),
+			'rest_path'        => '/' . rest_get_url_prefix() . '/wp-abilities/v1',
+		);
+	}
+
+	/**
+	 * Lightweight server-side checks the Test Connection button surfaces.
+	 * Each entry is `[label, ok(bool), detail(string)]`, plus `info` for rows
+	 * that report a state rather than pass/fail. Order matters — displayed
+	 * top-down in the UI.
+	 *
+	 * @return array<int, array{label:string, ok:bool, detail:string, info?:bool}>
 	 */
 	private function infrastructureChecks(): array {
 		$tokenActive = Auth::STATE_ACTIVE === Auth::state();
@@ -427,6 +464,31 @@ final class AdminPage {
 				'ok'     => Capabilities::isWriteAllowed(),
 				'detail' => Capabilities::isWriteAllowed() ? 'Writes enabled' : 'Read-only mode is on — set_* tools are blocked.',
 			),
+			array(
+				'label'  => 'Other MCP servers',
+				'ok'     => true,
+				'info'   => true,
+				'detail' => $this->externalAccessDetail( $this->externalAccessStatus() ),
+			),
 		);
+	}
+
+	/**
+	 * Connection-test line for the "Other MCP servers" state.
+	 *
+	 * @param array $status {@see externalAccessStatus()}.
+	 * @return string
+	 */
+	private function externalAccessDetail( array $status ): string {
+		$state = $status[ 'enabled' ] ? 'On' : 'Off';
+		if ( !$status[ 'adapter_detected' ] ) {
+			return $state . ' — WordPress MCP Adapter not detected; PixelYourSite tools are '
+			       . ( $status[ 'enabled' ] ? 'available to' : 'hidden from' ) . ' the WordPress abilities REST API.';
+		}
+
+		$adapter = trim( 'WordPress MCP Adapter ' . $status[ 'adapter_version' ] );
+
+		return $state . ' — ' . $adapter . ' detected, PixelYourSite tools '
+		       . ( $status[ 'enabled' ] ? 'available to it.' : 'hidden from it.' );
 	}
 }

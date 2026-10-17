@@ -144,19 +144,28 @@ class ParamBuilderAdapter {
             ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) )
             : (string) wp_parse_url( get_site_url(), PHP_URL_HOST );
 
-        // Passed RAW, query string intact — pys_resolve_event_referrer_url()
-        // strips it to keep PII out of referrer_url, but the library only reads
-        // an fbclid from this query. Nothing leaves the process: we don't use
-        // getReferrerUrl().
-        $referer = ! empty( $_SERVER['HTTP_REFERER'] )
-            ? esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) )
-            : null;
+        // The library never parses a query itself. It reads `fbclid` from
+        // $_GET-style input and from the referrer through parse_str(), which
+        // keeps the LAST of `?fbclid=A&fbclid=B` (our JS stores A) and turns
+        // `?fbclid[0]=B` into an array it concatenates as "Array"
+        // (capi-param-builder issue #45). So we resolve the click id with the
+        // reader the main path uses — URL first, then the referrer — and hand
+        // over that alone. The referrer itself is withheld: getReferrerUrl(),
+        // its only other consumer, is not used.
+        $fbclid = (string) pys_query_param_first(
+            isset( $_SERVER['QUERY_STRING'] ) ? (string) $_SERVER['QUERY_STRING'] : '',
+            'fbclid'
+        );
+
+        if ( '' === $fbclid ) {
+            $fbclid = pys_fbclid_from_referrer();
+        }
 
         return new PlainDataObject(
             $host,
-            $_GET,
+            '' !== $fbclid ? array( 'fbclid' => $fbclid ) : array(),
             $this->normalised_cookies(),
-            $referer,
+            null,
             // x_forwarded_for is deliberately null: the library would take the
             // first hop of it as the client, which is spoofable and ignores
             // every proxy header we actually trust.
@@ -225,6 +234,15 @@ class ParamBuilderAdapter {
      * @return string|null
      */
     public function get_fbp() {
+        // Consent first. With pys_meta_ldu_mode events reach Meta without
+        // consent, while flush_cookies() writes nothing: the library has
+        // already invented a value that exists in no browser, and handing it
+        // out would send Meta an identity stored nowhere. The browser's real
+        // cookie still arrives through ServerEventHelper::getFbp().
+        if ( ! Consent()->checkConsent( 'facebook' ) ) {
+            return null;
+        }
+
         if ( pys_cookie_domain_pending() ) {
             // Not bounded — see pys_cookie_domain_pending(). Withheld, not
             // reported: only the caller knows whether the browser supplied an
@@ -261,6 +279,12 @@ class ParamBuilderAdapter {
      * @return string|null
      */
     public function get_fbc() {
+        // Same reason as get_fbp(): without consent nothing is persisted, and
+        // the main path does not build an `_fbc` from an fbclid then either.
+        if ( ! Consent()->checkConsent( 'facebook' ) ) {
+            return null;
+        }
+
         $this->run();
 
         return $this->builder ? $this->builder->getFbc() : null;
@@ -278,41 +302,26 @@ class ParamBuilderAdapter {
     }
 
     /**
-     * How long to keep a cookie the library produced.
-     *
-     * The site's own cookie_duration wins; the library's fixed 90 days is only
-     * a fallback for a site that has somehow cleared the setting.
-     *
-     * @param int $days            cookie_duration, in days.
-     * @param int $library_max_age The library's own max_age, in seconds.
-     * @return int Seconds.
-     */
-    public static function cookie_max_age( $days, $library_max_age ) {
-        $days = (int) $days;
-
-        return $days > 0 ? $days * DAY_IN_SECONDS : (int) $library_max_age;
-    }
-
-    /**
      * Persist whatever the library decided needs writing.
      *
      * Consent-gated, and it overrides two of the library's own choices: the
      * domain comes from pys_cookie_domain() so PHP and the front end cannot
-     * disagree, and the lifetime comes from the site's cookie_duration setting
-     * rather than the library's fixed 90 days.
+     * disagree, and the lifetime comes from pys_fb_cookie_lifetime() (90 days,
+     * `pys_fb_cookie_lifetime_days` filter) rather than the library's own max_age.
      */
     public function flush_cookies() {
-        if ( headers_sent() || ! Consent()->checkConsent( 'facebook' ) ) {
+        if ( ! Consent()->checkConsent( 'facebook' ) ) {
             return;
         }
 
-        // Browser hasn't told us the registrable domain yet and this site
-        // wants one, so any scope chosen now would be contradicted next
+        // Headers gone, every PYS cookie switched off by the site, or the
+        // browser hasn't told us the registrable domain yet and this site
+        // wants one — any scope chosen now would be contradicted next
         // request; our script resolves it and writes the cookies itself.
         //
         // Checked before the write-once latch below on purpose: sharing one
         // latch would mean a deferred first call consumed the single write.
-        if ( pys_cookie_domain_pending() ) {
+        if ( ! pys_may_write_cookies() ) {
             return;
         }
 
@@ -331,12 +340,13 @@ class ParamBuilderAdapter {
             return;
         }
 
-        $days    = PYS()->getOption( 'cookie_duration' );
+        $max_age = pys_fb_cookie_lifetime();
         $written = array();
 
         foreach ( $this->builder->getCookiesToSet() as $cookie ) {
-            $max_age = self::cookie_max_age( $days, $cookie->max_age );
-
+            // The library's own max_age is ignored for the same reason
+            // the lifetime is: one lifetime answers for `_fbp` and `_fbc`
+            // whichever writer produced them.
             setcookie( $cookie->name, $cookie->value, time() + $max_age, '/', pys_cookie_domain() );
 
             // Readable within this same request, so anything running later sees
@@ -354,7 +364,7 @@ class ParamBuilderAdapter {
                 continue;
             }
 
-            setcookie( $name, $value, time() + self::cookie_max_age( $days, DAY_IN_SECONDS * 90 ), '/', pys_cookie_domain() );
+            setcookie( $name, $value, time() + $max_age, '/', pys_cookie_domain() );
             $_COOKIE[ $name ] = $value;
         }
     }
@@ -370,17 +380,9 @@ class ParamBuilderAdapter {
      */
     public static function strip_appendix( $value ) {
         $value = (string) $value;
-        $dot   = strrpos( $value, '.' );
 
-        if ( false === $dot ) {
-            return $value;
-        }
-
-        $suffix = substr( $value, $dot + 1 );
-
-        // 8 characters is the current format; 2 is the legacy language token.
-        if ( preg_match( '/^[A-Za-z0-9_-]{8}$/', $suffix ) || preg_match( '/^[A-Za-z0-9_-]{2}$/', $suffix ) ) {
-            return substr( $value, 0, $dot );
+        if ( pys_fb_has_appendix( $value ) ) {
+            return substr( $value, 0, strrpos( $value, '.' ) );
         }
 
         return $value;

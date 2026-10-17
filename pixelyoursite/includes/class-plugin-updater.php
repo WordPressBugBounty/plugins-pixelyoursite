@@ -74,8 +74,8 @@ class Plugin_Updater {
      */
     public function init() {
 
-        // Must work in every context: WP-CLI and wp-cron (background auto-updates)
-        // read this transient too, and they never reach the admin-only hooks below.
+        // Must work in every context: WP-CLI, wp-cron (background auto-updates) and the
+        // REST API read this transient too, and they never reach the admin-only hooks below.
         add_filter( 'site_transient_update_plugins', array( $this, 'check_update' ) );
         add_filter( 'plugins_api', array( $this, 'plugins_api_filter' ), 10, 3 );
 
@@ -151,7 +151,7 @@ class Plugin_Updater {
 
             }
 
-            $_transient_data->last_checked           = current_time( 'timestamp' );
+            // last_checked belongs to Core: it schedules the plugin update checks from it.
             $_transient_data->checked[ $this->name ] = $this->version;
 
         }
@@ -217,7 +217,6 @@ class Plugin_Updater {
 
             }
 
-            $update_cache->last_checked           = current_time( 'timestamp' );
             $update_cache->checked[ $this->name ] = $this->version;
 
             set_site_transient( 'update_plugins', $update_cache );

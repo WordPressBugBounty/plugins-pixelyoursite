@@ -1,7 +1,7 @@
 <?php
 /**
  * Base class for every ability. Carries the `wp_register_ability()`
- * boilerplate (category, annotations, `meta.mcp.public`, callbacks);
+ * boilerplate (category, annotations, visibility meta, callbacks);
  * subclasses just define id / label / description / schemas / logic.
  * Defaults to `permissionCallback => true` and `readonly: true`;
  * {@see AbstractWriteAbility} overrides both for writes.
@@ -20,6 +20,7 @@ if ( !defined( 'ABSPATH' ) ) {
 use PixelYourSite\MCP\Capabilities;
 use PixelYourSite\MCP\ErrorEnvelope;
 use PixelYourSite\MCP\McpServer;
+use PixelYourSite\MCP\ToolNameMap;
 
 abstract class AbstractAbility {
 
@@ -70,17 +71,21 @@ abstract class AbstractAbility {
 	abstract public static function execute( $input );
 
 	/**
-	 * Permission gate. Every ability requires the current user to hold
-	 * `Capabilities::REQUIRED_CAPABILITY`. The transport Bearer check is NOT
-	 * enough on its own: abilities are published with `meta.mcp.public`, so any
-	 * other MCP server on the site can execute them for whoever it
-	 * authenticated (by default anyone with `read`). Write abilities extend
-	 * this with the read-only gate.
+	 * Permission gate. First the context: outside our own MCP endpoint (and
+	 * WP-CLI) a call is refused unless the "Other MCP servers" toggle is on.
+	 * This is the security boundary — the visibility meta only hides the
+	 * abilities. Then the current user must hold
+	 * `Capabilities::REQUIRED_CAPABILITY`: other MCP servers and the core REST
+	 * API authenticate anyone with `read`. Write abilities extend this with
+	 * the read-only gate.
 	 *
 	 * @param mixed $input Tool args (some gates inspect them).
 	 * @return bool|\WP_Error True to allow, or a WP_Error envelope to deny.
 	 */
 	public static function permissionCallback( $input = null ) {
+		if ( !Capabilities::isAccessAllowedInThisContext() ) {
+			return ErrorEnvelope::externalAccessDisabled();
+		}
 		if ( !Capabilities::currentUserCanManage() ) {
 			return ErrorEnvelope::forbidden();
 		}
@@ -132,16 +137,20 @@ abstract class AbstractAbility {
 			return;
 		}
 
+		$external = static::isPublic();
+
 		$args = array(
 			'label'               => static::label(),
-			'description'         => static::description(),
+			'description'         => static::resolvedDescription(),
 			'category'            => McpServer::ABILITY_CATEGORY,
 			'input_schema'        => static::resolvedInputSchema(),
-			'execute_callback'    => array( static::class, 'execute' ),
+			'execute_callback'    => static::executeCallback(),
 			'permission_callback' => array( static::class, 'permissionCallback' ),
 			'meta'                => array(
-				'annotations' => static::annotations(),
-				'mcp'         => array( 'public' => true ),
+				'annotations'  => static::annotations(),
+				'public'       => $external,                     // core: seeds the channel flags
+				'show_in_rest' => $external,                     // core wp-abilities/v1
+				'mcp'          => array( 'public' => $external ), // MCP Adapter default server
 			),
 		);
 
@@ -151,6 +160,61 @@ abstract class AbstractAbility {
 		}
 
 		wp_register_ability( static::id(), $args );
+	}
+
+	/**
+	 * Whether other MCP servers and the core REST API may list the ability.
+	 *
+	 * @return bool
+	 */
+	protected static function isPublic(): bool {
+		return Capabilities::isExternalAccessAllowed();
+	}
+
+	/**
+	 * The description registered for the tool: the prefixes, then the
+	 * subclass description.
+	 *
+	 * @return string
+	 */
+	protected static function resolvedDescription(): string {
+		return implode( ' ', array_merge( static::descriptionPrefixes(), array( static::description() ) ) );
+	}
+
+	/**
+	 * Texts placed ahead of the description, so clients that cut long
+	 * descriptions still show them. A parent can add its own.
+	 *
+	 * @return string[]
+	 */
+	protected static function descriptionPrefixes(): array {
+		$note = static::externalNamingNote();
+
+		return '' === $note ? array() : array( $note );
+	}
+
+	/**
+	 * How to read our tool names on other servers; empty while they have no
+	 * access or the ability has no mapped name.
+	 *
+	 * @return string
+	 */
+	protected static function externalNamingNote(): string {
+		if ( !Capabilities::isExternalAccessAllowed() || null === ToolNameMap::resolve( static::id() ) ) {
+			return '';
+		}
+
+		return ToolNameMap::EXTERNAL_NAMING_NOTE;
+	}
+
+	/**
+	 * The callable registered as the ability's `execute_callback`. A parent
+	 * can wrap `execute()` here (e.g. the write confirmation gate).
+	 *
+	 * @return callable
+	 */
+	protected static function executeCallback(): callable {
+		return array( static::class, 'execute' );
 	}
 
 	/**

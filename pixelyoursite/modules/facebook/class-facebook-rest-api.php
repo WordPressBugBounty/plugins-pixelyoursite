@@ -56,10 +56,57 @@ class Facebook_REST_API {
 
         $singleEvent = $this->data_to_single_event( $event, $data, $eventID, $ids, $woo_order, $edd_order, $referrer_url, $event_source_url );
 
-        // Send event using existing Facebook server logic
-        FacebookServer()->sendEventsNow( array( $singleEvent ) );
+        $authenticated = $this->authenticateVisitor();
+
+        try {
+            // Send event using existing Facebook server logic
+            FacebookServer()->sendEventsNow( array( $singleEvent ) );
+        } finally {
+            if ( $authenticated ) {
+                // Back to the state this request had before us: anonymous.
+                wp_set_current_user( 0 );
+            }
+        }
 
         return new \WP_REST_Response( array( 'success' => true ), 200 );
+    }
+
+    /**
+     * Recognise the visitor this event belongs to.
+     *
+     * WordPress treats every REST request without an X-WP-Nonce as anonymous
+     * (rest_cookie_check_errors() in wp-includes/rest-api.php calls
+     * wp_set_current_user(0)), and this route deliberately has no nonce -- see
+     * check_permission() for why. Without this, a logged-in visitor's event is
+     * built as if nobody were there: no account id in external_id, and no
+     * email or name from their profile in advanced matching, while user_role
+     * from the page render still says otherwise.
+     *
+     * Re-validating the logged-in cookie is how pys/v1/dynamic-options already
+     * does it. It identifies, it does not authorize: nothing here depends on a
+     * capability.
+     *
+     * @return bool Whether a user was set and has to be unset afterwards.
+     */
+    protected function authenticateVisitor() {
+
+        if ( get_current_user_id() > 0 ) {
+            return false; // already recognised; not ours to change or restore
+        }
+
+        if ( ! defined( 'LOGGED_IN_COOKIE' ) || empty( $_COOKIE[ LOGGED_IN_COOKIE ] ) ) {
+            return false;
+        }
+
+        $user_id = wp_validate_auth_cookie( $_COOKIE[ LOGGED_IN_COOKIE ], 'logged_in' );
+
+        if ( ! $user_id ) {
+            return false;
+        }
+
+        wp_set_current_user( (int) $user_id );
+
+        return true;
     }
 
     /**

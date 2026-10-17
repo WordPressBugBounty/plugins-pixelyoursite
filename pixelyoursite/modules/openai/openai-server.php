@@ -416,7 +416,11 @@ class OpenAIServer {
             return;
         }
 
-        setcookie( '__oppref', $from_url, 2147483647, '/', pys_cookie_domain() );
+        // Not stored when the site switched every PYS cookie off; the rest of
+        // this request still reads it from $_COOKIE.
+        if ( ! pys_cookie_domain_cookies_disabled() ) {
+            setcookie( '__oppref', $from_url, time() + Helpers\pys_openai_cookie_lifetime(), '/', pys_cookie_domain() );
+        }
         $_COOKIE['__oppref'] = $from_url;
     }
 

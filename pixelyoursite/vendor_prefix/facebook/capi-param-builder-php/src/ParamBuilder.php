@@ -67,13 +67,18 @@ final class ParamBuilder
             foreach ($params as $domain) {
                 array_push(
                     $this->domain_list,
-                    ParamBuilder::extractHostFromHttpHost($domain)
+                    strtolower(
+                        rtrim(
+                            ParamBuilder::extractHostFromHttpHost($domain),
+                            '.'
+                        )
+                    )
                 );
             }
         }
     }
 
-    private function validateAppendix($appendix_value)
+    private static function validateAppendix($appendix_value)
     {
         $appendix_length = strlen($appendix_value);
 
@@ -84,7 +89,22 @@ final class ParamBuilder
 
         // V2 format: 8-character appendix
         if ($appendix_length == APPENDIX_LENGTH_V2) {
-            return true;
+            if (!preg_match('/^[A-Za-z0-9_-]+$/D', $appendix_value)) {
+                return false;
+            }
+
+            $decoded = base64_decode(
+                strtr($appendix_value, '-_', '+/'),
+                true
+            );
+            if ($decoded === false || strlen($decoded) !== 6) {
+                return false;
+            }
+
+            $language_index = ord($decoded[1]);
+            return ord($decoded[0]) === DEFAULT_FORMAT &&
+                $language_index >= 1 &&
+                $language_index <= count(SUPPORTED_LANGUAGES_TOKEN);
         }
 
         return false;
@@ -120,7 +140,7 @@ final class ParamBuilder
         // Cookie exist, contains language token. Validate it
         if (
             $slice_length == PAYLOAD_SPLIT_LENGTH_WITH_LANGUAGE_TOKEN &&
-            !$this->validateAppendix(
+            !self::validateAppendix(
                 $slices[PAYLOAD_SPLIT_LENGTH_WITH_LANGUAGE_TOKEN - 1]
             )
         ) {
@@ -395,7 +415,9 @@ final class ParamBuilder
                 $this->sub_domain_index = 0;
                 return;
             }
-            $host = ParamBuilder::extractHostFromHttpHost($host);
+            $host = strtolower(
+                rtrim(ParamBuilder::extractHostFromHttpHost($host), '.')
+            );
 
             if (
                 ParamBuilder::isIPAddress($host)
@@ -417,13 +439,15 @@ final class ParamBuilder
             return $this->etld_plus1_resolver->resolveETLDPlus1($host);
         } else if ($this->domain_list !== null) {
             foreach ($this->domain_list as $domain_candidate) {
-                $lastOccurrence = strpos($host, $domain_candidate);
+                $lastOccurrence = strlen($host) - strlen($domain_candidate);
                 if (
-                    $lastOccurrence !== false
-                    && $lastOccurrence ===
-                    strlen($host) - strlen($domain_candidate)
+                    $lastOccurrence >= 0
+                    && substr($host, $lastOccurrence) === $domain_candidate
                 ) {
-                    if ($host[$lastOccurrence - 1] === '.') {
+                    if (
+                        $lastOccurrence === 0
+                        || $host[$lastOccurrence - 1] === '.'
+                    ) {
                         return $domain_candidate;
                     }
                 }
@@ -548,15 +572,22 @@ final class ParamBuilder
 
     private static function removeLanguageToken($input)
     {
-        // Find the position of the last dot
         $lastDot = strrpos($input, '.');
         if ($lastDot !== false) {
             $suffix = substr($input, $lastDot + 1);
             if (
-                in_array($suffix, SUPPORTED_LANGUAGES_TOKEN, true) ||
-                mb_strlen($suffix) == APPENDIX_LENGTH_V2
+                self::validateAppendix($suffix)
             ) {
-                return substr($input, 0, $lastDot);
+                $value = substr($input, 0, $lastDot);
+                $previousDot = strrpos($value, '.');
+                while (
+                    $previousDot !== false &&
+                    substr($value, $previousDot + 1) === $suffix
+                ) {
+                    $value = substr($value, 0, $previousDot);
+                    $previousDot = strrpos($value, '.');
+                }
+                return $value;
             }
         }
         return $input;
@@ -569,8 +600,7 @@ final class ParamBuilder
         if ($lastDot !== false) {
             $suffix = substr($input, $lastDot + 1);
             if (
-                in_array($suffix, SUPPORTED_LANGUAGES_TOKEN, true) ||
-                mb_strlen($suffix) == APPENDIX_LENGTH_V2
+                self::validateAppendix($suffix)
             ) {
                 return $suffix;
             }

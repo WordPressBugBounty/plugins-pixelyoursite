@@ -23,6 +23,9 @@ final class PYS extends Settings implements Plugin {
     /** @var $registeredPlugins array Registered plugins (addons) */
     private $registeredPlugins = array();
 
+    /** @var $updateCheckersRegistered bool Update checkers are registered once per request */
+    private $updateCheckersRegistered = false;
+
     private $adminPagesSlugs = array();
     private $externalId;
     /**
@@ -72,6 +75,14 @@ final class PYS extends Settings implements Plugin {
          * 'pys_register_plugins', so $registeredPlugins is filled by then.
          */
         add_action( 'init', array( $this, 'updatePlugin' ), 10 );
+
+        /**
+         * REST API requests (remote management tools read the list of updates over
+         * them) can not be told apart from front-end ones on 'init': the route is
+         * only resolved on 'parse_request'. Priority 9 because rest_api_loaded()
+         * serves the request at priority 10 and dies.
+         */
+        add_action( 'parse_request', array( $this, 'updatePlugin' ), 9 );
 	    add_action( 'admin_init', 'PixelYourSite\manageAdminPermissions' );
 	    add_action( 'admin_init', 'PixelYourSite\pys_add_privacy_policy_content' );
 
@@ -116,19 +127,10 @@ final class PYS extends Settings implements Plugin {
         add_action('wp_login', [$this,'userLogin'], 10, 2);
         // track user registrations
         add_action( 'user_register', array( $this, 'userRegisterHandler' ) );
-	    // "admin_permission" option custom sanitization function
-	    add_filter( 'pys_core_settings_sanitize_admin_permissions_field', function( $value ) {
-
-	    	// "administrator" always should be allowed
-	    	if ( ! is_array( $value ) || ! in_array( 'administrator', $value ) ) {
-	    		$value[] = 'administrator';
-		    }
-
-		    manageAdminPermissions();
-
-	    	return $this->sanitize_multi_select_field( $value );
-
-	    } );
+	    // permission options custom sanitization functions
+	    add_filter( 'pys_core_settings_sanitize_admin_permissions_field', array( $this, 'sanitizeAdminPermissionsField' ) );
+	    add_filter( 'pys_core_settings_sanitize_woo_edd_reports_permissions_field', array( $this, 'sanitizeReportsPermissionsField' ) );
+	    add_filter( 'pys_core_settings_sanitize_woo_edd_export_permissions_field', array( $this, 'sanitizeExportPermissionsField' ) );
 
 	    add_action( 'wp_ajax_pys_get_gdpr_filters_values', array( $this, 'ajaxGetGdprFiltersValues' ) );
 	    add_action( 'wp_ajax_nopriv_pys_get_gdpr_filters_values', array( $this, 'ajaxGetGdprFiltersValues' ) );
@@ -186,6 +188,10 @@ final class PYS extends Settings implements Plugin {
         // pixel finds _fbp already present instead of minting its own. No-op
         // unless the pys_use_capi_param_builder filter turns it on.
         add_action( 'init', array( 'PixelYourSite\ParamBuilderAdapter', 'boot' ), 21 );
+
+        // Opt-in (Meta setting first_request_cookies): _fbp / _fbc in the first
+        // HTML response, for anything that reads them before our script runs.
+        add_action( 'init', array( 'PixelYourSite\ServerEventHelper', 'writeFirstRequestCookies' ), 22 );
     }
 
     public function init() {
@@ -1100,8 +1106,12 @@ final class PYS extends Settings implements Plugin {
     public function adminMenu() {
         global $submenu;
 
-        add_menu_page( 'PixelYourSite', 'PixelYourSite', 'manage_pys', 'pixelyoursite',
+        $main_page_hook = add_menu_page( 'PixelYourSite', 'PixelYourSite', 'manage_pys', 'pixelyoursite',
             array( $this, 'adminPageMain' ), PYS_FREE_URL . '/dist/images/favicon.png' );
+
+        if ( ! current_user_can( 'manage_pys_data_export' ) ) {
+            add_action( 'load-' . $main_page_hook, array( $this, 'sendLogsDeniedStatus' ) );
+        }
         add_submenu_page( 'pixelyoursite', 'Global Settings', 'Global Settings',
             'manage_pys', 'pixelyoursite_settings', array( $this, 'adminSinglePage' ) );
         add_submenu_page('pixelyoursite',__('Queue Settings PRO', 'pys'),__('Queue Settings PRO', 'pys'),
@@ -1199,6 +1209,8 @@ final class PYS extends Settings implements Plugin {
 
             wp_enqueue_script( 'pys_js', PYS_FREE_URL . '/dist/scripts/admin.js', array( 'jquery', 'select2_js', 'popper', 'tippy',
                                                                                  'bootstrap' ), PYS_FREE_VERSION );
+            // Lets admin.js detect and store the site's cookie domain once.
+            wp_localize_script( 'pys_js', 'pysCookieDomainDetect', pys_cookie_domain_detect_data() );
 
             if( (isset($_GET['page']) && $_GET['page'] == "pixelyoursite" && isset($_GET['tab']) && ($_GET['tab'] == 'events')) ||
                 ( isset($_GET['page']) && (( $_GET['page'] == "pixelyoursite_woo_reports" ) || $_GET['page'] == "pixelyoursite_edd_reports" )) ||
@@ -1252,7 +1264,7 @@ final class PYS extends Settings implements Plugin {
     /**
      * Should the update checker be registered for the current request?
      *
-     * Front-end requests are skipped on purpose: nothing there reads the
+     * Front-end page views are skipped on purpose: nothing there reads the
      * update_plugins transient, and building the updater may trigger a
      * blocking request to our licensing API on a visitor's page load.
      *
@@ -1279,15 +1291,30 @@ final class PYS extends Settings implements Plugin {
             return true;
         }
 
-        return false;
+        // REST API. The query var is what rest_api_loaded() itself goes by,
+        // REST_REQUEST is not defined yet when we are called on 'parse_request'.
+        $rest_route = isset( $GLOBALS['wp'] ) && ! empty( $GLOBALS['wp']->query_vars['rest_route'] )
+            ? (string) $GLOBALS['wp']->query_vars['rest_route']
+            : '';
+
+        if ( $rest_route !== '' ) {
+            // Our own routes (pys/v1, pys-facebook/v1, ...) are requested on visitors'
+            // page views, and nobody reads the list of updates through them.
+            return ! preg_match( '#^/?pys[/-]#i', $rest_route );
+        }
+
+        return defined( 'REST_REQUEST' ) && REST_REQUEST;
 
     }
 
     public function updatePlugin() {
 
-        if ( ! $this->shouldCheckPluginUpdates() ) {
+        // hooked more than once, see the constructor
+        if ( $this->updateCheckersRegistered || ! $this->shouldCheckPluginUpdates() ) {
             return;
         }
+
+        $this->updateCheckersRegistered = true;
 
         foreach ( $this->registeredPlugins as $slug => $plugin ) {
         
@@ -1425,6 +1452,118 @@ final class PYS extends Settings implements Plugin {
 
 	}
 
+    public function sendLogsDeniedStatus() {
+        if ( 'logs' === getCurrentAdminTab() ) {
+            status_header( 403 );
+        }
+    }
+
+    /**
+     * Only site administrators may change who can use the plugin.
+     *
+     * @return bool
+     */
+    public function canEditPermissions() {
+        return current_user_can( 'manage_options' );
+    }
+
+    /**
+     * Sanitize the general plugin access list.
+     *
+     * @param mixed $value Submitted field value.
+     *
+     * @return array
+     */
+    public function sanitizeAdminPermissionsField( $value ) {
+
+        if ( ! $this->canEditPermissions() ) {
+            return (array) $this->getOption( 'admin_permissions', array( 'administrator' ) );
+        }
+
+        $value = is_array( $value ) ? $value : array();
+
+        // "administrator" always should be allowed
+        if ( ! in_array( 'administrator', $value ) ) {
+            $value[] = 'administrator';
+        }
+
+        manageAdminPermissions();
+
+        return $this->sanitize_multi_select_field( $value );
+
+    }
+
+    /**
+     * @param mixed $value Submitted field value.
+     *
+     * @return array
+     */
+    public function sanitizeReportsPermissionsField( $value ) {
+        return $this->sanitizeScopedPermissionsField( 'woo_edd_reports_permissions', $value );
+    }
+
+    /**
+     * @param mixed $value Submitted field value.
+     *
+     * @return array
+     */
+    public function sanitizeExportPermissionsField( $value ) {
+        return $this->sanitizeScopedPermissionsField( 'woo_edd_export_permissions', $value );
+    }
+
+    /**
+     * Sanitize a role list that narrows general plugin access, keeping it
+     * within the roles allowed by "admin_permissions".
+     *
+     * @param string $key   Option key.
+     * @param mixed  $value Submitted field value.
+     *
+     * @return array
+     */
+    private function sanitizeScopedPermissionsField( $key, $value ) {
+
+        if ( ! $this->canEditPermissions() ) {
+            return (array) $this->getOption( $key, array( 'administrator' ) );
+        }
+
+        $value = is_array( $value ) ? $value : array();
+        $value = array_intersect( $value, $this->getSubmittedAdminPermissions() );
+
+        // "administrator" always should be allowed
+        if ( ! in_array( 'administrator', $value ) ) {
+            $value[] = 'administrator';
+        }
+
+        manageAdminPermissions();
+
+        return $this->sanitize_multi_select_field( array_values( $value ) );
+
+    }
+
+    /**
+     * Roles holding general plugin access for the current request; the
+     * submitted value wins because the stored one is still the previous value.
+     *
+     * @return array
+     */
+    private function getSubmittedAdminPermissions() {
+
+        if ( isset( $_POST['pys']['core']['admin_permissions'] ) && is_array( $_POST['pys']['core']['admin_permissions'] ) ) {
+            $permissions = array_map( 'sanitize_text_field', wp_unslash( $_POST['pys']['core']['admin_permissions'] ) );
+        } else {
+            $permissions = (array) $this->getOption( 'admin_permissions', array( 'administrator' ) );
+        }
+
+        // the field posts an empty hidden value
+        $permissions = array_filter( $permissions );
+
+        if ( ! in_array( 'administrator', $permissions ) ) {
+            $permissions[] = 'administrator';
+        }
+
+        return $permissions;
+    }
+
     private function adminSaveSettings() {
 
     	if ( ! $this->adminSecurityCheck() ) {
@@ -1479,6 +1618,9 @@ final class PYS extends Settings implements Plugin {
 	        }
             GATags()->updateOptions();
 	        purgeCache();
+            if ( class_exists( 'PixelYourSite\FeedIdCheck' ) ) {
+                FeedIdCheck::refreshState();
+            }
 
         }
 

@@ -36,6 +36,7 @@
   "woo_variable_data_select_product": "checkbox",
   "woo_variations_use_parent_name": "checkbox",
   "woo_content_id": "select",
+  "woo_content_id_variation_sku": "select",
   "woo_content_id_prefix": "text",
   "woo_content_id_suffix": "text",
   "woo_wpml_unified_id": "checkbox",

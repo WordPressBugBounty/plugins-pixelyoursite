@@ -371,7 +371,11 @@ class EventsWoo extends EventsFactory {
                 $variation_name = "";
             }
             $sale_price = -1;
-
+            // a discount plugin has already priced this line with its real quantity and conditions
+            $discounted = pys_woo_get_discounted_cart_item_price( $cart_item, $product->get_price() );
+            if ( $discounted !== false ) {
+                $sale_price = $discounted;
+            }
 
             $price = getWooProductPriceToDisplay($product_id, 1,$sale_price);
             $product_data = [

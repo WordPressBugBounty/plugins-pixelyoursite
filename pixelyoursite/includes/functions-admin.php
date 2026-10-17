@@ -135,12 +135,15 @@ function getAdminSecondaryNavTabs() {
         'pos' => 50,
         'icon' => PYS_FREE_URL . '/dist/images/filter-icon.svg'
     );
-    $tabs['logs'] = array(
-        'url'  => buildAdminUrl( 'pixelyoursite', 'logs' ),
-        'name' => 'Logs',
-        'pos' => 60,
-        'icon' => PYS_FREE_URL . '/dist/images/logs-icon.svg'
-    );
+    // logs can contain customer data
+    if ( current_user_can( 'manage_pys_data_export' ) ) {
+        $tabs['logs'] = array(
+            'url'  => buildAdminUrl( 'pixelyoursite', 'logs' ),
+            'name' => 'Logs',
+            'pos' => 60,
+            'icon' => PYS_FREE_URL . '/dist/images/logs-icon.svg'
+        );
+    }
 
 
     uasort($tabs,function ($first,$second){
@@ -173,19 +176,51 @@ function renderCollapseTargetAttributes( $key, $settings ) {
     echo 'class="pys_' . $settings->getSlug() . '_' . esc_attr( $key ) . '_panel"';
 }
 
+/**
+ * Sync the plugin capabilities with the role lists stored in settings.
+ * Scoped capabilities are always limited to roles holding general access.
+ */
 function manageAdminPermissions() {
     global $wp_roles;
 
-    $roles = PYS()->getOption( 'admin_permissions', array( 'administrator' ) );
+    $admin_roles   = (array) PYS()->getOption( 'admin_permissions', array( 'administrator' ) );
+    $reports_roles = (array) PYS()->getOption( 'woo_edd_reports_permissions', array( 'administrator' ) );
+    $export_roles  = (array) PYS()->getOption( 'woo_edd_export_permissions', array( 'administrator' ) );
+
+    $capabilities = array(
+        'manage_pys'             => $admin_roles,
+        'manage_pys_reports'     => array_intersect( $reports_roles, $admin_roles ),
+        'manage_pys_data_export' => array_intersect( $export_roles, $admin_roles ),
+    );
 
     foreach ( $wp_roles->roles as $role => $options ) {
-
-        if ( in_array( $role, $roles ) ) {
-            $wp_roles->add_cap( $role, 'manage_pys' );
-        } else {
-            $wp_roles->remove_cap( $role, 'manage_pys' );
+        foreach ( $capabilities as $capability => $allowed_roles ) {
+            syncRoleCapability( $role, $capability, in_array( $role, $allowed_roles ) );
         }
+    }
+}
 
+/**
+ * Grant or revoke a capability only when the role state actually changes,
+ * since add_cap()/remove_cap() rewrite the whole roles option.
+ *
+ * @param string $role       Role slug.
+ * @param string $capability Capability name.
+ * @param bool   $granted    Should the role hold the capability?
+ */
+function syncRoleCapability( $role, $capability, $granted ) {
+    global $wp_roles;
+
+    $has_capability = ! empty( $wp_roles->roles[ $role ]['capabilities'][ $capability ] );
+
+    if ( $granted === $has_capability ) {
+        return;
+    }
+
+    if ( $granted ) {
+        $wp_roles->add_cap( $role, $capability );
+    } else {
+        $wp_roles->remove_cap( $role, $capability );
     }
 }
 
@@ -414,7 +449,7 @@ function adminRenderLicenseExpirationNotice( $plugin ) {
 
     // show only if never dismissed or dismissed more than a week ago
     $meta_key = 'pys_' . $slug . '_expiration_notice_dismissed_at';
-    $dismissed_at = get_option($meta_key) ?? get_user_meta( $user_id, $meta_key );
+    $dismissed_at = get_option( $meta_key );
     if ( $dismissed_at ) {
 
         if ( is_array( $dismissed_at ) ) {
@@ -459,6 +494,64 @@ function adminRenderLicenseExpirationNotice( $plugin ) {
     </script>
 
     <?php
+}
+
+/**
+ * Data admin.js needs to detect the cookie domain, for wp_localize_script().
+ *
+ * Detection is asked for only while nothing else answers: the option is
+ * empty, no filter is set, and the site wants subdomain cookies at all. With
+ * the option off host-only is the answer and there is nothing to detect.
+ *
+ * @return array
+ */
+function pys_cookie_domain_detect_data() {
+    $wanted = pys_cookie_domain_track_subdomains()
+        && '' === pys_cookie_domain_setting()
+        && ! has_filter( 'pys_cookie_domain_override' );
+
+    return array(
+        'detect' => $wanted ? '1' : '',
+        'nonce'  => wp_create_nonce( 'pys_save_cookie_domain' ),
+        'action' => 'pys_save_cookie_domain',
+    );
+}
+
+/**
+ * Store the cookie domain an administrator's browser just verified.
+ *
+ * Posted by admin.js (detectCookieDomain()) after it ran the same probe
+ * public.js runs. The value is validated by pys_cookie_domain_accept_detected():
+ * it must cover the host this request arrived on, and an existing value is
+ * never overwritten. Nothing here trusts the browser beyond that — the
+ * capability is the real gate, and this is the same person who can type any
+ * value into the settings page.
+ */
+add_action( 'wp_ajax_pys_save_cookie_domain', 'PixelYourSite\pysSaveCookieDomainHandler' );
+function pysSaveCookieDomainHandler() {
+
+    if ( empty( $_REQUEST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['nonce'] ) ), 'pys_save_cookie_domain' ) ) {
+        wp_send_json_error( 'bad nonce', 403 );
+    }
+
+    if ( ! current_user_can( 'manage_pys' ) ) {
+        wp_send_json_error( 'forbidden', 403 );
+    }
+
+    $detected = isset( $_REQUEST['domain'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['domain'] ) ) : '';
+    $accepted = pys_cookie_domain_accept_detected(
+        $detected,
+        pys_cookie_domain_request_host(),
+        pys_cookie_domain_setting()
+    );
+
+    if ( '' === $accepted ) {
+        wp_send_json_success( array( 'stored' => false ) );
+    }
+
+    PYS()->updateOptions( array( PYS_COOKIE_DOMAIN_OPTION => $accepted ) );
+
+    wp_send_json_success( array( 'stored' => true, 'domain' => $accepted ) );
 }
 
 add_action( 'wp_ajax_pys_notice_dismiss', 'PixelYourSite\adminNoticeDismissHandler' );
@@ -571,7 +664,7 @@ function adminRenderPageCacheMatchingNotice() {
 
     // permanent dismissal; adminNoticeDismissHandler() stores it with update_option()
     $meta_key = 'pys_page_cache_matching_dismissed_at';
-    $dismissed_at = get_option( $meta_key ) ?? get_user_meta( $user_id, $meta_key );
+    $dismissed_at = get_option( $meta_key );
     if ( $dismissed_at ) {
         return;
     }
@@ -609,84 +702,6 @@ function adminRenderPageCacheMatchingNotice() {
 
     <?php
 }
-
-function adminRenderNotCAPI( $plugin ) {
-
-    $slug = $plugin->getSlug();
-    $user_id = get_current_user_id();
-
-    // show only if never dismissed or dismissed more than a week ago
-    $meta_key = 'pys_' . $slug . '_CAPI_notice_dismissed_at';
-    $dismissed_at = get_option( $meta_key ) ?? get_user_meta( $user_id, $meta_key );
-    if ( $dismissed_at ) {
-
-        if ( is_array( $dismissed_at ) ) {
-            $dismissed_at = reset( $dismissed_at );
-        }
-
-        $week_ago = time() - WEEK_IN_SECONDS;
-
-        if ( $week_ago < $dismissed_at ) {
-            return;
-        }
-        else
-        {
-            ?>
-            <div class="notice notice-error is-dismissible pys_<?php echo esc_attr( $slug ); ?>_CAPI_notice">
-                <p><b>PixelYourSite Tip: </b>Don't forget to enable Meta Conversion API events. They can improve your ads performance and conversion tracking. Watch this video to learn how: <a href="https://www.youtube.com/watch?v=1rKd57SS094" target="_blank">watch the video</a>.</p>
-            </div>
-            <?php
-        }
-
-    }
-    else
-    {
-        ?>
-        <div class="notice notice-error is-dismissible pys_<?php echo esc_attr( $slug ); ?>_CAPI_notice">
-            <p><b>PixelYourSite Tip: </b>Improve your Meta Ads conversion tracking and performance with Conversion API events. Simply add your token to enable CAPI. Watch this video to learn how to do it: <a href="https://www.youtube.com/watch?v=1rKd57SS094" target="_blank">watch the video</a>.</p>
-        </div>
-        <?php
-    }
-    ?>
-
-    <script type="application/javascript">
-        jQuery(document).on('click', '.pys_<?php echo esc_attr( $slug ); ?>_CAPI_notice .notice-dismiss', function () {
-
-            jQuery.ajax({
-                url: ajaxurl,
-                data: {
-                    action: 'pys_notice_CAPI_dismiss',
-                    nonce: '<?php echo esc_attr( wp_create_nonce( 'pys_notice_CAPI_dismiss' ) ); ?>',
-                    user_id: '<?php echo esc_attr( $user_id ); ?>',
-                    addon_slug: '<?php echo esc_attr( $slug ); ?>',
-                    meta_key: 'CAPI_notice'
-                }
-            })
-
-        })
-    </script>
-
-    <?php
-}
-
-add_action( 'wp_ajax_pys_notice_CAPI_dismiss', 'PixelYourSite\adminNoticeCAPIDismissHandler' );
-
-function adminNoticeCAPIDismissHandler() {
-
-    if ( empty( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], 'pys_notice_CAPI_dismiss' ) ) {
-        return;
-    }
-
-    if ( empty( $_REQUEST['user_id'] ) || empty( $_REQUEST['addon_slug'] ) || empty( $_REQUEST['meta_key'] ) ) {
-        return;
-    }
-
-    // save time when notice was dismissed
-    $meta_key = 'pys_' . sanitize_text_field( $_REQUEST['addon_slug'] ) . '_' . sanitize_text_field( $_REQUEST['meta_key'] ) . '_dismissed_at';
-    update_user_meta( sanitize_text_field( $_REQUEST['user_id'] ), $meta_key, time() );
-    die();
-}
-
 
 function adminRenderActivatePinterestLicence() {
 
@@ -728,7 +743,7 @@ function adminRenderNoPixelsNotice() {
 
     // do not show dismissed notice
     $meta_key = 'pys_core_no_pixels_dismissed_at';
-    $dismissed_at = get_option( $meta_key ) ?? get_user_meta( $user_id, $meta_key );
+    $dismissed_at = get_option( $meta_key );
     if ( $dismissed_at ) {
         return;
     }
@@ -776,7 +791,7 @@ function adminRenderNoPixelNotice( $plugin ) {
 
     // do not show dismissed notice
     $meta_key = 'pys_' . $slug . '_no_pixel_dismissed_at';
-    $dismissed_at = get_option( $meta_key ) ?? get_user_meta( $user_id, $meta_key );
+    $dismissed_at = get_option( $meta_key );
     if ( $dismissed_at ) {
         return;
     }

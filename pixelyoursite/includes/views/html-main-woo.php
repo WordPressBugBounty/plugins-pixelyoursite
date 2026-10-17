@@ -22,6 +22,908 @@ use PixelYourSite\Facebook\Helpers;
             </div>
         </div>
     </div>
+    <?php \PixelYourSite\FeedIdCheck::renderCard(); ?>
+
+    <!-- ID Settings -->
+    <div class="card card-style5 woo-id-settings">
+        <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <h4 class="secondary_heading_type2">ID Settings</h4>
+            </div>
+
+            <?php cardCollapseSettings(); ?>
+        </div>
+
+        <div class="card-body">
+            <div class="gap-22">
+
+                <!-- Facebook for WooCommerce -->
+                <?php if ( Facebook()->enabled() && Helpers\isFacebookForWooCommerceActive() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Facebook for WooCommerce Integration</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <div>
+                                    <p class="primary-heading-color mb-8">
+                                    <span class="primary-text-color primary_heading">It looks like you're using both PixelYourSite and Facebook for WooCommerce Extension. Good, because
+                                they can do a great job together!</span>
+                                    </p>
+                                    <p class="primary-heading-color mb-8">Facebook for WooCommerce Extension is a useful
+                                        free tool that lets you import your products to a Facebook shop and adds a very
+                                        basic Meta Pixel on your site. PixelYourSite is a
+                                        dedicated plugin that supercharges your Meta Pixel
+                                        with extremely useful features.</p>
+
+                                </div>
+
+                                <?php \PixelYourSite\FeedIdCheck::renderIntegrationBlock(); ?>
+
+                                <p class="primary-heading-color">We made it possible to use both plugins together.
+                                    You just have to decide what ID to use for your events.</p>
+
+                                <div class="radio-inputs-wrap">
+                                    <?php Facebook()->render_radio_input( 'woo_content_id_logic', 'facebook_for_woocommerce', 'Use Facebook for WooCommerce extension content_id logic' ); ?>
+                                    <?php Facebook()->render_radio_input( 'woo_content_id_logic', 'default', 'Use PixelYourSite content_id logic' ); ?>
+                                </div>
+
+                                <p class="form-text text-small">
+                                    * If you plan to use the product catalog created by Facebook for WooCommerce
+                                    Extension, use the Facebook for WooCommerce Extension ID. If you plan to use older
+                                    product catalogs, or new ones created
+                                    with other plugins, it's better to keep the default PixelYourSite settings.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( Facebook()->enabled() ) : ?>
+                    <?php
+                    // The card used to be hidden as a whole in Facebook for WooCommerce mode,
+                    // although the WPML logic in it keeps applying there — changing it took two
+                    // saves with a mode switch in between. The ID source, prefix, suffix and
+                    // "Treat variable products like simple products" are replaced by the
+                    // extension's catalog (every variant is its own item), so only they are
+                    // hidden (.pys-fb-default-id-logic, toggled live in admin.js).
+                    $isExpand = Helpers\isFacebookForWooCommerceActive();
+                    ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center <?php echo esc_attr( $isExpand ? 'header-opened' : '' ); ?>">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Facebook ID settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body <?php echo esc_attr( $isExpand ? 'show' : '' ); ?>"
+                             style="display: <?php echo esc_attr( $isExpand ? 'block' : 'none' ); ?>">
+                            <div class="gap-24">
+                                <?php \PixelYourSite\FeedIdCheck::renderModuleBlock( 'facebook' ); ?>
+
+                                <div class="d-flex align-items-center justify-content-between mb-4 pro-feature-container">
+                                    <div class="d-flex align-items-center flex-with-badge">
+                                        <?php renderDummySwitcher( false); ?>
+                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation
+                                            data when a variation is selected</h4>
+                                    </div>
+                                    <?php renderProBadge(); ?>
+                                </div>
+
+                                <p class="form-text pys-fb-fbwoo-id-logic" style="<?php echo esc_attr( Helpers\isDefaultWooContentIdLogic() ? 'display: none;' : '' ); ?>">
+                                    Content IDs come from the Facebook for WooCommerce extension in this mode, and its
+                                    catalog lists every variant as its own item, so events use the variant's ID whenever one is selected.
+                                    "Treat variable products like simple products" and the ID, prefix and suffix
+                                    settings do not apply here. Switch to "Use PixelYourSite content_id logic" above
+                                    to change them.
+                                </p>
+
+                                <div class="gap-24 pys-fb-default-id-logic" style="<?php echo esc_attr( Helpers\isDefaultWooContentIdLogic() ? '' : 'display: none;' ); ?>">
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php Facebook()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">If you enable this option, the main ID will be used
+                                        instead of the variation ID. Turn this option ON when your Product Catalog
+                                        doesn't include the variants for variable products.</p>
+                                </div>
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+                                    <?php Facebook()->render_select_input( 'woo_content_id', array(
+                                        'product_id'  => 'Product ID',
+                                        'product_sku' => 'Product SKU',
+                                    ), false, 'pys_facebook_woo_content_id_variation_sku_wrap', 'product_sku' ); ?>
+                                </div>
+
+                                <div id="pys_facebook_woo_content_id_variation_sku_wrap" class="<?php echo Facebook()->getOption( 'woo_content_id' ) === 'product_sku' ? '' : 'form-control-hidden'; ?>">
+                                    <div class="mb-8">
+                                        <label class="primary_heading">If a variation has no SKU of its own</label>
+                                    </div>
+
+                                    <?php Facebook()->render_select_input( 'woo_content_id_variation_sku', array(
+                                        'parent_sku'   => "Use the parent's SKU",
+                                        'variation_id' => 'Use the variation ID',
+                                    ) ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+
+                                    <?php Facebook()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+                                    <?php Facebook()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+                                </div><!-- .pys-fb-default-id-logic -->
+
+                                <?php if ( isWPMLActive() ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+                                                    <?php Facebook()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
+                                                </h4>
+                                                <div class="d-flex align-items-center justify-content-between mb-4 pro-feature-container">
+                                                    <div class="d-flex align-items-center flex-with-badge">
+                                                        <?php renderDummySelectInput( 'Select language');?>
+                                                    </div>
+                                                    <?php renderProBadge(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( GATags()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Google Tags ID settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <?php \PixelYourSite\FeedIdCheck::renderModuleBlock( 'gatags' ); ?>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php GATags()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your Merchant Catalog doesn't include the variants for
+                                        variable
+                                        products.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between mb-4 pro-feature-container">
+                                    <div class="d-flex align-items-center flex-with-badge">
+                                        <?php renderDummySwitcher(); ?>
+                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
+                                    </div>
+                                    <?php renderProBadge(); ?>
+                                </div>
+
+                                <div>
+                                    <?php GATags()->render_checkbox_input( 'woo_variations_use_parent_name', "When tracking variations, use the parent name" ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+                                    <?php GATags()->render_select_input( 'woo_content_id', array(
+                                        'product_id'  => 'Product ID',
+                                        'product_sku' => 'Product SKU',
+                                    ), false, 'pys_gatags_woo_content_id_variation_sku_wrap', 'product_sku' ); ?>
+                                </div>
+
+                                <div id="pys_gatags_woo_content_id_variation_sku_wrap" class="<?php echo GATags()->getOption( 'woo_content_id' ) === 'product_sku' ? '' : 'form-control-hidden'; ?>">
+                                    <div class="mb-8">
+                                        <label class="primary_heading">If a variation has no SKU of its own</label>
+                                    </div>
+
+                                    <?php GATags()->render_select_input( 'woo_content_id_variation_sku', array(
+                                        'parent_sku'   => "Use the parent's SKU",
+                                        'variation_id' => 'Use the variation ID',
+                                    ) ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+
+                                    <?php GATags()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+                                    <?php GATags()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <?php if ( isWPMLActive() ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+                                                    <?php GATags()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
+                                                </h4>
+                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                                    <div class="d-flex align-items-center flex-with-badge">
+                                                        <?php renderDummySelectInput( 'Select language');?>
+                                                    </div>
+                                                    <?php renderProBadge(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+
+                <?php if ( Pinterest()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Pinterest Tag ID settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <?php \PixelYourSite\FeedIdCheck::renderModuleBlock( 'pinterest' ); ?>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php Pinterest()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your Product Catalog doesn't include the variants for
+                                        variable products.
+                                    </p>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                    <div class="d-flex align-items-center flex-with-badge">
+                                        <?php renderDummySwitcher(); ?>
+                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
+                                    </div>
+                                    <?php renderProBadge(); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+                                    <?php Pinterest()->render_select_input( 'woo_content_id', array(
+                                        'product_id'  => 'Product ID',
+                                        'product_sku' => 'Product SKU',
+                                    ), false, 'pys_pinterest_woo_content_id_variation_sku_wrap', 'product_sku' ); ?>
+                                </div>
+
+                                <?php if ( Pinterest()->issetOption( 'woo_content_id_variation_sku' ) ) : ?>
+                                <div id="pys_pinterest_woo_content_id_variation_sku_wrap" class="<?php echo Pinterest()->getOption( 'woo_content_id' ) === 'product_sku' ? '' : 'form-control-hidden'; ?>">
+                                    <div class="mb-8">
+                                        <label class="primary_heading">If a variation has no SKU of its own</label>
+                                    </div>
+
+                                    <?php Pinterest()->render_select_input( 'woo_content_id_variation_sku', array(
+                                        'parent_sku'   => "Use the parent's SKU",
+                                        'variation_id' => 'Use the variation ID',
+                                    ) ); ?>
+                                </div>
+                                <?php endif; ?>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+
+                                    <?php Pinterest()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+                                    <?php Pinterest()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <?php if ( isWPMLActive() ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+                                                    <?php Pinterest()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
+                                                </h4>
+                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                                    <div class="d-flex align-items-center flex-with-badge">
+                                                        <?php renderDummySelectInput( 'Select language');?>
+                                                    </div>
+                                                    <?php renderProBadge(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Pinterest Tag ID settings</h4>&nbsp;
+                                <a class="link"
+                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/pinterest-tag-add-on?utm_source=pys-free-plugin&utm_medium=pinterest-badge&utm_campaign=requiere-free-add-on"
+                                   target="_blank">The paid add-on is required</a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( Bing()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Bing Tag ID settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php Bing()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your Product Catalog doesn't include the variants for
+                                        variable products.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                    <div class="d-flex align-items-center flex-with-badge">
+                                        <?php renderDummySwitcher(); ?>
+                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
+                                    </div>
+                                    <?php renderProBadge(); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+                                    <?php Bing()->render_select_input( 'woo_content_id', array(
+                                        'product_id'  => 'Product ID',
+                                        'product_sku' => 'Product SKU',
+                                    ), false, 'pys_bing_woo_content_id_variation_sku_wrap', 'product_sku' ); ?>
+                                </div>
+
+                                <?php if ( Bing()->issetOption( 'woo_content_id_variation_sku' ) ) : ?>
+                                <div id="pys_bing_woo_content_id_variation_sku_wrap" class="<?php echo Bing()->getOption( 'woo_content_id' ) === 'product_sku' ? '' : 'form-control-hidden'; ?>">
+                                    <div class="mb-8">
+                                        <label class="primary_heading">If a variation has no SKU of its own</label>
+                                    </div>
+
+                                    <?php Bing()->render_select_input( 'woo_content_id_variation_sku', array(
+                                        'parent_sku'   => "Use the parent's SKU",
+                                        'variation_id' => 'Use the variation ID',
+                                    ) ); ?>
+                                </div>
+                                <?php endif; ?>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+                                    <?php Bing()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+                                    <?php Bing()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <?php if ( isWPMLActive() && Bing()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+                                                    <?php Bing()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
+                                                </h4>
+                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                                    <div class="d-flex align-items-center flex-with-badge">
+                                                        <?php renderDummySelectInput( 'Select language');?>
+                                                    </div>
+                                                    <?php renderProBadge(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Bing Tag ID settings</h4>&nbsp;
+                                <a class="link"
+                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing"
+                                   target="_blank">The paid add-on is required</a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+
+                <?php if ( OpenAI()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">OpenAI ID settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php OpenAI()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your product catalog does not include the variants for
+                                        variable products.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                    <div class="d-flex align-items-center flex-with-badge">
+                                        <?php renderDummySwitcher(); ?>
+                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
+                                    </div>
+                                    <?php renderProBadge(); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_select_input( 'woo_content_id', array(
+                                        'product_id'  => 'Product ID',
+                                        'product_sku' => 'Product SKU',
+                                    ), false, 'pys_openai_woo_content_id_variation_sku_wrap', 'product_sku' ); ?>
+                                </div>
+
+                                <div id="pys_openai_woo_content_id_variation_sku_wrap" class="<?php echo OpenAI()->getOption( 'woo_content_id' ) === 'product_sku' ? '' : 'form-control-hidden'; ?>">
+                                    <div class="mb-8">
+                                        <label class="primary_heading">If a variation has no SKU of its own</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_select_input( 'woo_content_id_variation_sku', array(
+                                        'parent_sku'   => "Use the parent's SKU",
+                                        'variation_id' => 'Use the variation ID',
+                                    ) ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+                                    <?php OpenAI()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <?php if ( isWPMLActive() && OpenAI()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+                                                    <?php OpenAI()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
+                                                </h4>
+                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                                    <div class="d-flex align-items-center flex-with-badge">
+                                                        <?php renderDummySelectInput( 'Select language');?>
+                                                    </div>
+                                                    <?php renderProBadge(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the pixel and we will use the native product ID for each translated item.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+	            <?php if ( Reddit()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>
+                            </div>
+
+				            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <?php \PixelYourSite\FeedIdCheck::renderModuleBlock( 'reddit' ); ?>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+							            <?php Reddit()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your Product Catalog doesn't include the variants for
+                                        variable products.
+                                    </p>
+                                </div>
+
+
+                                <div class="d-flex align-items-center">
+						            <?php Reddit()->render_switcher_input( 'woo_variable_data_select_product' ); ?>
+                                    <h4 class="switcher-label secondary_heading">For product pages, track the variation
+                                        data when a variation is selected</h4>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+						            <?php Reddit()->render_select_input( 'woo_content_id', array(
+							            'product_id'  => 'Product ID',
+							            'product_sku' => 'Product SKU',
+						            ), false, 'pys_reddit_woo_content_id_variation_sku_wrap', 'product_sku' ); ?>
+                                </div>
+
+                                <?php if ( Reddit()->issetOption( 'woo_content_id_variation_sku' ) ) : ?>
+                                <div id="pys_reddit_woo_content_id_variation_sku_wrap" class="<?php echo Reddit()->getOption( 'woo_content_id' ) === 'product_sku' ? '' : 'form-control-hidden'; ?>">
+						            <div class="mb-8">
+						                <label class="primary_heading">If a variation has no SKU of its own</label>
+						            </div>
+
+						            <?php Reddit()->render_select_input( 'woo_content_id_variation_sku', array(
+						                'parent_sku'   => "Use the parent's SKU",
+						                'variation_id' => 'Use the variation ID',
+						            ) ); ?>
+                                </div>
+                                <?php endif; ?>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+						            <?php Reddit()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+						            <?php Reddit()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+					            <?php if ( isWPMLActive() && Reddit()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+										            <?php Reddit()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+								            <?php if ( ! empty( $languages ) ) { ?>
+                                                <div>
+                                                    <h4 class="primary_heading mb-16"><strong>Default language IDs</strong>
+                                                        logic.
+                                                    </h4>
+                                                    <div class="d-flex align-items-center mb-4">
+											            <?php  Reddit()->render_select_input( 'woo_wpml_language', $languages ); ?>
+                                                    </div>
+                                                </div>
+								            <?php } ?>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the tag and we
+                                            will
+                                            use
+                                            the native product ID for each translated item.
+                                        </p>
+                                    </div>
+					            <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+	            <?php else: ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>&nbsp;
+                                <a class="link"
+                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin"
+                                   target="_blank">The paid add-on is required</a>
+                            </div>
+                        </div>
+                    </div>
+	            <?php endif; ?>
+
+                <?php if ( GTM()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">GTM tag settings</h4>
+                            </div>
+
+                            <?php cardCollapseSettings(); ?>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="gap-24">
+                                <?php \PixelYourSite\FeedIdCheck::renderModuleBlock( 'gtm' ); ?>
+                                <div>
+                                    <div class="d-flex align-items-center mb-4">
+                                        <?php GTM()->render_switcher_input( 'woo_variable_as_simple' ); ?>
+                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
+                                            products</h4>
+                                    </div>
+
+                                    <p class="form-text">
+                                        If you enable this option, the main ID will be used instead of the variation ID.
+                                        Turn this option ON when your Merchant Catalog doesn't include the variants for
+                                        variable products.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                    <div class="d-flex align-items-center flex-with-badge">
+                                        <?php renderDummySwitcher(); ?>
+                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
+                                    </div>
+                                    <?php renderProBadge(); ?>
+                                </div>
+
+                                <div>
+                                    <?php GTM()->render_checkbox_input( 'woo_variations_use_parent_name', "When tracking variations, use the parent name" ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID</label>
+                                    </div>
+
+                                    <?php GTM()->render_select_input( 'woo_content_id', array(
+                                        'product_id'  => 'Product ID',
+                                        'product_sku' => 'Product SKU',
+                                    ), false, 'pys_gtm_woo_content_id_variation_sku_wrap', 'product_sku' ); ?>
+                                </div>
+
+                                <div id="pys_gtm_woo_content_id_variation_sku_wrap" class="<?php echo GTM()->getOption( 'woo_content_id' ) === 'product_sku' ? '' : 'form-control-hidden'; ?>">
+                                    <div class="mb-8">
+                                        <label class="primary_heading">If a variation has no SKU of its own</label>
+                                    </div>
+
+                                    <?php GTM()->render_select_input( 'woo_content_id_variation_sku', array(
+                                        'parent_sku'   => "Use the parent's SKU",
+                                        'variation_id' => 'Use the variation ID',
+                                    ) ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID prefix</label>
+                                    </div>
+                                    <?php GTM()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <div>
+                                    <div class="mb-8">
+                                        <label class="primary_heading">ID suffix</label>
+                                    </div>
+
+                                    <?php GTM()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
+                                </div>
+
+                                <?php if ( isWPMLActive() ) : ?>
+                                    <div>
+                                        <div class="gap-24">
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
+                                                    logic.
+                                                </h4>
+
+                                                <div class="d-flex align-items-center mb-4">
+                                                    <?php GTM()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
+                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
+                                                </h4>
+                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
+                                                    <div class="d-flex align-items-center flex-with-badge">
+                                                        <?php renderDummySelectInput( 'Select language');?>
+                                                    </div>
+                                                    <?php renderProBadge(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="form-text">
+                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Google Dynamic Remarketing Vertical -->
+                <?php if ( GA()->enabled() ) : ?>
+                    <div class="card card-style6">
+                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <h4 class="secondary_heading_type2">Google Dynamic Remarketing Vertical</h4>
+                            </div>
+                            <div class="d-flex align-items-center flex-collapse-block">
+                                <?php renderProBadge(); ?>
+                                <?php cardCollapseSettings(); ?>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="pro-feature-container">
+                                <div class="radio-inputs-wrap">
+                                    <?php renderDummyRadioInput( 'Use Retail Vertical  (select this if you have access to Google Merchant)' , true ); ?>
+                                    <?php renderDummyRadioInput( 'Use Custom Vertical (select this if Google Merchant is not available for your country)' ); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
     <!-- Advanced Purchase Tracking-->
     <div class="card card-style5">
         <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
@@ -508,802 +1410,6 @@ use PixelYourSite\Facebook\Helpers;
                 </div>
 
                 <?php renderDummyTagsFields( array( 'Pending Payment', 'Processing', 'On Hold', 'Completed' ) ); ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- ID Settings -->
-    <div class="card card-style5 woo-id-settings">
-        <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <h4 class="secondary_heading_type2">ID Settings</h4>
-            </div>
-
-            <?php cardCollapseSettings(); ?>
-        </div>
-
-        <div class="card-body">
-            <div class="gap-22">
-
-                <!-- Facebook for WooCommerce -->
-                <?php if ( Facebook()->enabled() && Helpers\isFacebookForWooCommerceActive() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Facebook for WooCommerce Integration</h4>
-                            </div>
-
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="gap-24">
-                                <div>
-                                    <p class="primary-heading-color mb-8">
-                                    <span class="primary-text-color primary_heading">It looks like you're using both PixelYourSite and Facebook for WooCommerce Extension. Good, because
-                                they can do a great job together!</span>
-                                    </p>
-                                    <p class="primary-heading-color mb-8">Facebook for WooCommerce Extension is a useful
-                                        free tool that lets you import your products to a Facebook shop and adds a very
-                                        basic Meta Pixel on your site. PixelYourSite is a
-                                        dedicated plugin that supercharges your Meta Pixel
-                                        with extremely useful features.</p>
-
-                                </div>
-
-                                <p class="primary-heading-color">We made it possible to use both plugins together.
-                                    You just have to decide what ID to use for your events.</p>
-
-                                <div class="radio-inputs-wrap">
-                                    <?php Facebook()->render_radio_input( 'woo_content_id_logic', 'facebook_for_woocommerce', 'Use Facebook for WooCommerce extension content_id logic' ); ?>
-                                    <?php Facebook()->render_radio_input( 'woo_content_id_logic', 'default', 'Use PixelYourSite content_id logic' ); ?>
-                                </div>
-
-                                <p class="form-text text-small">
-                                    * If you plan to use the product catalog created by Facebook for WooCommerce
-                                    Extension, use the Facebook for WooCommerce Extension ID. If you plan to use older
-                                    product catalogs, or new ones created
-                                    with other plugins, it's better to keep the default PixelYourSite settings.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ( Facebook()->enabled() ) : ?>
-                    <?php
-                    $facebook_id_visibility = Helpers\isDefaultWooContentIdLogic() ? 'block' : 'none';
-                    $isExpand = Helpers\isFacebookForWooCommerceActive();
-                    ?>
-                    <div class="card card-style6" style="display: <?php echo esc_attr( $facebook_id_visibility ); ?>;">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center <?php echo esc_attr( $isExpand ? 'header-opened' : '' ); ?>">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Facebook ID settings</h4>
-                            </div>
-
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body <?php echo esc_attr( $isExpand ? 'show' : '' ); ?>"
-                             style="display: <?php echo esc_attr( $isExpand ? 'block' : 'none' ); ?>">
-                            <div class="gap-24">
-                                <div>
-                                    <div class="d-flex align-items-center mb-4">
-                                        <?php Facebook()->render_switcher_input( 'woo_variable_as_simple' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
-                                            products</h4>
-                                    </div>
-
-                                    <p class="form-text">If you enable this option, the main ID will be used
-                                        instead of the variation ID. Turn this option ON when your Product Catalog
-                                        doesn't include the variants for variable products.</p>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between mb-4 pro-feature-container">
-                                    <div class="d-flex align-items-center flex-with-badge">
-                                        <?php renderDummySwitcher( false); ?>
-                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation
-                                            data when a variation is selected</h4>
-                                    </div>
-                                    <?php renderProBadge(); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID</label>
-                                    </div>
-
-                                    <?php Facebook()->render_select_input( 'woo_content_id', array(
-                                        'product_id'  => 'Product ID',
-                                        'product_sku' => 'Product SKU',
-                                    ) ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID prefix</label>
-                                    </div>
-
-                                    <?php Facebook()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID suffix</label>
-                                    </div>
-
-                                    <?php Facebook()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <?php if ( isWPMLActive() ) : ?>
-                                    <div>
-                                        <div class="gap-24">
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
-                                                    logic.
-                                                </h4>
-
-                                                <div class="d-flex align-items-center mb-4">
-                                                    <?php Facebook()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
-                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
-                                                </h4>
-                                                <div class="d-flex align-items-center justify-content-between mb-4 pro-feature-container">
-                                                    <div class="d-flex align-items-center flex-with-badge">
-                                                        <?php renderDummySelectInput( 'Select language');?>
-                                                    </div>
-                                                    <?php renderProBadge(); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="form-text">
-                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ( GATags()->enabled() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Google Tags ID settings</h4>
-                            </div>
-
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="gap-24">
-                                <div>
-                                    <div class="d-flex align-items-center mb-4">
-                                        <?php GATags()->render_switcher_input( 'woo_variable_as_simple' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
-                                            products</h4>
-                                    </div>
-
-                                    <p class="form-text">
-                                        If you enable this option, the main ID will be used instead of the variation ID.
-                                        Turn this option ON when your Merchant Catalog doesn't include the variants for
-                                        variable
-                                        products.
-                                    </p>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between mb-4 pro-feature-container">
-                                    <div class="d-flex align-items-center flex-with-badge">
-                                        <?php renderDummySwitcher(); ?>
-                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
-                                    </div>
-                                    <?php renderProBadge(); ?>
-                                </div>
-
-                                <div>
-                                    <?php GATags()->render_checkbox_input( 'woo_variations_use_parent_name', "When tracking variations, use the parent name" ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID</label>
-                                    </div>
-
-                                    <?php GATags()->render_select_input( 'woo_content_id', array(
-                                        'product_id'  => 'Product ID',
-                                        'product_sku' => 'Product SKU',
-                                    ) ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID prefix</label>
-                                    </div>
-
-                                    <?php GATags()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID suffix</label>
-                                    </div>
-
-                                    <?php GATags()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <?php if ( isWPMLActive() ) : ?>
-                                    <div>
-                                        <div class="gap-24">
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
-                                                    logic.
-                                                </h4>
-
-                                                <div class="d-flex align-items-center mb-4">
-                                                    <?php GATags()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
-                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
-                                                </h4>
-                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                                    <div class="d-flex align-items-center flex-with-badge">
-                                                        <?php renderDummySelectInput( 'Select language');?>
-                                                    </div>
-                                                    <?php renderProBadge(); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="form-text">
-                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-
-                <?php if ( Pinterest()->enabled() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Pinterest Tag ID settings</h4>
-                            </div>
-
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="gap-24">
-                                <div>
-                                    <div class="d-flex align-items-center mb-4">
-                                        <?php Pinterest()->render_switcher_input( 'woo_variable_as_simple' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
-                                            products</h4>
-                                    </div>
-
-                                    <p class="form-text">
-                                        If you enable this option, the main ID will be used instead of the variation ID.
-                                        Turn this option ON when your Product Catalog doesn't include the variants for
-                                        variable products.
-                                    </p>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                    <div class="d-flex align-items-center flex-with-badge">
-                                        <?php renderDummySwitcher(); ?>
-                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
-                                    </div>
-                                    <?php renderProBadge(); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID</label>
-                                    </div>
-
-                                    <?php Pinterest()->render_select_input( 'woo_content_id', array(
-                                        'product_id'  => 'Product ID',
-                                        'product_sku' => 'Product SKU',
-                                    ) ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID prefix</label>
-                                    </div>
-
-                                    <?php Pinterest()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID suffix</label>
-                                    </div>
-
-                                    <?php Pinterest()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <?php if ( isWPMLActive() ) : ?>
-                                    <div>
-                                        <div class="gap-24">
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
-                                                    logic.
-                                                </h4>
-
-                                                <div class="d-flex align-items-center mb-4">
-                                                    <?php Pinterest()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
-                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
-                                                </h4>
-                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                                    <div class="d-flex align-items-center flex-with-badge">
-                                                        <?php renderDummySelectInput( 'Select language');?>
-                                                    </div>
-                                                    <?php renderProBadge(); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="form-text">
-                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Pinterest Tag ID settings</h4>&nbsp;
-                                <a class="link"
-                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/pinterest-tag-add-on?utm_source=pys-free-plugin&utm_medium=pinterest-badge&utm_campaign=requiere-free-add-on"
-                                   target="_blank">The paid add-on is required</a>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ( Bing()->enabled() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Bing Tag ID settings</h4>
-                            </div>
-
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="gap-24">
-                                <div>
-                                    <div class="d-flex align-items-center mb-4">
-                                        <?php Bing()->render_switcher_input( 'woo_variable_as_simple' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
-                                            products</h4>
-                                    </div>
-
-                                    <p class="form-text">
-                                        If you enable this option, the main ID will be used instead of the variation ID.
-                                        Turn this option ON when your Product Catalog doesn't include the variants for
-                                        variable products.
-                                    </p>
-                                </div>
-
-
-                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                    <div class="d-flex align-items-center flex-with-badge">
-                                        <?php renderDummySwitcher(); ?>
-                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
-                                    </div>
-                                    <?php renderProBadge(); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID</label>
-                                    </div>
-
-                                    <?php Bing()->render_select_input( 'woo_content_id', array(
-                                        'product_id'  => 'Product ID',
-                                        'product_sku' => 'Product SKU',
-                                    ) ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID prefix</label>
-                                    </div>
-                                    <?php Bing()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID suffix</label>
-                                    </div>
-
-                                    <?php Bing()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <?php if ( isWPMLActive() && Bing()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
-                                    <div>
-                                        <div class="gap-24">
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
-                                                    logic.
-                                                </h4>
-
-                                                <div class="d-flex align-items-center mb-4">
-                                                    <?php Bing()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
-                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
-                                                </h4>
-                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                                    <div class="d-flex align-items-center flex-with-badge">
-                                                        <?php renderDummySelectInput( 'Select language');?>
-                                                    </div>
-                                                    <?php renderProBadge(); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="form-text">
-                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Bing Tag ID settings</h4>&nbsp;
-                                <a class="link"
-                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/bing-tag-add-on?utm_source=pixelyoursite-free-plugin&utm_medium=plugin&utm_campaign=free-plugin-bing"
-                                   target="_blank">The paid add-on is required</a>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-
-                <?php if ( OpenAI()->enabled() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">OpenAI ID settings</h4>
-                            </div>
-
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="gap-24">
-                                <div>
-                                    <div class="d-flex align-items-center mb-4">
-                                        <?php OpenAI()->render_switcher_input( 'woo_variable_as_simple' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
-                                            products</h4>
-                                    </div>
-
-                                    <p class="form-text">
-                                        If you enable this option, the main ID will be used instead of the variation ID.
-                                        Turn this option ON when your product catalog does not include the variants for
-                                        variable products.
-                                    </p>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                    <div class="d-flex align-items-center flex-with-badge">
-                                        <?php renderDummySwitcher(); ?>
-                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
-                                    </div>
-                                    <?php renderProBadge(); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID</label>
-                                    </div>
-
-                                    <?php OpenAI()->render_select_input( 'woo_content_id', array(
-                                        'product_id'  => 'Product ID',
-                                        'product_sku' => 'Product SKU',
-                                    ) ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID prefix</label>
-                                    </div>
-
-                                    <?php OpenAI()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID suffix</label>
-                                    </div>
-
-                                    <?php OpenAI()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <?php if ( isWPMLActive() && OpenAI()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
-                                    <div>
-                                        <div class="gap-24">
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
-                                                    logic.
-                                                </h4>
-
-                                                <div class="d-flex align-items-center mb-4">
-                                                    <?php OpenAI()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
-                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
-                                                </h4>
-                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                                    <div class="d-flex align-items-center flex-with-badge">
-                                                        <?php renderDummySelectInput( 'Select language');?>
-                                                    </div>
-                                                    <?php renderProBadge(); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="form-text">
-                                            If you use localized feeds, enable the unified ID logic for the pixel and we will use the native product ID for each translated item.
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-	            <?php if ( Reddit()->enabled() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>
-                            </div>
-
-				            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="gap-24">
-                                <div>
-                                    <div class="d-flex align-items-center mb-4">
-							            <?php Reddit()->render_switcher_input( 'woo_variable_as_simple' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
-                                            products</h4>
-                                    </div>
-
-                                    <p class="form-text">
-                                        If you enable this option, the main ID will be used instead of the variation ID.
-                                        Turn this option ON when your Product Catalog doesn't include the variants for
-                                        variable products.
-                                    </p>
-                                </div>
-
-
-                                <div class="d-flex align-items-center">
-						            <?php Reddit()->render_switcher_input( 'woo_variable_data_select_product' ); ?>
-                                    <h4 class="switcher-label secondary_heading">For product pages, track the variation
-                                        data when a variation is selected</h4>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID</label>
-                                    </div>
-
-						            <?php Reddit()->render_select_input( 'woo_content_id', array(
-							            'product_id'  => 'Product ID',
-							            'product_sku' => 'Product SKU',
-						            ) ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID prefix</label>
-                                    </div>
-						            <?php Reddit()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID suffix</label>
-                                    </div>
-
-						            <?php Reddit()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-					            <?php if ( isWPMLActive() && Reddit()->getOption( 'woo_wpml_unified_id' ) !== NULL ) : ?>
-                                    <div>
-                                        <div class="gap-24">
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
-                                                    logic.
-                                                </h4>
-
-                                                <div class="d-flex align-items-center mb-4">
-										            <?php Reddit()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
-                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
-                                                </div>
-                                            </div>
-								            <?php if ( ! empty( $languages ) ) { ?>
-                                                <div>
-                                                    <h4 class="primary_heading mb-16"><strong>Default language IDs</strong>
-                                                        logic.
-                                                    </h4>
-                                                    <div class="d-flex align-items-center mb-4">
-											            <?php  Reddit()->render_select_input( 'woo_wpml_language', $languages ); ?>
-                                                    </div>
-                                                </div>
-								            <?php } ?>
-                                        </div>
-                                        <p class="form-text">
-                                            If you use localized feeds, enable the unified ID logic for the tag and we
-                                            will
-                                            use
-                                            the native product ID for each translated item.
-                                        </p>
-                                    </div>
-					            <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-	            <?php else: ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Reddit Tag ID settings</h4>&nbsp;
-                                <a class="link"
-                                   href="https://www.pixelyoursite.com/plugins/pixelyoursite-professional/reddit-wordpress-plugin"
-                                   target="_blank">The paid add-on is required</a>
-                            </div>
-                        </div>
-                    </div>
-	            <?php endif; ?>
-
-                <?php if ( GTM()->enabled() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">GTM tag settings</h4>
-                            </div>
-
-                            <?php cardCollapseSettings(); ?>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="gap-24">
-                                <div>
-                                    <div class="d-flex align-items-center mb-4">
-                                        <?php GTM()->render_switcher_input( 'woo_variable_as_simple' ); ?>
-                                        <h4 class="switcher-label secondary_heading">Treat variable products like simple
-                                            products</h4>
-                                    </div>
-
-                                    <p class="form-text">
-                                        If you enable this option, the main ID will be used instead of the variation ID.
-                                        Turn this option ON when your Merchant Catalog doesn't include the variants for
-                                        variable products.
-                                    </p>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                    <div class="d-flex align-items-center flex-with-badge">
-                                        <?php renderDummySwitcher(); ?>
-                                        <h4 class="switcher-label secondary_heading">For product pages, track the variation data when a variation is selected</h4>
-                                    </div>
-                                    <?php renderProBadge(); ?>
-                                </div>
-
-                                <div>
-                                    <?php GTM()->render_checkbox_input( 'woo_variations_use_parent_name', "When tracking variations, use the parent name" ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID</label>
-                                    </div>
-
-                                    <?php GTM()->render_select_input( 'woo_content_id', array(
-                                        'product_id'  => 'Product ID',
-                                        'product_sku' => 'Product SKU',
-                                    ) ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID prefix</label>
-                                    </div>
-                                    <?php GTM()->render_text_input( 'woo_content_id_prefix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <div>
-                                    <div class="mb-8">
-                                        <label class="primary_heading">ID suffix</label>
-                                    </div>
-
-                                    <?php GTM()->render_text_input( 'woo_content_id_suffix', '(optional)', false, false, false, 'short' ); ?>
-                                </div>
-
-                                <?php if ( isWPMLActive() ) : ?>
-                                    <div>
-                                        <div class="gap-24">
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>WPML Detected.</strong> Select your ID
-                                                    logic.
-                                                </h4>
-
-                                                <div class="d-flex align-items-center mb-4">
-                                                    <?php GTM()->render_switcher_input( 'woo_wpml_unified_id' ); ?>
-                                                    <h4 class="switcher-label secondary_heading">WPML Unified ID logic</h4>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <h4 class="primary_heading mb-16"><strong>Default language IDs</strong> logic.
-                                                </h4>
-                                                <div class="d-flex align-items-center justify-content-between pro-feature-container mb-4">
-                                                    <div class="d-flex align-items-center flex-with-badge">
-                                                        <?php renderDummySelectInput( 'Select language');?>
-                                                    </div>
-                                                    <?php renderProBadge(); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="form-text">
-                                            If you use localized feeds, enable the unified ID logic for the tag and we will use the native product ID for each translated item.
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <!-- Google Dynamic Remarketing Vertical -->
-                <?php if ( GA()->enabled() ) : ?>
-                    <div class="card card-style6">
-                        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <h4 class="secondary_heading_type2">Google Dynamic Remarketing Vertical</h4>
-                            </div>
-                            <div class="d-flex align-items-center flex-collapse-block">
-                                <?php renderProBadge(); ?>
-                                <?php cardCollapseSettings(); ?>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="pro-feature-container">
-                                <div class="radio-inputs-wrap">
-                                    <?php renderDummyRadioInput( 'Use Retail Vertical  (select this if you have access to Google Merchant)' , true ); ?>
-                                    <?php renderDummyRadioInput( 'Use Custom Vertical (select this if Google Merchant is not available for your country)' ); ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>

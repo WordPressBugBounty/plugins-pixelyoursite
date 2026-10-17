@@ -13,6 +13,7 @@ use PixelYourSite\GA\Helpers;
 use WC_Product;
 
 require_once PYS_FREE_PATH . '/modules/google_analytics/function-collect-data-4v.php';
+require_once PYS_FREE_PATH . '/modules/google_tags/functions-datalayer.php';
 
 class GATags extends Settings {
 
@@ -121,30 +122,7 @@ class GATags extends Settings {
                 break;
         }
 
-        $buffer = preg_replace_callback('/(<script\s+[^>]*src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=[^"]+)/', function($matches)  use ($dataLayerName) {
-            if (strpos($matches[0], '&l=dataLayer') !== false) {
-                return str_replace('&l=dataLayer', '&l='.$dataLayerName, $matches[0]);
-            } else {
-                return $matches[0] . '&l=' . $dataLayerName;
-            }
-        }, $buffer);
-        $buffer = preg_replace_callback(
-            '/window\.dataLayer\s*=\s*window\.dataLayer\s*\|\|\s*\[\];|window\[\'dataLayer\'\]\s*=\s*window\[\'dataLayer\'\]\s*\|\|\s*\[\];/s',
-            function($matches)  use ($dataLayerName) {
-                return str_replace('dataLayer', $dataLayerName, $matches[0]);
-            },
-            $buffer
-        );
-        $buffer = preg_replace_callback(
-            '/gtag\((.*?)\);/s',
-            function($matches)  use ($dataLayerName) {
-                return str_replace('dataLayer', $dataLayerName, $matches[0]);
-            },
-            $buffer
-        );
-
-
-        return $buffer;
+        return pys_rename_gtag_datalayer( $buffer, $dataLayerName );
     }
 
     public function start_output_buffer() {

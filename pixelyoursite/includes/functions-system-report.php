@@ -178,6 +178,8 @@ function get_system_report_data( $for_download = false ) {
         $cookies[ $label ] = $marker . esc_html( $row['text'] );
     }
 
+    $cookies['Meta cookies on the first page view'] = Facebook()->getOption( 'first_request_cookies' ) ? 'On' : 'Off';
+
     $report = array(
         'WordPress Environment' => $wordpress,
         'Server Environment'    => $server,

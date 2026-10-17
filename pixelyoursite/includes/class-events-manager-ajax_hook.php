@@ -117,7 +117,7 @@ class AjaxHookEventManager {
             if( !empty($variation_id)
                 && $variation_id > 0
                 && (($pixel->getSlug() === 'ga' && !GATags()->getOption( 'woo_variable_as_simple')) ||
-                    ($pixel->getSlug() === "facebook" && Facebook\Helpers\isDefaultWooContentIdLogic() && !Facebook()->getOption( 'woo_variable_as_simple') ) ||
+                    ($pixel->getSlug() === "facebook" && !Facebook\Helpers\facebookVariableAsSimple() ) ||
                     (!in_array($pixel->getSlug(), ['ga', 'facebook']) && !$pixel->getOption( 'woo_variable_as_simple' ))
                 )
             ) {
@@ -173,7 +173,7 @@ class AjaxHookEventManager {
 
     public static function printEvent() {
         $pixelsEventData = self::getPendingEvent("woo_add_to_cart_on_button_click",true);
-        if( !is_null($pixelsEventData) ) {
+        if( !empty($pixelsEventData) ) {
             PYS()->getLog()->debug('trackWooAddToCartEvent printEvent is footer');
             echo "<div id='pys_late_event' style='display:none' dir='".json_encode($pixelsEventData,JSON_HEX_APOS)."'></div>";
         }
@@ -201,7 +201,7 @@ class AjaxHookEventManager {
 
     public static function addPixelCodeToAddToCarMessage($message, $products, $show_qty) {
         $pixelsEventData = self::getPendingEvent("woo_add_to_cart_on_button_click",true);
-        if( !is_null($pixelsEventData) ){
+        if( !empty($pixelsEventData) ){
             $message .= "<div id='pys_late_event' dir='".json_encode($pixelsEventData,JSON_HEX_APOS)."'></div>";
         }
         return $message;
@@ -211,7 +211,7 @@ class AjaxHookEventManager {
 
 
         $pixelsEventData = self::getPendingEvent("woo_add_to_cart_on_button_click",true);
-        if( !is_null($pixelsEventData) ){
+        if( !empty($pixelsEventData) ){
             PYS()->getLog()->debug('addPixelCodeToAddToCartFragment send data with fragment');
             $pixel_code = self::generatePixelCode($pixelsEventData);
             $fragments['#'.self::$DIV_ID_FOR_AJAX_EVENTS] =
@@ -223,61 +223,91 @@ class AjaxHookEventManager {
 
     public static function generatePixelCode($pixelsEventData){
 
+        // Extract the shared eventID and unique e_id keys from PHP event data (set once
+        // in trackWooAddToCartEvent before the pixel loop, so all pixels carry the same UUID).
+        $sharedEventId = '';
+        $uniqueEIds    = [];
+        $events        = [];
+        foreach ($pixelsEventData as $slug => $eventData) {
+            if (empty($sharedEventId) && !empty($eventData['eventID'])) {
+                $sharedEventId = $eventData['eventID'];
+            }
+            $eId = !empty($eventData['custom_event_post_id'])
+                    ? $eventData['custom_event_post_id']
+                    : ($eventData['e_id'] ?? '');
+            if (!empty($eId) && !in_array($eId, $uniqueEIds, true)) {
+                $uniqueEIds[] = $eId;
+            }
+            $events[] = ['slug' => $slug, 'event' => $eventData];
+        }
+
         ob_start();
-        //$cartHashKey = apply_filters( 'woocommerce_cart_hash_key', 'wc_cart_hash_' . md5( get_current_blog_id() . '_' . get_site_url( get_current_blog_id(), '/' ) . get_template() ) );
         ?>
         <script>
-            function pys_getCookie(name) {
-                var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-                return v ? v[2] : null;
-            }
-            function pys_setCookie(name, value, days) {
-                var d = new Date;
-                d.setTime(d.getTime() + 24*60*60*1000*days);
-                document.cookie = name + "=" + value + ";path=/;expires=" + d.toGMTString();
-            }
-            var name = 'pysAddToCartFragmentId';
-            var cartHash = "<?= isWooCartAvailable() ? WC()->cart->get_cart_hash() : '' ?>";
+            // Runs on every cart-fragments refresh, possibly before public.js (held
+            // back by a consent tool or a script optimizer): keep everything local
+            // and wait for PYS instead of calling into it blindly.
+            (function () {
+                var cookieName = 'pysAddToCartFragmentId';
+                var cartHash = <?= wp_json_encode( isWooCartAvailable() ? WC()->cart->get_cart_hash() : '' ) ?>;
+                var uniqueEIds = <?= wp_json_encode( $uniqueEIds ) ?>;
+                var events = <?= wp_json_encode( $events ) ?>;
+                var attempts = 0;
 
-            if(pys_getCookie(name) != cartHash) { // prevent re send event if user update page
-                <?php
-                // Extract the shared eventID and unique e_id keys from PHP event data (set once
-                // in trackWooAddToCartEvent before the pixel loop, so all pixels carry the same UUID).
-                $sharedEventId = '';
-                $uniqueEIds    = [];
-                foreach ($pixelsEventData as $slug => $eventData) {
-                    if (empty($sharedEventId) && !empty($eventData['eventID'])) {
-                        $sharedEventId = $eventData['eventID'];
-                    }
-                    $eId = !empty($eventData['custom_event_post_id'])
-                            ? $eventData['custom_event_post_id']
-                            : ($eventData['e_id'] ?? '');
-                    if (!empty($eId) && !in_array($eId, $uniqueEIds, true)) {
-                        $uniqueEIds[] = $eId;
-                    }
+                function getCookie(name) {
+                    var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+                    return v ? v[2] : null;
                 }
-                ?>
-                // Use the PHP-generated shared eventID; fall back to a JS token if absent.
-                var pys_action_event_id = '<?= esc_js($sharedEventId) ?>' || pys_generate_token();
 
-                <?php if (!empty($uniqueEIds)) : ?>
-                // Sync the uniqueId cache once per event type so generateUniqueId()
-                // returns the same fresh ID even when ajaxForServerStaticEvent=true.
-                if (window.pys && window.pys.setEventUniqueId) {
-                    <?php foreach ($uniqueEIds as $eId) : ?>
-                    window.pys.setEventUniqueId('<?= esc_js($eId) ?>', pys_action_event_id);
-                    <?php endforeach; ?>
+                function token() {
+                    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                        return window.crypto.randomUUID();
+                    }
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                        var r = Math.random() * 16 | 0;
+                        return (c === 'x' ? r : (r % 4 + 8)).toString(16);
+                    });
                 }
-                <?php endif; ?>
 
-                <?php foreach ($pixelsEventData as $slug => $eventData) : ?>
-                    var pixel = getPixelBySlag('<?= $slug ?>');
-                    var event = <?= json_encode($eventData) ?>;
-                    event.eventID = pys_action_event_id;
-                    pixel.fireEvent(event.name, event);
-                <?php endforeach; ?>
-                pys_setCookie(name,cartHash,90)
-            }
+                function fire() {
+                    if (!window.pys || typeof window.pys.getPixelBySlag !== 'function') {
+                        if (++attempts < 50) {
+                            setTimeout(fire, 200);
+                        }
+                        return;
+                    }
+                    if (getCookie(cookieName) == cartHash) { // prevent re send event if user update page
+                        return;
+                    }
+
+                    // Use the PHP-generated shared eventID; fall back to a JS token if absent.
+                    var eventId = <?= wp_json_encode( (string) $sharedEventId ) ?> || token();
+
+                    // Sync the uniqueId cache once per event type so generateUniqueId()
+                    // returns the same fresh ID even when ajaxForServerStaticEvent=true.
+                    if (typeof window.pys.setEventUniqueId === 'function') {
+                        uniqueEIds.forEach(function (eId) {
+                            window.pys.setEventUniqueId(eId, eventId);
+                        });
+                    }
+
+                    events.forEach(function (item) {
+                        var pixel = window.pys.getPixelBySlag(item.slug);
+                        if (!pixel) {
+                            return;
+                        }
+                        item.event.eventID = eventId;
+                        pixel.fireEvent(item.event.name, item.event);
+                    });
+
+                    // Woo re-applies cached fragments on page load: the cookie stops a re-send.
+                    var d = new Date();
+                    d.setTime(d.getTime() + 24 * 60 * 60 * 1000 * 90);
+                    document.cookie = cookieName + "=" + cartHash + ";path=/;expires=" + d.toGMTString();
+                }
+
+                fire();
+            })();
         </script>
         <?php
 

@@ -196,7 +196,11 @@ include_once 'components/recommended-video.php';
                             include "html-reset.php";
                             break;
                         case 'logs':
-                            include "html-logs.php";
+                            if ( current_user_can( 'manage_pys_data_export' ) ) {
+                                include "html-logs.php";
+                            } else {
+                                include "html-logs-no-access.php";
+                            }
                             break;
                         case 'hooks':
                             include "html-hooks.php";

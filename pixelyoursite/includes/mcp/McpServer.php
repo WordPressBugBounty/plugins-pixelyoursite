@@ -39,14 +39,18 @@ class McpServer {
 	private const SERVER_NAME = 'PixelYourSite';
 
 	/** Returned as the `initialize` instructions (operating guidance for the LLM). */
-	private const SERVER_DESCRIPTION = 'PixelYourSite (Free) — tracking pixel and ecommerce event configuration. Free platforms: Facebook, Google Analytics (GA4), Google Tags, GTM, plus Pinterest/Bing/Reddit when their add-on is active. Call get_tracking_audit first in any new conversation. Skip domains marked ok or not_active; drill only warning, incomplete or error. Every write tool returns its own confirmation — do not re-audit after a write. When a request needs a Pro-only capability, explain it once plainly and note it requires PixelYourSite Pro. Pro-only includes: Google Ads (the AW-… conversion platform, conversion IDs and conversion labels — NOT the same as GA4 / Google Tags, do not substitute those), CAPI / server-side tokens, advanced matching, extra custom-event triggers/conditions, lifecycle events, attribution reports, and TikTok.';
+	private const SERVER_DESCRIPTION = 'PixelYourSite (Free) — tracking pixel and ecommerce event configuration. Free platforms: Facebook, Google Analytics (GA4), Google Tags, GTM, plus Pinterest/Bing/Reddit when their add-on is active. Call get_tracking_audit first in any new conversation. Skip domains marked ok or not_active; drill only warning, incomplete or error. Every write tool returns its own confirmation — do not re-audit after a write. A write preview (`confirmation_required: true`) is not the user\'s confirmation: show it, ask, end your turn and wait for their reply before calling again with `confirm: true` — the original request never counts as that confirmation. When a request needs a Pro-only capability, explain it once plainly and note it requires PixelYourSite Pro. Pro-only includes: Google Ads (the AW-… conversion platform, conversion IDs and conversion labels — NOT the same as GA4 / Google Tags, do not substitute those), CAPI / server-side tokens, advanced matching, extra custom-event triggers/conditions, lifecycle events, attribution reports, and TikTok.';
 
-	private const ADAPTER_VERSION = '0.5.0';
+	private const LANGUAGE_DIRECTIVE = 'Always reply in the same language the user wrote their message in.';
+	private const ADAPTER_VERSION    = '0.5.0';
 
 	private static ?self $instance = null;
 
 	/** Guards the deferred adapter boot: `rest_api_init` and WP-CLI `init` can both reach it. */
 	private bool $adapter_booted = false;
+
+	/** Memoised should_register_abilities() answer. */
+	private ?bool $has_callers = null;
 
 	/**
 	 * Singleton accessor; boots the server on first call.
@@ -66,7 +70,7 @@ class McpServer {
 	}
 
 	/**
-	 * Register the read-only option and the admin page, then arm the deferred
+	 * Register the MCP options and the admin page, then arm the deferred
 	 * adapter boot. No-op if dependencies are missing.
 	 *
 	 * @return void
@@ -76,7 +80,7 @@ class McpServer {
 			return;
 		}
 
-		$this->register_read_only_option();
+		$this->register_options();
 
 		// Settings tab UI under PixelYourSite → MCP (tokens, read-only,
 		// activity log). Registered on every request — it gates itself on
@@ -84,6 +88,9 @@ class McpServer {
 		// token-less install must still be able to open the page and mint its
 		// first token.
 		( new AdminPage( self::ROUTE_NAMESPACE, self::ROUTE ) )->register();
+
+		add_action( 'wp_abilities_api_categories_init', array( $this, 'register_category' ) );
+		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
 
 		// The MCP endpoint authenticates with a Bearer token issued in
 		// wp-admin. With no token on record it could only ever answer 401, so
@@ -106,8 +113,8 @@ class McpServer {
 	 * Boot the prefixed adapter and everything that only matters once it is
 	 * running. Runs at most once, from `rest_api_init` 0 or — under WP-CLI —
 	 * `init` 10. Both are early enough for the adapter's own registration
-	 * (`rest_api_init` 15 / `init` 20) and for the Abilities API, whose
-	 * registry the adapter first touches while creating servers.
+	 * (`rest_api_init` 15 / `init` 20). Ability registration is hooked in
+	 * boot(), independently of the adapter.
 	 *
 	 * @return void
 	 */
@@ -129,8 +136,6 @@ class McpServer {
 		// cannot reach theirs.
 		add_filter( 'pys_pro_mcp_adapter_create_default_server', '__return_false' );
 
-		add_action( 'wp_abilities_api_categories_init', array( $this, 'register_category' ) );
-		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
 		add_action( 'pys_pro_mcp_adapter_init', array( $this, 'register_server' ) );
 
 		// Map hyphen ability IDs to the underscore MCP tool names.
@@ -171,10 +176,20 @@ class McpServer {
 
 		$data      = $result->toArray();
 		$base      = isset( $data['instructions'] ) && is_string( $data['instructions'] ) ? trim( $data['instructions'] ) : '';
-		$directive = 'Always reply in the same language the user wrote their message in.';
+		$directive = self::LANGUAGE_DIRECTIVE;
 		$data['instructions'] = '' === $base ? $directive : $base . ' ' . $directive;
 
 		return $dtoClass::fromArray( $data );
+	}
+
+	/**
+	 * The instructions our server sends on `initialize`, for clients that
+	 * reach the abilities through another server.
+	 *
+	 * @return string
+	 */
+	public static function instructions(): string {
+		return self::SERVER_DESCRIPTION . ' ' . self::LANGUAGE_DIRECTIVE;
 	}
 
 	/**
@@ -221,19 +236,20 @@ class McpServer {
 	}
 
 	/**
-	 * Register the read-only toggle as a PYS Settings option so the admin
-	 * page can render it. Defaults to off; existing installs keep their
-	 * stored value.
+	 * Register the read-only and "Other MCP servers" toggles as PYS Settings
+	 * options so the admin page can render them. Both default to off; existing
+	 * installs keep their stored values.
 	 *
-	 * Registered unconditionally: the admin page renders this toggle even when
-	 * the adapter itself is never booted (no token on record yet).
+	 * Registered unconditionally: the admin page renders these toggles even
+	 * when the adapter itself is never booted (no token on record yet).
 	 *
 	 * @return void
 	 */
-	private function register_read_only_option(): void {
+	private function register_options(): void {
 		add_action( 'init', static function (): void {
 			if ( function_exists( '\\PixelYourSite\\PYS' ) ) {
 				\PixelYourSite\PYS()->addOption( Capabilities::OPTION_READ_ONLY_ENABLED, 'checkbox', false );
+				\PixelYourSite\PYS()->addOption( Capabilities::OPTION_EXTERNAL_ACCESS_ENABLED, 'checkbox', false );
 			}
 		}, 11 );
 	}
@@ -244,7 +260,7 @@ class McpServer {
 	 * @return void
 	 */
 	public function register_category(): void {
-		if ( !function_exists( 'wp_register_ability_category' ) ) {
+		if ( !function_exists( 'wp_register_ability_category' ) || !$this->options_ready() ) {
 			return;
 		}
 		if ( function_exists( 'wp_has_ability_category' ) && wp_has_ability_category( self::ABILITY_CATEGORY ) ) {
@@ -295,11 +311,24 @@ class McpServer {
 	}
 
 	/**
-	 * Register all abilities owned by PYS Free MCP.
+	 * Register all abilities owned by PYS Free MCP. Called on
+	 * `wp_abilities_api_init`, which fires after
+	 * `wp_abilities_api_categories_init` — by then the `pixelyoursite`
+	 * category exists, so registration succeeds.
 	 *
 	 * @return void
 	 */
 	public function register_abilities(): void {
+		if ( !$this->options_ready() ) {
+			return;
+		}
+
+		Abilities\McpAccessInfoAbility::register();
+
+		if ( !$this->should_register_abilities() ) {
+			return;
+		}
+
 		Abilities\PingAbility::register();
 		Abilities\UsageGuidanceAbility::register();
 		Abilities\CredentialSetupInstructionsAbility::register();
@@ -315,6 +344,37 @@ class McpServer {
 		Abilities\GetCustomEventAbility::register();
 		Abilities\SetCustomEventAbility::register();
 		Abilities\ManageCustomEventAbility::register();
+	}
+
+	/**
+	 * PYS has located its options (`init` 9). A registry built earlier would
+	 * otherwise query a table a fresh install has not created yet.
+	 *
+	 * @return bool
+	 */
+	private function options_ready(): bool {
+		return function_exists( '\\PixelYourSite\\PYS' ) && \PixelYourSite\PYS()->optionsLocated();
+	}
+
+	/**
+	 * Is there any caller for our abilities on this site?
+	 *
+	 * @return bool
+	 */
+	private function should_register_abilities(): bool {
+		if ( !$this->options_ready() ) {
+			return false;
+		}
+
+		if ( null === $this->has_callers ) {
+			try {
+				$this->has_callers = Capabilities::isExternalAccessAllowed() || Auth::count() > 0;
+			} catch ( \Throwable $e ) {
+				$this->has_callers = false;
+			}
+		}
+
+		return $this->has_callers;
 	}
 
 	/**

@@ -197,7 +197,7 @@ $copy = function ( $code ): void {
                 <li><b>Dry-run first.</b> <code>POST /import</code> and <code>wp ... import</code> only report a diff until you pass <code>apply</code> / <code>--apply</code>.</li>
                 <li><b>Automatic backup.</b> Every apply snapshots the previous settings; <code>restore</code> rolls them back.</li>
                 <li><b>Tokens are opt-in.</b> Credentials are excluded from exports unless you pass <code>include_tokens</code> / <code>--include-tokens</code>.</li>
-                <li><b>What never travels.</b> License credentials, plugin access (<code>admin_permissions</code>), and the MCP read-only posture (<code>mcp_read_only_enabled</code>) are excluded from every profile — so a shared file can't hand over control of a site.</li>
+                <li><b>What never travels.</b> License credentials, plugin access (<code>admin_permissions</code>), the MCP read-only posture (<code>mcp_read_only_enabled</code>), and MCP access for other MCP servers (<code>mcp_external_access_enabled</code>) are excluded from every profile — so a shared file can't hand over control of a site.</li>
                 <li><b>Auto vs explicit.</b> Without a <code>plan</code>, import replicates each module's settings and its main pixel. Use an explicit <code>plan</code> for fine-grained per-pixel control.</li>
             </ul>
         </div>

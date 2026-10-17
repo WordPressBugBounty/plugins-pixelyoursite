@@ -42,7 +42,23 @@ final class ToolNameMap {
 		'pixelyoursite/get-custom-event'                  => 'get_custom_event',
 		'pixelyoursite/set-custom-event'                  => 'set_custom_event',
 		'pixelyoursite/manage-custom-event'               => 'manage_custom_event',
+		'pixelyoursite/mcp-access-info'                   => 'get_mcp_access_info',
 	);
+
+	/**
+	 * Appended to tool descriptions while other MCP servers have access:
+	 * there the filter does not run and tools keep their ability IDs.
+	 */
+	public const EXTERNAL_NAMING_NOTE = 'Outside the PixelYourSite MCP server, a tool name like `get_tracking_audit` in these texts means the ability `pixelyoursite/get-tracking-audit` (`_` becomes `-`, plus the `pixelyoursite/` prefix). Call `pixelyoursite/mcp-access-info` once for the usage instructions.';
+
+	/**
+	 * Tool name → ability ID, for clients that only see ability IDs.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function abilityIdsByToolName(): array {
+		return array_flip( self::MAP );
+	}
 
 	/**
 	 * Direct lookup for PHP callers that need the public name without going

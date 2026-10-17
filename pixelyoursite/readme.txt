@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, O
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.1
-Stable tag: 11.4.2.1
+Stable tag: 11.4.3
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -324,6 +324,59 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+
+= PixelYourSite 11.4.3 =
+
+17 October 20226
+
+* New: Product feed ID check. It warns when product IDs don’t match your catalog feed and fills in the matching settings.
+
+* New: Product ID settings. All tags share one ID logic, and there’s a new option for variations without their own SKU.
+
+* New: Option to create Meta cookies on the first page view, for forms that read _fbp/_fbc on load.
+
+* New: More granular user role permissions for WooCommerce/EDD reports and exports.
+
+* New: Support for Discount Rules for WooCommerce by Flycart.
+
+* New: MCP option to allow access from other MCP plugins (off by default).
+
+* Improvement: Better Meta Parameter Builder support.
+
+* Change: Product group IDs now use the parent product ID instead of its SKU.
+
+* Security: Fixed an XSS issue in noscript pixels. Thanks to Jakub Herman via WPScan.
+
+* Fix: WordPress update checks were blocked by the add-on updater.
+
+* Fix: Add-on updates were not detected by WP-Cron, WP-CLI and REST API.
+
+* Fix: Cookies were written by the server even when all PYS cookies were disabled.
+
+* Fix: Several Meta CAPI bugs (TLS verification, fbclid handling, invalid _fbp, referrer_url).
+
+* Fix: external_id in the page didn’t match the one sent by server events.
+
+* Fix: JS error and no tracking for bot visitors when visitor data is loaded through the REST API.
+
+* Fix: InitiateCheckout sent the subtotal before discounts.
+
+* Fix: Noscript pixels ignored the opt-out.
+
+* Fix: Pixels didn’t load when the consent check request failed.
+
+* Fix: Conflict with GTM4WP.
+
+* Fix: Fatal error from a typo in promo notices.
+
+* Fix: GA and GTM remove_from_cart now send the same item_id as add_to_cart.
+
+* Fix: GTM view_item now lists the variations of variable products.
+
+* Fix: Facebook for WooCommerce ID mode settings.
+
+* Fix: JS errors with Complianz and WP Rocket.
 
 
 = PixelYourSite 11.4.2.1 =

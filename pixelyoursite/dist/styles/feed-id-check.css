@@ -1,0 +1,85 @@
+/* Product feed ID check (WooCommerce tab). All selectors are prefixed pfc- and scoped to #pys. */
+
+#pys .pfc .pfc-head{gap:14px;flex-wrap:wrap}
+#pys .pfc p{line-height:150%}
+#pys .pfc-intro{color:#303030;font-size:14px;line-height:150%}
+#pys span.pfc-status{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;white-space:nowrap}
+#pys span.pfc-status:before{content:"";width:10px;height:10px;border-radius:50%;background:currentColor;flex-shrink:0}
+#pys span.pfc-ok{color:#29845a}
+#pys span.pfc-bad{color:#d21c1c}
+#pys span.pfc-warn{color:#b26200}
+#pys span.pfc-neutral{color:#5d5d5d}
+
+/* platform rows */
+#pys .card.card-style6.pfc-row>.card-header{cursor:pointer;gap:16px;flex-wrap:wrap;max-height:none}
+#pys .pfc-row>.card-header:focus-visible{outline:2px solid #0172cb;outline-offset:2px}
+#pys .pfc-title{display:flex;align-items:center;gap:12px;min-width:0}
+#pys .pfc-title img{width:24px;height:24px;flex-shrink:0}
+#pys .pfc-title .pfc-name{font-size:16px;font-weight:600;color:#252a31;line-height:134%}
+#pys .pfc-title .pfc-sub{font-size:14px;color:#5d5d5d;line-height:150%;margin-top:2px}
+#pys .pfc-right{display:flex;align-items:center;gap:16px;margin-left:auto}
+#pys .pfc-chev{transition:transform .2s ease;color:#668ba6;font-size:18px;line-height:1;display:inline-block}
+#pys .pfc-row>.card-header.header-opened .pfc-chev{transform:rotate(180deg)}
+#pys .pfc-row>.card-body{padding:16px 24px 18px}
+#pys .pfc-badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;background:#e8edf1;color:#5d5d5d;margin-left:6px;vertical-align:middle}
+
+/* lines */
+#pys .pfc-line{font-size:14px;line-height:150%;color:#252a31;display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+#pys .pfc-line .pys-mcp-status{margin-top:2px}
+#pys ul.pfc-diffs{margin:0 0 0 28px;padding:0;list-style:disc}
+#pys ul.pfc-diffs li{font-size:14px;line-height:160%;color:#303030;font-weight:400}
+#pys .pfc-fix{font-size:14px;line-height:160%;color:#252a31;background:#f1f2f8;border-radius:6px;padding:10px 12px;margin-left:28px}
+#pys .pfc-side{font-size:13px;line-height:150%;color:#5d5d5d}
+#pys .pfc-mod-row{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#5d5d5d;align-items:baseline}
+#pys .pfc-mod-row span b{color:#252a31;font-weight:600;font-size:13px}
+#pys .pfc code{color:#ff6100;font-size:inherit}
+
+/* Facebook for WooCommerce reminder */
+#pys .pfc-remind{border:1px solid #e8edf1;background:#f7f8fb;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+#pys .pfc-remind .pfc-remind-q{font-size:14px;font-weight:600;color:#252a31;line-height:140%}
+#pys .pfc-remind .pfc-remind-opts{display:flex;flex-direction:column;gap:4px}
+#pys .pfc-remind .pfc-remind-opts div{font-size:14px;color:#303030;line-height:150%}
+#pys .pfc-remind .pfc-remind-opts b{font-size:14px}
+
+/* patterns */
+#pys .pfc-ref{border:1px solid #e8edf1;border-radius:12px;padding:14px 16px;background:#fff}
+#pys .pfc-ref summary{cursor:pointer;font-size:14px;font-weight:600;color:#252a31;list-style:none;display:flex;align-items:center;gap:8px}
+#pys .pfc-ref summary::-webkit-details-marker{display:none}
+#pys .pfc-ref[open] summary .pfc-chev{transform:rotate(180deg)}
+#pys .pfc-ref .pfc-side{margin-top:8px}
+#pys .pfc-patterns{margin-top:12px}
+
+/* in-card block (ID settings sub-cards) */
+#pys .pfc-incard{border:1px solid #e8edf1;border-left:3px solid #bac7d5;border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:#fafbfd}
+#pys .pfc-incard .pfc-fix{margin-left:0;background:#fff}
+#pys .pfc-incard code{color:#ff6100}
+
+/* suggestion box */
+#pys .pfc-suggest{border:1px solid #bfd8f2;background:#eaf4ff;border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+#pys .pfc-suggest .pfc-suggest-title{font-size:15px;font-weight:600;color:#252a31}
+#pys .pfc-suggest .pfc-side{color:#3b4b5c}
+#pys table.pfc-suggest-table{border-collapse:collapse;width:auto}
+#pys table.pfc-suggest-table td{padding:5px 14px 5px 0;font-size:14px;color:#252a31;vertical-align:middle;border:0}
+#pys table.pfc-suggest-table td:first-child{color:#5d5d5d}
+#pys table.pfc-suggest-table .pfc-cur{color:#8d8d8d;text-decoration:line-through}
+#pys table.pfc-suggest-table .pfc-cur-none{text-decoration:none}
+#pys table.pfc-suggest-table .pfc-cur .pfc-note{font-size:12px;color:#8d8d8d;white-space:nowrap}
+#pys table.pfc-suggest-table .pfc-arrow{color:#8d8d8d;padding:0 10px}
+#pys table.pfc-suggest-table .pfc-new{font-weight:600}
+#pys table.pfc-suggest-table .pfc-new code{font-weight:600}
+#pys .pfc-suggest-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#pys .pfc-suggest-actions .btn{padding:10px 16px}
+#pys .pfc-applied-box{margin-top:0}
+#pys .pfc-alert-text{display:inline;line-height:150%;font-weight:400;font-size:14px;color:#252a31}
+#pys .pfc-alert-text b{font-size:14px}
+#pys .pfc-undo{background:none;border:0;padding:0;color:#005bd3;cursor:pointer;font-size:14px;font-weight:600;text-decoration:underline}
+
+/* save bar hint */
+#pys .pfc-unsaved{align-self:center;margin-right:14px;color:#b26200;font-weight:600;font-size:14px}
+#pys .save-settings #pys-save-settings.pfc-highlight{box-shadow:0 0 0 3px rgba(223,123,0,.35)}
+
+/* highlight */
+#pys .pfc-field-flash{animation:pfcflash 1.6s ease}
+@keyframes pfcflash{0%,40%{box-shadow:0 0 0 3px #fff1c2;border-color:#df7b00}100%{box-shadow:none}}
+@media (prefers-reduced-motion:reduce){#pys .pfc-chev,#pys .pfc-field-flash{transition:none;animation:none}}
+@media (max-width:782px){#pys .pfc-row>.card-body{padding:14px 12px}#pys .pfc-fix{margin-left:0}}

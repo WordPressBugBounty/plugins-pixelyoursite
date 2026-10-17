@@ -12,6 +12,7 @@
 
   "woo_variable_as_simple": "checkbox",
   "woo_content_id": "select",
+  "woo_content_id_variation_sku": "select",
   "woo_content_id_prefix": "text",
   "woo_content_id_suffix": "text",
   "woo_content_id_logic": "radio",
@@ -68,6 +69,7 @@
   "automatic_event_search_enabled":  "checkbox",
 
   "disable_noscript": "checkbox",
+  "first_request_cookies": "checkbox",
   "enabled_medical": "checkbox",
   "do_not_track_medical_param": "multi_select"
 }

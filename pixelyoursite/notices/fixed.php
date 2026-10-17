@@ -53,7 +53,7 @@ If need fixed message
  * */
 
 function adminGetFixedNotices() {
-    return [
+    $notices = [
         [
             'order' => '1',
             'wait' => 0,
@@ -227,4 +227,8 @@ function adminGetFixedNotices() {
               */
 
     ];
+    if ( class_exists( 'PixelYourSite\FeedIdCheck' ) ) {
+        $notices = array_merge( $notices, FeedIdCheck::noticeEntries() );
+    }
+    return $notices;
 }

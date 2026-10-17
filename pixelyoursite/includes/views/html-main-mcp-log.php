@@ -32,9 +32,10 @@ $logUrl        = (string) ( $viewModel['log_url'] ?? '' );
 
 $filterTool   = (string) ( $filters['tool'] ?? '' );
 $filterStatus = (string) ( $filters['status'] ?? '' );
+$filterSource = (string) ( $filters['source'] ?? '' );
 $filterPeriod = (string) ( $filters['period'] ?? '' );
 $filterSearch = (string) ( $filters['search'] ?? '' );
-$hasFilters   = '' !== $filterTool || '' !== $filterStatus || '' !== $filterPeriod || '' !== $filterSearch;
+$hasFilters   = '' !== $filterTool || '' !== $filterStatus || '' !== $filterSource || '' !== $filterPeriod || '' !== $filterSearch;
 
 $rangeFrom = 0 === $totalFiltered ? 0 : ( $paged - 1 ) * $perPage + 1;
 $rangeTo   = min( $paged * $perPage, $totalFiltered );
@@ -48,6 +49,14 @@ $statusIcon = static function ( $ok ) {
 		return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12 10 17 19 7"></polyline></svg>';
 	}
 	return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="6" y1="18" x2="18" y2="6"></line></svg>';
+};
+
+$info_icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8h.01M12 11v5"></path></svg>';
+
+$source_badge = static function ( $entry ) {
+	$is_external = \PixelYourSite\MCP\Provenance::SOURCE_EXTERNAL === \PixelYourSite\MCP\Provenance::entrySource( (array) $entry );
+	echo '<span class="pys-mcp-source pys-mcp-source--' . ( $is_external ? 'external' : 'pys' ) . '">'
+	     . esc_html( $is_external ? __( 'External', 'pys' ) : __( 'PYS', 'pys' ) ) . '</span>';
 };
 ?>
 
@@ -77,6 +86,13 @@ $statusIcon = static function ( $ok ) {
                         <option value=""><?php _e( 'Any status', 'pys' ); ?></option>
                         <option value="success" <?php selected( $filterStatus, 'success' ); ?>><?php _e( 'Success', 'pys' ); ?></option>
                         <option value="error" <?php selected( $filterStatus, 'error' ); ?>><?php _e( 'Error', 'pys' ); ?></option>
+                        <option value="preview" <?php selected( $filterStatus, 'preview' ); ?>><?php esc_html_e( 'Preview (nothing written)', 'pys' ); ?></option>
+                    </select>
+
+                    <select name="pys_source" class="pys_status input-standard" style="width: auto; min-width: 150px;">
+                        <option value=""><?php _e( 'Any source', 'pys' ); ?></option>
+                        <option value="pys" <?php selected( $filterSource, 'pys' ); ?>><?php _e( 'PYS', 'pys' ); ?></option>
+                        <option value="external" <?php selected( $filterSource, 'external' ); ?>><?php _e( 'External', 'pys' ); ?></option>
                     </select>
 
                     <select name="pys_period" class="pys_status input-standard" style="width: auto; min-width: 150px;">
@@ -126,6 +142,7 @@ $statusIcon = static function ( $ok ) {
                         <th class="pys-mcp-activity__status-col"></th>
                         <th><?php _e( 'When', 'pys' ); ?></th>
                         <th><?php _e( 'Tool', 'pys' ); ?></th>
+                        <th><?php _e( 'Source', 'pys' ); ?></th>
                         <th><?php _e( 'Token', 'pys' ); ?></th>
                         <th><?php _e( 'Note', 'pys' ); ?></th>
                         <th><?php _e( 'IP', 'pys' ); ?></th>
@@ -134,21 +151,23 @@ $statusIcon = static function ( $ok ) {
                     <tbody>
 					<?php
 					foreach ( $entries as $entry ) :
-						$status   = (string) ( $entry['result_status'] ?? '' );
-						$statusOk = 'success' === $status;
+						$status     = (string) ( $entry['result_status'] ?? '' );
+						$statusOk   = 'success' === $status;
+						$is_preview = \PixelYourSite\MCP\Provenance::STATUS_PREVIEW === $status;
 						?>
                         <tr>
                             <td class="pys-mcp-activity__status-cell">
-                                <span class="pys-mcp-status pys-mcp-status--<?php echo $statusOk ? 'ok' : 'fail'; ?>"
+                                <span class="pys-mcp-status pys-mcp-status--<?php echo $is_preview ? 'preview' : ( $statusOk ? 'ok' : 'fail' ); ?>"
                                       title="<?php echo esc_attr( $status ); ?>"
                                       aria-label="<?php echo esc_attr( $status ); ?>">
-                                    <?php echo $statusIcon( $statusOk ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static trusted SVG ?>
+                                    <?php echo $is_preview ? $info_icon : $statusIcon( $statusOk ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static trusted SVG ?>
                                 </span>
                             </td>
                             <td class="pys-mcp-activity__when">
 								<?php echo esc_html( isset( $entry['ts'] ) ? date_i18n( 'Y-m-d H:i:s', (int) $entry['ts'] ) : '—' ); ?>
                             </td>
                             <td><code><?php echo esc_html( (string) ( $entry['tool'] ?? '' ) ); ?></code></td>
+                            <td><?php $source_badge( $entry ); ?></td>
                             <td><?php echo esc_html( (string) ( $entry['token'] ?? '' ) ); ?></td>
                             <td class="pys-mcp-activity__note"><?php echo esc_html( (string) ( $entry['mcp_note'] ?? '' ) ); ?></td>
                             <td class="pys-mcp-activity__ip"><?php echo esc_html( (string) ( $entry['actor_ip'] ?? '' ) ); ?></td>

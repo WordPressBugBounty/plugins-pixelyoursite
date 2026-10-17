@@ -166,52 +166,7 @@ function pys_openai_parse_localized_number( $amount ) {
  * @return string
  */
 function getOpenAiWooProductContentId( $product_id ) {
-
-    if ( PixelYourSite\isWPMLActive() ) {
-        $product_id = PixelYourSite\getWPMLProductId( $product_id, PixelYourSite\OpenAI() );
-    }
-
-    $id_option = PixelYourSite\OpenAI()->getOption( 'woo_content_id' );
-    $prefix    = PixelYourSite\OpenAI()->getOption( 'woo_content_id_prefix' );
-    $suffix    = PixelYourSite\OpenAI()->getOption( 'woo_content_id_suffix' );
-
-    if ( $id_option == 'product_sku' ) {
-
-        $product = wc_get_product( $product_id );
-
-        if ( $product && $product->is_type( 'variation' ) ) {
-            $content_id = $product->get_sku();
-
-            if ( empty( $content_id ) ) {
-                $parent_product = wc_get_product( $product->get_parent_id() );
-
-                if ( $parent_product ) {
-                    $content_id = $parent_product->get_sku();
-                }
-            }
-
-            if ( empty( $content_id ) ) {
-                $content_id = $product_id;
-            }
-        } elseif ( $product ) {
-            $content_id = $product->get_sku();
-
-            if ( empty( $content_id ) ) {
-                $content_id = $product_id;
-            }
-        } else {
-            $content_id = $product_id;
-        }
-
-    } else {
-        $content_id = $product_id;
-    }
-
-    if ( empty( $content_id ) ) {
-        return '';
-    }
-
-    return trim( $prefix ) . $content_id . trim( $suffix );
+    return PixelYourSite\getWooProductItemId( $product_id, PixelYourSite\OpenAI(), true );
 }
 
 /**
@@ -330,6 +285,24 @@ function pys_openai_get_click_id() {
     }
 
     return '';
+}
+
+/**
+ * How long to keep OpenAI's `__oppref` click id, in seconds.
+ *
+ * It used to be written with an expiry of 2147483647 — January 2038, a
+ * twelve-year advertising cookie. 90 days matches what we keep Meta's click id
+ * for; `pys_openai_cookie_lifetime_days` is the way to change it.
+ *
+ * @return int Seconds.
+ */
+function pys_openai_cookie_lifetime() {
+    $days = PixelYourSite\pys_cookie_lifetime_days(
+        apply_filters( 'pys_openai_cookie_lifetime_days', 90 ),
+        90
+    );
+
+    return $days * DAY_IN_SECONDS;
 }
 
 /**

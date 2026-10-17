@@ -47,9 +47,10 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 
 	/** Per-platform content_id args => platform option key. */
 	private const CONTENT_ID_ARGS = array(
-		'content_id_source' => 'woo_content_id',
-		'content_id_prefix' => 'woo_content_id_prefix',
-		'content_id_suffix' => 'woo_content_id_suffix',
+		'content_id_source'        => 'woo_content_id',
+		'content_id_prefix'        => 'woo_content_id_prefix',
+		'content_id_suffix'        => 'woo_content_id_suffix',
+		'content_id_variation_sku' => 'woo_content_id_variation_sku',
 	);
 
 	/**
@@ -104,7 +105,8 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 				'content_id_source'            => array( 'type' => 'string', 'enum' => array( 'product_id', 'product_sku' ), 'description' => 'Content-ID source. `product_id` = the WooCommerce product/variation post ID (always present). `product_sku` = the product SKU (blank for products without one → they drop from catalog matching). The `custom_field` source is Pro-only.' ),
 				'content_id_prefix'            => array( 'type' => 'string', 'description' => 'Content-ID prefix (must match the platform catalog feed). Pass an empty string to clear.' ),
 				'content_id_suffix'            => array( 'type' => 'string', 'description' => 'Content-ID suffix (must match the platform catalog feed). Pass an empty string to clear.' ),
-				'variable_as_simple'           => array( 'type' => 'boolean', 'description' => 'Per-platform "Treat variable products like simple products" (admin: Facebook/GA/… ID settings → `woo_variable_as_simple`). When ON, a variable product reports the parent product id instead of the selected variation id. Written to the same platform(s) as the content_id args (all active, or the one in `content_id_platform`). This IS a Free setting. (Not to be confused with the Pro-only "track the variation data when a variation is selected".)' ),
+				'content_id_variation_sku'     => array( 'type' => 'string', 'enum' => array( 'parent_sku', 'variation_id' ), 'description' => 'Admin label: "If a variation has no SKU of its own". Only used when `content_id_source` is `product_sku`. `parent_sku` = a variation without its own SKU reports the parent product\'s SKU (legacy; default on existing installs). `variation_id` = it reports its own variation post ID (default on new installs). Must match the same setting in the Product Catalog Feed. Platforms whose add-on predates this setting ignore it.' ),
+				'variable_as_simple'           => array( 'type' => 'boolean', 'description' => 'Per-platform "Treat variable products like simple products" (admin: Facebook/GA/… ID settings → `woo_variable_as_simple`). When ON, a variable product reports the parent product id instead of the selected variation id. Not applied to Facebook while content_id_logic is facebook_for_woocommerce: the catalog of that extension lists variants as items and the parent only as item_group_id, so Facebook events use the variant ID there whenever one is selected. Written to the same platform(s) as the content_id args (all active, or the one in `content_id_platform`). This IS a Free setting. (Not to be confused with the Pro-only "track the variation data when a variation is selected".)' ),
 				'wpml_unified_id'              => array( 'type' => 'boolean', 'description' => 'Per-platform "WPML Unified ID logic" (`woo_wpml_unified_id`): send the default-language product id for all languages so multilingual variants share one content id. This IS a Free setting, but it REQUIRES the WPML plugin to be active (rejected with 409 otherwise) and only appears in the admin then. NOTE: choosing WHICH language is the default is a Pro-only "Select language" option and is NOT controllable via MCP (neither Free nor Pro) — this arg only flips the unified-id toggle. Written to the same platform(s) as content_id (all active, or `content_id_platform`).' ),
 				'content_id_platform'          => array( 'type' => 'string', 'description' => 'Scope the content_id / variable_as_simple / wpml_unified_id args to ONE active platform slug (e.g. `facebook`, `gatags`, `openai`, `pinterest`, `bing`, `reddit`). Omit to write to every active content-id platform. Read current per-platform values from get_woo_events_config `content_id_by_platform`.' ),
 				'platform_event_toggles'       => array(
@@ -205,6 +207,9 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 				$contentNew[ $key ] = (string) $input[ $arg ];
 			}
 		}
+		if ( isset( $contentNew[ 'woo_content_id_variation_sku' ] ) && !in_array( $contentNew[ 'woo_content_id_variation_sku' ], array( 'parent_sku', 'variation_id' ), true ) ) {
+			return new \WP_Error( 'pys_mcp_bad_variation_sku', '`content_id_variation_sku` must be `parent_sku` or `variation_id`.', array( 'status' => 400 ) );
+		}
 		$varAsSimple  = array_key_exists( 'variable_as_simple', $input ) ? (bool) $input[ 'variable_as_simple' ] : null;
 		$wpmlUnified  = array_key_exists( 'wpml_unified_id', $input ) ? (bool) $input[ 'wpml_unified_id' ] : null;
 		if ( null !== $wpmlUnified && ( !function_exists( '\\PixelYourSite\\isWPMLActive' ) || !\PixelYourSite\isWPMLActive() ) ) {
@@ -245,9 +250,14 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 			foreach ( $targets as $slug => $inst ) {
 				$row = array();
 				foreach ( self::CONTENT_ID_ARGS as $arg => $key ) {
-					if ( array_key_exists( $key, $contentNew ) ) {
-						$row[ $arg ] = array( 'current' => (string) $inst->getOption( $key, '' ), 'new' => $contentNew[ $key ] );
+					if ( !array_key_exists( $key, $contentNew ) ) {
+						continue;
 					}
+					// Skip settings this module/add-on does not define (e.g. an older add-on); updateOptions() drops them anyway.
+					if ( method_exists( $inst, 'issetOption' ) && !$inst->issetOption( $key ) ) {
+						continue;
+					}
+					$row[ $arg ] = array( 'current' => (string) $inst->getOption( $key, '' ), 'new' => $contentNew[ $key ] );
 				}
 				if ( null !== $varAsSimple ) {
 					$row[ 'variable_as_simple' ] = array( 'current' => self::toBool( $inst->getOption( 'woo_variable_as_simple' ) ), 'new' => $varAsSimple );

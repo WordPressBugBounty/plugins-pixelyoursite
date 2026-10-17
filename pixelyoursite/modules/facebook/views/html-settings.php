@@ -43,6 +43,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <h4 class="switcher-label secondary_heading"> <?php _e('Disable noscript', 'pys');?> </h4>
                     </div>
                 </div>
+
+                <div>
+                    <div class="d-flex align-items-center mb-4">
+                        <?php Facebook()->render_switcher_input( 'first_request_cookies' ); ?>
+                        <h4 class="switcher-label secondary_heading"><?php _e('Write _fbp and _fbc on the first page view', 'pys');?></h4>
+                    </div>
+                    <p class="text-gray"><?php _e('The server sets these cookies in the page response, so forms and scripts that read them while the page loads (hidden form fields, for example) get them on a visitor\'s first visit too. When "Track domains and subdomains together" is ON, the cookie domain must be known (see Cookie domain in the general settings). Do not enable it if a full-page cache stores Set-Cookie headers together with the page.', 'pys');?></p>
+                </div>
             </div>
         </div>
     </div>

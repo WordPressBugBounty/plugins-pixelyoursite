@@ -17,6 +17,12 @@
   "admin_permissions": [
     "administrator"
   ],
+  "woo_edd_reports_permissions": [
+    "administrator"
+  ],
+  "woo_edd_export_permissions": [
+    "administrator"
+  ],
 
   "block_robot_enabled": true,
   "exclude_blocked_robots": ["WP Rocket"],
@@ -164,6 +170,7 @@
   "send_external_id": true,
   "external_id_expire": 180,
   "track_cookie_for_subdomains": true,
+  "cookie_domain": "",
   "server_event_use_ajax": true,
   "server_static_event_use_ajax": true,
   "google_consent_mode": true,

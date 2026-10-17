@@ -25,6 +25,9 @@ $isPro           = (bool) ( $viewModel['is_pro'] ?? false );
 $endpointUrl     = (string) ( $viewModel['endpoint_url'] ?? '' );
 $recentActivity  = is_array( $viewModel['recent_activity'] ?? null ) ? $viewModel['recent_activity'] : array();
 $infraChecks     = is_array( $viewModel['infra_checks'] ?? null ) ? $viewModel['infra_checks'] : array();
+$external_access = is_array( $viewModel['external_access'] ?? null ) ? $viewModel['external_access'] : array();
+$external_on     = ! empty( $external_access['enabled'] );
+$adapter_found   = ! empty( $external_access['adapter_detected'] );
 
 // Compact "time ago" string for header timestamps.
 $humanTime = static function ( $ts ) {
@@ -43,6 +46,14 @@ $statusIcon = static function ( $ok ) {
 		return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12 10 17 19 7"></polyline></svg>';
 	}
 	return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="6" y1="18" x2="18" y2="6"></line></svg>';
+};
+
+$info_icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8h.01M12 11v5"></path></svg>';
+
+$source_badge = static function ( $entry ) {
+	$is_external = \PixelYourSite\MCP\Provenance::SOURCE_EXTERNAL === \PixelYourSite\MCP\Provenance::entrySource( (array) $entry );
+	echo '<span class="pys-mcp-source pys-mcp-source--' . ( $is_external ? 'external' : 'pys' ) . '">'
+	     . esc_html( $is_external ? __( 'External', 'pys' ) : __( 'PYS', 'pys' ) ) . '</span>';
 };
 ?>
 
@@ -64,7 +75,8 @@ $statusIcon = static function ( $ok ) {
 
             <h4 class="secondary_heading mb-8"><?php esc_html_e( 'How access works', 'pys' ); ?></h4>
             <p class="text-gray mb-24"><?php esc_html_e( 'PYS MCP uses the WordPress Abilities API to expose tools to AI assistants. Each token you generate grants an AI assistant access through a secure endpoint. Tokens can be set to read-only if you want to allow auditing without allowing changes.', 'pys' ); ?></p>
-            <p class="text-gray"><?php esc_html_e( 'This server exposes only PixelYourSite tools. The WordPress Abilities API is a shared system. Other plugins may register their own abilities, but PYS\'s MCP endpoint is scoped to PYS tools only by design.', 'pys' ); ?></p>
+            <p class="text-gray mb-24"><?php esc_html_e( 'This server exposes only PixelYourSite tools. The WordPress Abilities API is a shared system. Other plugins may register their own abilities, but PYS\'s MCP endpoint is scoped to PYS tools only by design.', 'pys' ); ?></p>
+            <p class="text-gray"><?php esc_html_e( 'By default PixelYourSite tools are only available through this server; see Other MCP servers below to change that.', 'pys' ); ?></p>
         </div>
     </div>
     <!-- ============================================================= TOKENS -->
@@ -160,6 +172,60 @@ $statusIcon = static function ( $ok ) {
             </div>
         </div>
     </div>
+    <!-- ========================================================= OTHER MCP SERVERS -->
+    <div class="card card-style6 card-static<?php echo $external_on ? ' pys-mcp-external-on' : ''; ?>" id="pys-mcp-access-card"
+         data-adapter="<?php echo $adapter_found ? '1' : '0'; ?>">
+        <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
+            <h4 class="secondary_heading_type2"><?php esc_html_e( 'Other MCP servers', 'pys' ); ?><span class="pys-mcp-badge-critical" id="pys-mcp-ext-badge"<?php echo $external_on ? '' : ' style="display:none;"'; ?>><?php esc_html_e( 'Critical', 'pys' ); ?></span></h4>
+        </div>
+        <div class="card-body">
+            <div class="d-flex align-items-center">
+	            <?php \PixelYourSite\PYS()->render_switcher_input( \PixelYourSite\MCP\Capabilities::OPTION_EXTERNAL_ACCESS_ENABLED ); ?>
+                <h4 class="switcher-label secondary_heading ml-12 mb-0"><?php esc_html_e( 'Allow other MCP servers to use PixelYourSite tools', 'pys' ); ?></h4>
+            </div>
+            <p class="text-gray mt-4"><?php esc_html_e( 'Off by default: PixelYourSite tools work only through the PixelYourSite MCP server and your tokens above. Turn on to also allow the servers below, for any WordPress user with PixelYourSite access.', 'pys' ); ?></p>
+
+            <ul class="pys-mcp-access">
+                <li>
+                    <span class="pys-mcp-access__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></span>
+                    <span class="pys-mcp-access__text">
+                        <span class="pys-mcp-access__label"><?php esc_html_e( 'WordPress MCP Adapter plugin', 'pys' ); ?>
+	                        <?php if ( $adapter_found ) : ?>
+                                <span class="pys-mcp-chip"><?php echo esc_html( '' !== (string) ( $external_access['adapter_version'] ?? '' ) ? sprintf( /* translators: %s: plugin version */ __( 'Detected · v%s', 'pys' ), $external_access['adapter_version'] ) : __( 'Detected', 'pys' ) ); ?></span>
+	                        <?php else : ?>
+                                <span class="pys-mcp-chip pys-mcp-chip--muted"><?php esc_html_e( 'Not installed', 'pys' ); ?></span>
+	                        <?php endif; ?>
+                        </span>
+                        <span class="pys-mcp-access__detail"><code><?php echo esc_html( (string) ( $external_access['adapter_path'] ?? '' ) ); ?></code></span>
+                    </span>
+                    <span class="pys-mcp-access__state pys-mcp-access__state--<?php echo $external_on ? 'warn' : 'off'; ?> js-pys-mcp-ext-state"><?php echo $external_on ? esc_html__( 'Available', 'pys' ) : esc_html__( 'Hidden', 'pys' ); ?></span>
+                </li>
+                <li>
+                    <span class="pys-mcp-access__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"></path></svg></span>
+                    <span class="pys-mcp-access__text">
+                        <span class="pys-mcp-access__label"><?php esc_html_e( 'WordPress abilities REST API', 'pys' ); ?></span>
+                        <span class="pys-mcp-access__detail"><code><?php echo esc_html( (string) ( $external_access['rest_path'] ?? '' ) ); ?></code> · <?php esc_html_e( 'WordPress 6.9+', 'pys' ); ?></span>
+                    </span>
+	                <?php if ( ! empty( $external_access['rest_available'] ) ) : ?>
+                        <span class="pys-mcp-access__state pys-mcp-access__state--<?php echo $external_on ? 'warn' : 'off'; ?> js-pys-mcp-ext-state"><?php echo $external_on ? esc_html__( 'Available', 'pys' ) : esc_html__( 'Hidden', 'pys' ); ?></span>
+	                <?php else : ?>
+                        <span class="pys-mcp-access__state pys-mcp-access__state--off"><?php esc_html_e( 'Not available', 'pys' ); ?></span>
+	                <?php endif; ?>
+                </li>
+            </ul>
+
+            <div class="alert alert-info mt-24" id="pys-mcp-ext-alert-off"<?php echo ( $external_on || ! $adapter_found ) ? ' style="display:none;"' : ''; ?>>
+                <p><?php esc_html_e( 'The WordPress MCP Adapter plugin is installed. It will not see PixelYourSite tools while this is off.', 'pys' ); ?></p>
+            </div>
+            <div class="alert alert-warning mt-24" id="pys-mcp-ext-alert-on"<?php echo $external_on ? '' : ' style="display:none;"'; ?>>
+                <p><strong><?php esc_html_e( 'Any WordPress user with PixelYourSite access can now run PixelYourSite tools without a token.', 'pys' ); ?></strong>
+	                <?php esc_html_e( 'PixelYourSite cannot revoke or rate-limit this. Writes are logged as', 'pys' ); ?>
+                    <span class="pys-mcp-source pys-mcp-source--external"><?php esc_html_e( 'External', 'pys' ); ?></span>.
+	                <?php esc_html_e( 'Read-only mode still applies.', 'pys' ); ?></p>
+            </div>
+        </div>
+    </div>
+
     <!-- ====================================================== CONNECT YOUR AI CLIENT -->
     <div class="card card-style6">
         <div class="card-header card-header-style2 d-flex justify-content-between align-items-center">
@@ -406,11 +472,12 @@ $statusIcon = static function ( $ok ) {
         <div class="card-body">
             <ul id="pys-mcp-check-list" class="pys-mcp-checks">
 		        <?php foreach ( $infraChecks as $check ) :
-			        $checkOk = ! empty( $check['ok'] );
+			        $checkOk  = ! empty( $check['ok'] );
+			        $is_info  = ! empty( $check['info'] );
 			        ?>
-                    <li class="pys-mcp-check pys-mcp-check--<?php echo $checkOk ? 'ok' : 'fail'; ?>">
+                    <li class="pys-mcp-check pys-mcp-check--<?php echo $is_info ? 'info' : ( $checkOk ? 'ok' : 'fail' ); ?>">
                         <span class="pys-mcp-check__icon" aria-hidden="true">
-                            <?php echo $statusIcon( $checkOk ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static trusted SVG ?>
+                            <?php echo $is_info ? $info_icon : $statusIcon( $checkOk ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static trusted SVG ?>
                         </span>
                         <span class="pys-mcp-check__text">
                             <span class="pys-mcp-check__label"><?php echo esc_html( (string) $check['label'] ); ?></span>
@@ -490,6 +557,10 @@ $statusIcon = static function ( $ok ) {
                     <td><?php _e( 'Assistant mentions a rate limit or "loop detected" error', 'pys' ); ?></td>
                     <td><?php _e( 'The server is protecting itself from too many rapid or repeated calls. Wait a moment and ask again — no action needed on your end.', 'pys' ); ?></td>
                 </tr>
+                <tr>
+                    <td><?php _e( 'Assistant uses the WordPress MCP Adapter and sees no PixelYourSite tools', 'pys' ); ?></td>
+                    <td><?php _e( 'Expected by default. Connect it to the PixelYourSite MCP server with a token, or enable Other MCP servers above.', 'pys' ); ?></td>
+                </tr>
                 </tbody>
             </table>
         </div>
@@ -515,6 +586,7 @@ $statusIcon = static function ( $ok ) {
                             <th class="pys-mcp-activity__status-col"></th>
                             <th><?php esc_html_e( "When", "pys" ); ?></th>
                             <th><?php esc_html_e( "Tool", "pys" ); ?></th>
+                            <th><?php esc_html_e( "Source", "pys" ); ?></th>
                             <th><?php esc_html_e( "Token", "pys" ); ?></th>
                             <th><?php esc_html_e( "Note", "pys" ); ?></th>
                             <th><?php esc_html_e( "IP", "pys" ); ?></th>
@@ -523,21 +595,23 @@ $statusIcon = static function ( $ok ) {
                         <tbody>
 				        <?php
 				        foreach ( $recentActivity as $entry ) :
-					        $status   = (string) ( $entry['result_status'] ?? '' );
-					        $statusOk = 'success' === $status;
+					        $status     = (string) ( $entry['result_status'] ?? '' );
+					        $statusOk   = 'success' === $status;
+					        $is_preview = \PixelYourSite\MCP\Provenance::STATUS_PREVIEW === $status;
 					        ?>
                             <tr>
                                 <td class="pys-mcp-activity__status-cell">
-                                    <span class="pys-mcp-status pys-mcp-status--<?php echo $statusOk ? 'ok' : 'fail'; ?>"
+                                    <span class="pys-mcp-status pys-mcp-status--<?php echo $is_preview ? 'preview' : ( $statusOk ? 'ok' : 'fail' ); ?>"
                                           title="<?php echo esc_attr( $status ); ?>"
                                           aria-label="<?php echo esc_attr( $status ); ?>">
-									    <?php echo $statusIcon( $statusOk ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static trusted SVG ?>
+									    <?php echo $is_preview ? $info_icon : $statusIcon( $statusOk ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static trusted SVG ?>
                                     </span>
                                 </td>
                                 <td class="pys-mcp-activity__when">
 							        <?php echo esc_html( isset( $entry['ts'] ) ? date_i18n( 'Y-m-d H:i:s', (int) $entry['ts'] ) : '—' ); ?>
                                 </td>
                                 <td><code><?php echo esc_html( (string) ( $entry['tool'] ?? '' ) ); ?></code></td>
+                                <td><?php $source_badge( $entry ); ?></td>
                                 <td><?php echo esc_html( (string) ( $entry['token'] ?? '' ) ); ?></td>
                                 <td class="pys-mcp-activity__note"><?php echo esc_html( (string) ( $entry['mcp_note'] ?? '' ) ); ?></td>
                                 <td class="pys-mcp-activity__ip"><?php echo esc_html( (string) ( $entry['actor_ip'] ?? '' ) ); ?></td>
@@ -757,18 +831,19 @@ $statusIcon = static function ( $ok ) {
 				}
 				let $list = $('#pys-mcp-check-list').empty();
 				(res.data.checks || []).forEach(function (c) {
-					let ok = !!c.ok;
+					let ok = !!c.ok,
+					    info = !!c.info;
 					let $icon = $('<span>', {
 						'class': 'pys-mcp-check__icon',
 						'aria-hidden': 'true'
-					}).html(statusIcon(ok));
+					}).html(info ? <?php echo wp_json_encode( $info_icon ); ?> : statusIcon(ok));
 
 					let $label = $('<span>', { 'class': 'pys-mcp-check__label' }).text(c.label),
                         $detail = $('<span>', { 'class': 'pys-mcp-check__detail' }).text(c.detail),
 					    $text = $('<span>', { 'class': 'pys-mcp-check__text' }).append($label, $detail);
 
 					$list.append(
-						$('<li>', { 'class': 'pys-mcp-check pys-mcp-check--' + (ok ? 'ok' : 'fail') })
+						$('<li>', { 'class': 'pys-mcp-check pys-mcp-check--' + (info ? 'info' : (ok ? 'ok' : 'fail')) })
 							.append($icon, $text)
 					);
 				});
@@ -828,8 +903,25 @@ $statusIcon = static function ( $ok ) {
 		}
 	}
 
+	// ---------- Other MCP servers (preview until the settings are saved) ----------
+	function handleExternalToggle(e) {
+		let on = $(e.currentTarget).is(':checked'),
+		    $card = $('#pys-mcp-access-card'),
+		    adapterFound = '1' === String($card.data('adapter'));
+
+		$card.toggleClass('pys-mcp-external-on', on);
+		$card.find('.js-pys-mcp-ext-state')
+			.text(on ? 'Available' : 'Hidden')
+			.toggleClass('pys-mcp-access__state--warn', on)
+			.toggleClass('pys-mcp-access__state--off', !on);
+		$('#pys-mcp-ext-badge').toggle(on);
+		$('#pys-mcp-ext-alert-on').toggle(on);
+		$('#pys-mcp-ext-alert-off').toggle(!on && adapterFound);
+	}
+
 	$(function () {
 		$(document)
+			.on('change', '#pys-mcp-access-card input[type="checkbox"]', handleExternalToggle)
 			.on('click', '#pys-mcp-generate-btn', handleGenerate)
 			.on('click', '.pys-mcp-revoke-one', handleRevokeOne)
 			.on('click', '#pys-mcp-revoke-all-btn', handleRevokeAll)

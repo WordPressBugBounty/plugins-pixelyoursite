@@ -169,6 +169,11 @@ abstract class Settings {
         $preserve_fields = [
             'enabled',
 
+            // access control is not a tracking setting and must survive a reset
+            'admin_permissions',
+            'woo_edd_reports_permissions',
+            'woo_edd_export_permissions',
+
             'tracking_id',
             'enable_server_container',
             'server_container_url',
@@ -356,6 +361,21 @@ abstract class Settings {
      */
     public function getOptionKeys(): array {
         return array_keys( (array) $this->options );
+    }
+
+    /**
+     * Whether this module defines an option key (in its options_defaults.json).
+     * Lets the core render or write a setting only for modules/add-ons that know it.
+     *
+     * @param string $key
+     *
+     * @return bool
+     */
+    public function issetOption( $key ) {
+
+        $this->maybeLoad();
+
+        return isset( $this->defaults[ $key ] );
     }
 
     public function setOption($key, $value){
@@ -976,11 +996,13 @@ abstract class Settings {
 	/**
 	 * Output multi select input
 	 *
-	 * @param      $key
-	 * @param      $values
-	 * @param bool $disabled
+	 * @param        $key
+	 * @param        $values
+	 * @param bool   $disabled
+	 * @param string $placeholder
+	 * @param array  $disabled_keys Options that cannot be selected.
 	 */
-    public function render_multi_select_input( $key, $values, $disabled = false, $placeholder = "" ) {
+    public function render_multi_select_input( $key, $values, $disabled = false, $placeholder = "", $disabled_keys = array() ) {
 
         $attr_name = "pys[$this->slug][$key][]";
         $attr_id = 'pys_' . $this->slug . '_' . $key;
@@ -997,7 +1019,7 @@ abstract class Settings {
             <?php foreach ( $values as $option_key => $option_value ) : ?>
                 <option value="<?php echo esc_attr( $option_key ); ?>"
                     <?php selected( in_array( $option_key, $selected ) ); ?>
-                    <?php disabled( $option_key, 'disabled' ); ?>
+                    <?php disabled( 'disabled' === $option_key || in_array( $option_key, $disabled_keys ), true ); ?>
                 >
                     <?php echo esc_attr( $option_value ); ?>
                 </option>

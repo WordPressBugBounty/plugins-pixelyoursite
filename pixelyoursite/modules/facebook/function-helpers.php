@@ -181,7 +181,8 @@ function sanitizeAdvancedMatchingParam( $value, $key ) {
 	} elseif ( $key == 'em' ) {
 		$value = preg_replace( '/[^a-z0-9._+-@]+/i', '', $value );
 	} else {
-		$value = preg_replace( '/[^a-z]/', '', $value );
+	    // only letters with unicode support
+        $value = preg_replace( '/[^\w\p{L}]/u', '', $value );
 	}
 
 	return $value;
@@ -195,49 +196,16 @@ function sanitizeAdvancedMatchingParam( $value, $key ) {
  */
 function getFacebookWooProductContentId( $product_id ) {
 
-	if(isWPMLActive() && PixelYourSite\Facebook()->getOption( 'woo_wpml_unified_id' )) {
-		$wpml_product_id = apply_filters('wpml_original_element_id', NULL, $product_id);
-		if ($wpml_product_id) {
-			$product_id = $wpml_product_id;
-		}
-	}
-
-    if ( PixelYourSite\Facebook()->getOption( 'woo_content_id' ) == 'product_sku' ) {
-        $product = wc_get_product( $product_id );
-        if ($product && $product->is_type( 'variation' ) ) {
-            $content_id = $product->get_sku();
-            if ( empty( $content_id ) ) {
-                $parent_id = $product->get_parent_id();
-                $parent_product = wc_get_product( $parent_id );
-                if($parent_product){
-                    $content_id = $parent_product->get_sku();
-                }
-                if ( empty( $content_id ) ) {
-                    $content_id = $product_id;
-                }
-            }
-        } elseif($product) {
-            $content_id = $product->get_sku();
-            if ( empty( $content_id ) ) {
-                $content_id = $product_id;
-            }
-        } else {
-            $content_id = $product_id;
-        }
-    } else {
-        $content_id = $product_id;
-    }
-
-	$prefix = PixelYourSite\Facebook()->getOption( 'woo_content_id_prefix' );
-	$suffix = PixelYourSite\Facebook()->getOption( 'woo_content_id_suffix' );
-
-	$value = $prefix . $content_id . $suffix;
-	$value = array( $value );
+	$value = array( PixelYourSite\getWooProductItemId( $product_id, PixelYourSite\Facebook() ) );
 
 	// Facebook for WooCommerce plugin integration
 	if ( ! isDefaultWooContentIdLogic() ) {
 
-		$product = wc_get_product($product_id);
+		if ( isWPMLActive() ) {
+			$product_id = PixelYourSite\getWPMLProductId( $product_id, PixelYourSite\Facebook() );
+		}
+
+		$product = PixelYourSite\pysWooGetProduct($product_id);
 
 		if ( ! $product ) {
 			return $value;
@@ -249,14 +217,33 @@ function getFacebookWooProductContentId( $product_id ) {
 		);
 
 		$value = array_values( array_filter( $ids ) );
-		
+
 	}
 
 	return $value;
 
 }
+
+/**
+ * Group ID for a variable product (Meta `product_group` events):
+ * the parent's post ID with the Facebook prefix and suffix.
+ *
+ * @param int $product_id Parent or variation post ID.
+ *
+ * @return array
+ */
+function getFacebookWooProductGroupId( $product_id ) {
+	return array( PixelYourSite\getWooProductGroupId( $product_id, PixelYourSite\Facebook() ) );
+}
+
 function get_fb_plugin_retailer_id( $woo_product ) {
     if(!$woo_product) return "";
+
+    // Prefer the Facebook for WooCommerce plugin's own implementation when present.
+    if ( is_callable( array( '\WC_Facebookcommerce_Utils', 'get_fb_retailer_id' ) ) ) {
+        return \WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product );
+    }
+
     $woo_id = $woo_product->get_id();
 
     // Call $woo_product->get_id() instead of ->id to account for Variable
@@ -265,23 +252,15 @@ function get_fb_plugin_retailer_id( $woo_product ) {
         $woo_id : 'wc_post_id_'. $woo_id;
 }
 function getFacebookWooCartItemId( $item ) {
+	// Whether the option applies is facebookVariableAsSimple()'s call: never under the
+	// extension's ID logic, whose catalog has no item for a parent product.
 
-	if ( ! PixelYourSite\Facebook()->getOption( 'woo_variable_as_simple' ) && isset( $item['variation_id'] ) && $item['variation_id'] !== 0 ) {
+	if ( ! facebookVariableAsSimple() && isset( $item['variation_id'] ) && $item['variation_id'] !== 0 ) {
 		$product_id = $item['variation_id'];
 	} else {
 		$product_id = $item['product_id'];
 	}
 
-	// Facebook for WooCommerce plugin integration
-	if ( ! isDefaultWooContentIdLogic() ) {
-
-		if ( isset( $item['variation_id'] ) && $item['variation_id'] !== 0 ) {
-			$product_id = $item['variation_id'];
-		} else {
-			$product_id = $item['product_id'];
-		}
-
-	}
 
 	return $product_id;
 
@@ -317,7 +296,7 @@ function getWooCustomAudiencesOptimizationParams( $post_id ) {
 function getWooSingleAddToCartParams( $_product_id, $qty = 1, $price_id = null ) {
 
 	$params = array();
-    $product = wc_get_product($_product_id);
+    $product = PixelYourSite\pysWooGetProduct($_product_id);
     if(!$product) return array();
     $product_ids = array();
     $isGrouped = $product->get_type() == "grouped";
@@ -353,7 +332,7 @@ function getWooSingleAddToCartParams( $_product_id, $qty = 1, $price_id = null )
 	}
 
     foreach ($product_ids as $product_id) {
-        $product = wc_get_product($product_id);
+        $product = PixelYourSite\pysWooGetProduct($product_id);
         if(!$product) continue;
         if($product->get_type() == "variable" && $isGrouped) {
             continue;
@@ -460,7 +439,7 @@ function getWooCartParams( $context = 'cart' ) {
 		$value_option = PixelYourSite\PYS()->getOption( $value_option_option );
 		$global_value = PixelYourSite\PYS()->getOption( $value_global_option, 0 );
 
-		$params['value']    = PixelYourSite\getWooEventValueCart( $value_option, $global_value );
+		$params['value']    = PixelYourSite\getWooEventValueCart( $value_option, $global_value, 100, $context == 'InitiateCheckout' );
         $params['currency'] = get_woocommerce_currency();
 
 	}
@@ -475,6 +454,20 @@ function isFacebookForWooCommerceActive() {
 
 function isDefaultWooContentIdLogic() {
 	return ! isFacebookForWooCommerceActive() || PixelYourSite\Facebook()->getOption( 'woo_content_id_logic' ) != 'facebook_for_woocommerce';
+}
+
+/**
+ * Does "Treat variable products like simple products" apply to this Facebook event?
+ *
+ * Only under PixelYourSite's own ID logic. Facebook for WooCommerce's catalog holds the
+ * variations as items and uses the parent's retailer id only as item_group_id, so a parent
+ * id with content_type "product" matches nothing there; in that mode every Facebook path
+ * uses the variation, as the extension's own events do.
+ *
+ * @return bool
+ */
+function facebookVariableAsSimple() {
+	return isDefaultWooContentIdLogic() && (bool) PixelYourSite\Facebook()->getOption( 'woo_variable_as_simple' );
 }
 
 /**

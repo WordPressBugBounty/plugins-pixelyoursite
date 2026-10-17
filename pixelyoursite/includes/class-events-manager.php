@@ -26,6 +26,7 @@ class EventsManager {
         add_action( 'wp_enqueue_scripts', array( $this, 'setupEventsParams' ),14 );
         $this->setupEddButtonHooks();
         add_action( 'wp_enqueue_scripts', array( $this, 'outputData' ),15 );
+        add_action( 'wp_head', array( $this, 'outputPbidPrefetch' ), 1 );
 		add_action( 'wp_footer', array( $this, 'outputNoScriptData' ), 10 );
 
         // Classic hook for checkout page
@@ -102,6 +103,40 @@ class EventsManager {
 
 	}
 
+	/**
+	 * Start the pys_get_pbid request from <head>, before public.js is even
+	 * downloaded.
+	 *
+	 * On a first visit the Meta pixel holds its init for that reply
+	 * (Utils.holdForIdentity(), ceiling PBID_WAIT_MS). public.js is a footer
+	 * script, so a request started there leaves the whole page download inside
+	 * the wait, and on a slow host the pixel falls back to the inline value —
+	 * on a cached page, somebody else's. Utils.requestPbid() picks up
+	 * window.pysPbidPrefetch and makes its own request only when the prefetch is
+	 * missing or failed.
+	 *
+	 * Printed regardless of the cookie: the page may come from a cache generated
+	 * by a cookie-holding visitor, so the cookie check lives in the snippet.
+	 *
+	 * Inline-script rules: no `<`/`&`, and no "fbq"/"pysOptions" substrings,
+	 * which Consent Magic's script blocker parks.
+	 */
+	public function outputPbidPrefetch() {
+
+		if ( ! self::isTrackExternalId() || ! Facebook()->enabled() ) {
+			return;
+		}
+
+		$url = add_query_arg( 'action', 'pys_get_pbid', admin_url( 'admin-ajax.php' ) );
+
+		echo '<script id="pys-pbid-prefetch">(function(){'
+			. 'if(!window.fetch){return;}'
+			. 'if(/(^|;\s*)pbid=/.test(document.cookie)){return;}'
+			. 'try{window.pysPbidPrefetch=window.fetch(' . wp_json_encode( $url ) . ',{credentials:"same-origin"})'
+			. '.then(function(r){return r.json();});}catch(e){}'
+			. '})();</script>' . "\r\n";
+	}
+
 	public function outputData() {
 
 		// Everything below ends up inside the page HTML, which a full-page
@@ -138,6 +173,9 @@ class EventsManager {
 			'ajax_event'                       => wp_create_nonce( 'ajax-event-nonce' ),
 			'enable_remove_download_url_param' => PYS()->getOption( 'enable_remove_download_url_param' ),
 			'cookie_duration'                  => PYS()->getOption( 'cookie_duration' ),
+			// Meta's cookies do not follow cookie_duration; see
+			// pys_fb_cookie_lifetime() in includes/functions-fb-cookies.php.
+			'fb_cookie_duration'               => pys_fb_cookie_lifetime() / DAY_IN_SECONDS,
 			'last_visit_duration'              => PYS()->getOption( 'last_visit_duration' ),
 			'enable_success_send_form'         => PYS()->getOption( 'enable_success_send_form' ),
 			'ajaxForServerEvent'               => PYS()->getOption( 'server_event_use_ajax' ),
@@ -332,12 +370,34 @@ class EventsManager {
         if(!apply_filters( 'pys_disable_by_gdpr', false)) {
             foreach (PYS()->getRegisteredPixels() as $pixel) {
                 /** @var Pixel|Settings $pixel */
-                if (!apply_filters('pys_disable_' . $pixel->getSlug() . '_by_gdpr', false)
-                    || Consent()->firesInRestrictedMode($pixel->getSlug())) {
+                if ($this->noScriptAllowed($pixel->getSlug())) {
                     $pixel->outputNoScriptEvents();
                 }
             }
         }
+    }
+
+    /**
+     * A no-script tag is a plain image request: it carries no Consent Mode
+     * state, so for the Google pixels restricted mode is no licence to send it.
+     * GA and GTM also obey the shared pys_disable_analytics_by_gdpr filter,
+     * which stops them everywhere else; pys_disable_{ga|gtm}_by_gdpr only
+     * reach the no-script tags.
+     *
+     * @param string $slug Pixel slug
+     * @return bool
+     */
+    private function noScriptAllowed( $slug ) {
+        $disabled = (bool) apply_filters( 'pys_disable_' . $slug . '_by_gdpr', false );
+        if ( in_array( $slug, array( 'ga', 'gtm' ), true ) ) {
+            $disabled = $disabled || apply_filters( 'pys_disable_analytics_by_gdpr', false );
+        }
+        if ( ! $disabled ) {
+            return true;
+        }
+
+        return ! in_array( $slug, array( 'ga', 'gtm', 'google_ads' ), true )
+            && Consent()->firesInRestrictedMode( $slug );
     }
 
 
@@ -395,6 +455,14 @@ class EventsManager {
             ) {
                 add_action( 'woocommerce_after_shop_loop_item', array( $this, 'setupWooLoopProductData' ) );
                 add_action( 'woocommerce_after_add_to_cart_button', 'PixelYourSite\EventsManager::setupWooSingleProductData' );
+
+                // The net for themes and page builders that never fire the button hook, where
+                // the block was simply missing and AddToCart never had data to fire with.
+                // setupWooSingleProductData() is idempotent per product id, so when the hook
+                // does run this adds nothing.
+                if ( is_product() ) {
+                    add_action( 'wp_footer', 'PixelYourSite\EventsManager::setupWooSingleProductData', 5 );
+                }
                 add_filter( 'woocommerce_blocks_product_grid_item_html', array( $this, 'setupWooBlocksProductData' ), 10, 3 );
                 add_filter('jet-woo-builder/elementor-views/frontend/archive-item-content', array( $this, 'setupWooBlocksProductData' ),10, 3);
             }
@@ -655,14 +723,17 @@ class EventsManager {
 			return;
 		}
 
-		$params = json_encode( $params );
+		// JSON_HEX_TAG, or a product or category name containing "</script" ends the
+		// element and the rest of the page becomes markup. The title reaches this JSON
+		// through content_name in getWooCustomAudiencesOptimizationParams().
+		$params = wp_json_encode( $params, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
 
 		?>
 
 		<script type="application/javascript" style="display:none">
             /* <![CDATA[ */
-            window.pysWooProductData = window.pysWooProductData || [];
-            window.pysWooProductData[ <?php echo $product_id; ?> ] = <?php echo $params; ?>;
+            window.pysWooProductData = window.pysWooProductData || {};
+            window.pysWooProductData[ <?php echo (int) $product_id; ?> ] = <?php echo $params; ?>;
             /* ]]> */
 		</script>
 
@@ -675,7 +746,43 @@ class EventsManager {
 
         if ( ! is_object( $product)) $product = wc_get_product( get_the_ID() );
 
+        // In the footer the global cannot be trusted: a widget or shortcode that ran its
+        // own product loop without wp_reset_postdata() leaves it on a foreign product, and
+        // the net would then print that product's data while the page's own went missing —
+        // the exact case the net exists for. At the button hook the global is right, and
+        // deliberately so for a [product_page] shortcode inside a product page, hence the
+        // doing_action() scope.
+        if ( doing_action( 'wp_footer' ) && function_exists( 'is_product' ) && is_product() ) {
+            $queried_id = (int) get_queried_object_id();
+            if ( $queried_id && ( !is_object( $product ) || (int) $product->get_id() !== $queried_id ) ) {
+                $queried_product = wc_get_product( $queried_id );
+                if ( $queried_product ) {
+                    $product = $queried_product;
+                }
+            }
+        }
+
         if(!$product || !is_a($product,"WC_Product") ) return;
+
+        // This runs on the add-to-cart button hook and again on wp_footer, so that a theme
+        // or page builder which never fires the button hook still gets the data. Whichever
+        // comes first prints; the other finds the id here and leaves.
+        static $printed = array();
+
+        $guard_id = $product->get_id();
+        if ( isset( $printed[ $guard_id ] ) ) {
+            return;
+        }
+
+        // The net runs on every product page, including ones that have no add-to-cart
+        // form at all — every variation out of stock, catalog mode, "request a quote".
+        // No click can come from those, so the prerender (seconds on a large variable
+        // product) would be pure cost. Asked after the guard, so a page whose button hook
+        // already printed never pays for the check.
+        if ( doing_action( 'wp_footer' ) && function_exists( 'is_product' ) && is_product()
+             && ! pysWooProductCanBeAdded( $product ) ) {
+            return;
+        }
 
         if ( wooProductIsType( $product, 'external' ) ) {
             $eventType = 'woo_affiliate';
@@ -687,55 +794,94 @@ class EventsManager {
         // main product id
         $product_ids[] = $product_id;
 
-        // variations ids
-        if ( wooProductIsType( $product, 'variable' ) ) {
-            $product_ids = array_merge($product_ids, $product->get_children());
-        }
-
         $params = array();
 
-        foreach ( $product_ids as $product_id ) {
-
-            foreach ( PYS()->getRegisteredPixels() as $pixel ) {
-                /** @var Pixel|Settings $pixel */
-                $initEvent = new SingleEvent($eventType,EventTypes::$STATIC,"woo");
-                $initEvent->args = ['productId' => $product_id,'quantity' => 1];
-                $events = [];
-                if(method_exists($pixel,'generateEvents')) {
-                    add_filter('pys_conditional_post_id', function($id) use ($product_id) { return $product_id; });
-                    $events =  $pixel->generateEvents( $initEvent );
-                    remove_all_filters('pys_conditional_post_id',10);
-                } else {
-                    if( $pixel->addParamsToEvent( $initEvent )) {
-                        $events[] = $initEvent;
+        // One build per product id for the whole loop instead of one per pixel per
+        // helper; see WooProductScope. Closed in finally, or a throw here would leave
+        // every later wc_get_product() in this request served from the cache.
+        WooProductScope::enter();
+        try {
+            // variations ids — only those a shopper can add. For the rest WooCommerce disables
+            // the add-to-cart button and the click handler returns on .disabled, so their data
+            // could never be used. is_in_stock() is true for backorders, so those stay.
+            //
+            // Only while WooCommerce embeds availability in the page, though — the same
+            // comparison its variation form makes. Above that threshold the form fetches a
+            // variation's stock live when it is picked, so a cached page can enable the button
+            // for a variation that was out of stock at render time; leaving its data out would
+            // then lose that AddToCart silently. There every child is printed, as before.
+            if ( wooProductIsType( $product, 'variable' ) ) {
+                $children = $product->get_children();
+                $embedded = count( $children ) <= apply_filters( 'woocommerce_ajax_variation_threshold', 30, $product );
+                foreach ( $children as $child_id ) {
+                    if ( ! $embedded ) {
+                        $product_ids[] = $child_id;
+                        continue;
+                    }
+                    $child = pysWooGetProduct( (int) $child_id );
+                    if ( $child && $child->is_purchasable() && $child->is_in_stock() && pysWooVariationIsListable( $child ) ) {
+                        $product_ids[] = $child_id;
                     }
                 }
+            }
 
-                if(count($events) == 0) continue;
-                foreach ($events as $event) {
-                    // prepare event data
-                    $eventData = $event->getData();
-                    $eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
+            foreach ( $product_ids as $product_id ) {
 
-                    $params[ $product_id ][ $pixel->getSlug() ] = $eventData; // replace (use only one event for product)
+                foreach ( PYS()->getRegisteredPixels() as $pixel ) {
+                    /** @var Pixel|Settings $pixel */
+                    $initEvent = new SingleEvent($eventType,EventTypes::$STATIC,"woo");
+                    $initEvent->args = ['productId' => $product_id,'quantity' => 1];
+                    $events = [];
+                    if(method_exists($pixel,'generateEvents')) {
+                        add_filter('pys_conditional_post_id', function($id) use ($product_id) { return $product_id; });
+                        $events =  $pixel->generateEvents( $initEvent );
+                        remove_all_filters('pys_conditional_post_id',10);
+                    } else {
+                        if( $pixel->addParamsToEvent( $initEvent )) {
+                            $events[] = $initEvent;
+                        }
+                    }
+
+                    if(count($events) == 0) continue;
+                    foreach ($events as $event) {
+                        // prepare event data
+                        $eventData = $event->getData();
+                        $eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
+
+                        $params[ $product_id ][ $pixel->getSlug() ] = $eventData; // replace (use only one event for product)
+                    }
+
                 }
 
             }
-
+        } finally {
+            WooProductScope::leave();
         }
 
         if ( empty( $params ) ) {
             return;
         }
 
+        $printed[ $guard_id ] = true;
+
+        // One base plus per-id diffs when there are several ids, unless JSON cannot carry
+        // the payload — then the full print, as before compaction existed.
+        $compact = count( $params ) > 1 ? pysCompactProductData( $params ) : null;
+
         ?>
 
         <script type="application/javascript" style="display:none">
             /* <![CDATA[ */
-            window.pysWooProductData = window.pysWooProductData || [];
+            <?php if ( null !== $compact ) : ?>
+            <?php // One base plus per-id diffs; the expander rebuilds window.pysWooProductData as the full print would. ?>
+            <?php echo pysProductDataExpanderJs(); ?>
+            window.pysExpandProductData(<?php echo wp_json_encode( $compact, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>);
+            <?php else : ?>
+            window.pysWooProductData = window.pysWooProductData || {};
             <?php foreach ( $params as $product_id => $product_data ) : ?>
-            window.pysWooProductData[<?php echo $product_id; ?>] = <?php echo json_encode( $product_data ); ?>;
+            window.pysWooProductData[<?php echo (int) $product_id; ?>] = <?php echo wp_json_encode( $product_data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
             <?php endforeach; ?>
+            <?php endif; ?>
             /* ]]> */
         </script>
 
@@ -785,8 +931,8 @@ class EventsManager {
 
         <script type="application/javascript" style="display:none">
             /* <![CDATA[ */
-            window.pysEddProductData = window.pysEddProductData || [];
-            window.pysEddProductData[<?php echo $download; ?>] = <?php echo json_encode( $params ); ?>;
+            window.pysEddProductData = window.pysEddProductData || {};
+            window.pysEddProductData[<?php echo (int) $download; ?>] = <?php echo wp_json_encode( $params, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
             /* ]]> */
         </script>
 

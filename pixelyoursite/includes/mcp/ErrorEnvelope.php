@@ -69,6 +69,20 @@ final class ErrorEnvelope {
 	}
 
 	/**
+	 * 403 — ability called outside our own MCP endpoint while the "Other MCP
+	 * servers" toggle is off. No URLs in the message: it is shown to the model.
+	 *
+	 * @return \WP_Error
+	 */
+	public static function externalAccessDisabled(): \WP_Error {
+		return new \WP_Error(
+			'pys_mcp_external_access_disabled',
+			'PixelYourSite tools can only be used through the PixelYourSite MCP server. A site administrator can allow other MCP servers under PixelYourSite → MCP.',
+			array( 'status' => 403 )
+		);
+	}
+
+	/**
 	 * 429 — IP or per-token window limit exceeded.
 	 *
 	 * @return \WP_Error

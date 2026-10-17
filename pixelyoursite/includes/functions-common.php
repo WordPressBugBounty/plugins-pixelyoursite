@@ -252,10 +252,11 @@ function pys_snapshot_event_referrer_url() {
  * $_SERVER['HTTP_REFERER'] is never consulted here.
  *
  * @param \PixelYourSite\SingleEvent $event
+ * @param string                     $platform Pixel slug whose consent applies.
  * @return string
  */
-function pys_resolve_event_referrer_url( $event ) {
-    if ( ! Consent()->checkConsent( 'facebook' ) ) {
+function pys_resolve_event_referrer_url( $event, $platform = 'facebook' ) {
+    if ( ! Consent()->checkConsent( $platform ) ) {
         return '';
     }
 
@@ -373,6 +374,13 @@ function getUserRoles() {
 }
 
 function isPinterestVersionIncompatible() {
+    // get_plugin_data() opens the plugin file and parses its header on every call, and
+    // this sits behind the is*Active() checks every pixel asks while building each
+    // event. A plugin's version cannot change within a request.
+    static $incompatible = null;
+    if ( null !== $incompatible ) {
+        return $incompatible;
+    }
     
     if ( ! function_exists( 'get_plugin_data' ) ) {
         include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -380,7 +388,9 @@ function isPinterestVersionIncompatible() {
     
     $data = get_plugin_data( WP_PLUGIN_DIR . '/pixelyoursite-pinterest/pixelyoursite-pinterest.php', false, false );
     
-    return ! version_compare( $data['Version'], PYS_FREE_PINTEREST_MIN_VERSION, '>=' );
+    $incompatible = ! version_compare( $data['Version'], PYS_FREE_PINTEREST_MIN_VERSION, '>=' );
+
+    return $incompatible;
     
 }
 
@@ -419,6 +429,13 @@ function isBingActive( $checkCompatibility = true ) {
 }
 
 function isBingVersionIncompatible() {
+    // get_plugin_data() opens the plugin file and parses its header on every call, and
+    // this sits behind the is*Active() checks every pixel asks while building each
+    // event. A plugin's version cannot change within a request.
+    static $incompatible = null;
+    if ( null !== $incompatible ) {
+        return $incompatible;
+    }
 
     if ( ! function_exists( 'get_plugin_data' ) ) {
         include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -426,7 +443,9 @@ function isBingVersionIncompatible() {
 
     $data = get_plugin_data( WP_PLUGIN_DIR . '/pixelyoursite-bing/pixelyoursite-bing.php', false, false );
 
-    return ! version_compare( $data['Version'], PYS_FREE_BING_MIN_VERSION, '>=' );
+    $incompatible = ! version_compare( $data['Version'], PYS_FREE_BING_MIN_VERSION, '>=' );
+
+    return $incompatible;
 
 }
 
@@ -457,6 +476,13 @@ function isRedditActive( bool $checkCompatibility = true ): bool {
  * @return bool
  */
 function isRedditVersionIncompatible(): bool {
+	// get_plugin_data() opens the plugin file and parses its header on every call, and
+	// this sits behind the is*Active() checks every pixel asks while building each
+	// event. A plugin's version cannot change within a request.
+	static $incompatible = null;
+	if ( null !== $incompatible ) {
+		return $incompatible;
+	}
 
 	if ( !function_exists( 'get_plugin_data' ) ) {
 		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -464,7 +490,9 @@ function isRedditVersionIncompatible(): bool {
 
 	$data = get_plugin_data( WP_PLUGIN_DIR . '/pixelyoursite-reddit/pixelyoursite-reddit.php', false, false );
 
-	return !version_compare( $data[ 'Version' ], PYS_FREE_REDDIT_MIN_VERSION, '>=' );
+	$incompatible = ! version_compare( $data[ 'Version' ], PYS_FREE_REDDIT_MIN_VERSION, '>=' );
+
+	return $incompatible;
 }
 
 /**
@@ -718,15 +746,11 @@ function getAvailableProductCogOrder( $order ) {
         $product = wc_get_product($product_id);
         if(!$product) continue;
 
-        $args = array( 'qty'   => 1, 'price' => $product->get_price());
-
-        if($isWithoutTax) {
-            $price = wc_get_price_excluding_tax($product, $args);
-        } else {
-            $price = wc_get_price_including_tax($product,$args);
+        // what the customer paid for the line, as in Pro and in the COG plugin
+        $order_total += (float) $item->get_total();
+        if ( ! $isWithoutTax ) {
+            $order_total += (float) $item->get_total_tax();
         }
-
-        $order_total += (float) $price;
 
         $product_id    = $product->get_id();
 
@@ -738,12 +762,15 @@ function getAvailableProductCogOrder( $order ) {
             $product_cost = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
         }
 
-        // Use a distinct variable name to avoid shadowing the outer $args parameter
-        $price_args = [ 'qty' => 1, 'price' => $product->get_price() ];
-        $qlt = $item['quantity'];
-        $price      = $isWithoutTax
-            ? wc_get_price_excluding_tax( $product, $price_args )
-            : wc_get_price_including_tax( $product, $price_args );
+        $qlt   = $item['quantity'];
+        // a percent cost is a share of the line subtotal, like the COG plugin: discounted, before coupons
+        $price = pys_woo_line_unit_price( $item->get_subtotal(), $item->get_subtotal_tax(), $qlt, ! $isWithoutTax );
+        if ( $price === false ) {
+            $price_args = [ 'qty' => 1, 'price' => $product->get_price() ];
+            $price      = $isWithoutTax
+                ? wc_get_price_excluding_tax( $product, $price_args )
+                : wc_get_price_including_tax( $product, $price_args );
+        }
 
         if ( $product_cost ) {
             $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
@@ -801,12 +828,15 @@ function getProductCogOrder( $args ) {
             $product_cost = get_post_meta( $productObject->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
         }
 
-        // Use a distinct variable name to avoid shadowing the outer $args parameter
-        $price_args = [ 'qty' => 1, 'price' => $productObject->get_price() ];
-        $qlt        = $productData['quantity'];
-        $price      = $isWithoutTax
-            ? wc_get_price_excluding_tax( $productObject, $price_args )
-            : wc_get_price_including_tax( $productObject, $price_args );
+        $qlt   = $productData['quantity'];
+        // a percent cost is a share of the line subtotal, like the COG plugin: discounted, before coupons
+        $price = pys_woo_line_unit_price( $productData['subtotal'] ?? null, $productData['subtotal_tax'] ?? 0, $qlt, ! $isWithoutTax );
+        if ( $price === false ) {
+            $price_args = [ 'qty' => 1, 'price' => $productObject->get_price() ];
+            $price      = $isWithoutTax
+                ? wc_get_price_excluding_tax( $productObject, $price_args )
+                : wc_get_price_including_tax( $productObject, $price_args );
+        }
 
         if ( $product_cost ) {
             $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
@@ -894,11 +924,16 @@ function getAvailableProductCogCart() {
             $product_cost = get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true );
         }
 
-        $price_args = [ 'qty' => 1, 'price' => $product->get_price() ];
-        $price      = $isWithoutTax
-            ? wc_get_price_excluding_tax( $product, $price_args )
-            : wc_get_price_including_tax( $product, $price_args );
-        $qlt        = $item['quantity'];
+        $qlt   = $item['quantity'];
+        // a percent cost is a share of what the customer pays for the line, which discount plugins
+        // have already set_price()'d: the same base the COG plugin uses (the line subtotal)
+        $price = pys_woo_line_unit_price( $item['line_subtotal'] ?? null, $item['line_subtotal_tax'] ?? 0, $qlt, ! $isWithoutTax );
+        if ( $price === false ) {
+            $price_args = [ 'qty' => 1, 'price' => $product->get_price() ];
+            $price      = $isWithoutTax
+                ? wc_get_price_excluding_tax( $product, $price_args )
+                : wc_get_price_including_tax( $product, $price_args );
+        }
 
         if ( $product_cost ) {
             $cost         += ( $cost_type == 'percent' ) ? $price * ( (float) $product_cost / 100 ) * $qlt : (float) $product_cost * $qlt;
@@ -1877,6 +1912,33 @@ function isPurchaseConfirmationPage() {
 }
 
 /**
+ * Builds the src of a <noscript> tracking pixel, escaped for an HTML attribute.
+ *
+ * Every value is URL-encoded here, so callers pass them raw. A null or false
+ * value drops the parameter, as add_query_arg() does.
+ *
+ * @param string $base Pixel endpoint.
+ * @param array  $args Query parameters.
+ * @return string
+ */
+function pys_noscript_pixel_src( $base, $args ) {
+
+	foreach ( $args as $key => $value ) {
+		if ( $value === null || $value === false ) {
+			unset( $args[ $key ] );
+			continue;
+		}
+		$args[ $key ] = rawurlencode( is_array( $value ) ? wp_json_encode( $value ) : (string) $value );
+	}
+
+	$src = add_query_arg( $args, $base );
+	$src = str_replace( array( '[', ']' ), array( '%5B', '%5D' ), $src ); // pass markup validation
+
+	return esc_url( $src );
+
+}
+
+/**
  * Whether the current code path is building the HTML that goes into the page.
  *
  * Page HTML can be stored in a shared full-page cache and replayed to every
@@ -1983,15 +2045,13 @@ function pys_advanced_form_data_cookie_days() {
  */
 function pys_set_advanced_form_data_cookie( $userData ) {
 
-	if ( headers_sent() ) {
-		return;
-	}
-
 	// Until the browser reports the domain it accepts, the scope below would be
 	// host-only while the front end writes the same name on the site domain.
 	// Both copies then coexist, and PHP and js-cookie alike read the older one,
 	// so fresh values get written but are never read back.
-	if ( pys_cookie_domain_pending() ) {
+	// The same gate holds the write back when the site has switched every PYS
+	// cookie off, or the headers are gone.
+	if ( ! pys_may_write_cookies() ) {
 		return;
 	}
 
@@ -2651,4 +2711,141 @@ function pys_visitor_key( $server = null ) {
     $parts = apply_filters( 'pys_pbid_fingerprint_parts', $parts, $server );
 
     return hash_hmac( 'sha256', implode( '|', array_map( 'strval', $parts ) ), pys_pbid_secret() );
+}
+
+
+/**
+ * An external id in the one shape both channels send identically.
+ *
+ * fbevents.js hands every `ud[...]` value to its identity plugin, which passes a
+ * 32- or 64-hex value through lowercased and SHA-256s anything else. Meta also
+ * lists external_id as "hashing recommended", and Pinterest's API spec types the
+ * field as hashes outright. So a hash is the only value the browser Pixel and the
+ * server send as the same string -- a raw account id would reach Meta as "7" from
+ * the server and as sha256("7") from the Pixel.
+ *
+ * Every browser id PYS has ever issued is already 64 hex characters (the keyed
+ * visitor key, and the random mint before it), so this leaves those untouched and
+ * only hashes the values that are not hashes yet.
+ *
+ * @param string $value Id in any shape.
+ * @return string Hash, or '' when there was nothing to name.
+ */
+function pys_hash_external_id( $value ) {
+    $value = trim( (string) $value );
+
+    if ( '' === $value ) {
+        return '';
+    }
+
+    if ( preg_match( '/^[A-Fa-f0-9]{32}$|^[A-Fa-f0-9]{64}$/', $value ) ) {
+        return strtolower( $value );
+    }
+
+    return hash( 'sha256', strtolower( $value ) );
+}
+
+/**
+ * Every id that names the current visitor, browser id first.
+ *
+ * Meta's Conversions API types `external_id` as "string or list<string>" and
+ * states "You can send one or more external IDs for a given event"; Pinterest's
+ * API spec types it as a list outright. Sending the whole set instead of a
+ * single value lets a logged-in visitor's browser id and account id be read as
+ * one person, and keeps the id the pixel already sent in the set after login
+ * swapped the id the server resolves.
+ *
+ * The browser id stays first so the single value the pixel puts in fbq('init')
+ * is always a member of the set the server sends -- the two channels must not
+ * disagree about who this is.
+ *
+ * @param int|null $user_id Account to name; defaults to the current user, 0 skips it.
+ * @return string[] Unique non-empty ids, or none when external ids are switched off.
+ */
+function pys_get_external_ids( $user_id = null ) {
+    if ( ! EventsManager::isTrackExternalId() ) {
+        return array();
+    }
+
+    $ids = array();
+
+    // The id the pixel is using on this page right now.
+    if ( ! empty( $_COOKIE['pbid'] ) ) {
+        $ids[] = sanitize_text_field( wp_unslash( $_COOKIE['pbid'] ) );
+    }
+
+    // Whatever this request resolved: the stored id of a logged-in visitor, or
+    // the deterministic key minted before any cookie exists.
+    $ids[] = PYS()->get_pbid();
+
+    if ( null === $user_id ) {
+        $user_id = get_current_user_id();
+    }
+
+    $user_id = (int) $user_id;
+
+    if ( $user_id > 0 ) {
+        /**
+         * Filters the account id before it is hashed.
+         *
+         * The plain WordPress user id by default, so the hash lands on the same
+         * value as one computed from that id elsewhere -- a CRM or offline
+         * conversion upload. Namespace it here when one pixel serves several
+         * sites, where account 5 is a different person on each of them.
+         * Whatever is returned is hashed unless it already is a hash.
+         *
+         * @param string $value   Id before hashing.
+         * @param int    $user_id WordPress user the value was built from.
+         */
+        $ids[] = pys_hash_external_id(
+            apply_filters( 'pys_external_id_user_value', (string) $user_id, $user_id )
+        );
+    }
+
+    $ids = array_filter( array_map( 'strval', $ids ), 'strlen' );
+    $ids = array_values( array_unique( $ids ) );
+
+    /**
+     * Filters the whole set of external ids for one event.
+     *
+     * @param string[] $ids     Ordered, unique, browser id first.
+     * @param int      $user_id WordPress user the set was built for, 0 when anonymous.
+     */
+    return apply_filters( 'pys_external_ids', $ids, $user_id );
+}
+
+/**
+ * External ids for an order, independent of the request that reports it.
+ *
+ * An order is reported from the thank-you page, but also from a webhook, a cron
+ * retry or wp-admin, where the current request belongs to nobody in particular
+ * -- so the ids come from the order itself: the browser id persisted when the
+ * order was placed, plus the account that owns it. pys_get_external_ids() must
+ * not be used here, it would name whoever is making the current request.
+ *
+ * @param string   $stored_id Browser id saved on the order; may be empty.
+ * @param int|null $user_id   Account that owns the order; 0 for a guest.
+ * @return string[] Unique non-empty ids, or none when external ids are switched off.
+ */
+function pys_get_order_external_ids( $stored_id, $user_id = 0 ) {
+    if ( ! EventsManager::isTrackExternalId() ) {
+        return array();
+    }
+
+    $ids = array( $stored_id );
+
+    $user_id = (int) $user_id;
+
+    if ( $user_id > 0 ) {
+        /** This filter is documented in pys_get_external_ids(). */
+        $ids[] = pys_hash_external_id(
+            apply_filters( 'pys_external_id_user_value', (string) $user_id, $user_id )
+        );
+    }
+
+    $ids = array_filter( array_map( 'strval', $ids ), 'strlen' );
+    $ids = array_values( array_unique( $ids ) );
+
+    /** This filter is documented in pys_get_external_ids(). */
+    return apply_filters( 'pys_external_ids', $ids, $user_id );
 }

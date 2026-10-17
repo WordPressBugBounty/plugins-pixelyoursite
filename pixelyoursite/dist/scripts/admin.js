@@ -67,6 +67,25 @@ jQuery(document).ready(function($) {
         }
     }
 
+    // In "Facebook for WooCommerce extension content_id logic" mode the Facebook ID card
+    // stays open — the WPML logic still applies — but the ID source, prefix, suffix and
+    // "Treat variable products like simple products" give way to the extension's catalog,
+    // which lists every variant as its own item. The radio only exists while the
+    // extension is active.
+    function toggleFacebookContentIdLogic() {
+        var $checked = $( 'input[name="pys[facebook][woo_content_id_logic]"]:checked' );
+        if ( !$checked.length ) {
+            return;
+        }
+        if ( $checked.val() === 'default' ) {
+            $( '.pys-fb-default-id-logic' ).slideDown( 400 );
+            $( '.pys-fb-fbwoo-id-logic' ).slideUp( 400 );
+        } else {
+            $( '.pys-fb-default-id-logic' ).slideUp( 400 );
+            $( '.pys-fb-fbwoo-id-logic' ).slideDown( 400 );
+        }
+    }
+
     function toggleCogSourceOption() {
         var val = $( 'input[name="pys[core][woo_cog_source]"]:checked' ).val();
         if ( val === "wc_cog" ) {
@@ -1037,6 +1056,39 @@ jQuery(document).ready(function($) {
         } );
     } );
 
+    // scoped permission fields stay within the roles holding general access
+    const adminPermissionsField = $( "#pys_core_admin_permissions" );
+    const scopedPermissionsFields = $( "#pys_core_woo_edd_reports_permissions, #pys_core_woo_edd_export_permissions" );
+
+    if ( adminPermissionsField.length && scopedPermissionsFields.length ) {
+        adminPermissionsField.on( "change", function () {
+            const allowedRoles = ( $( this ).val() || [] ).concat( "administrator" );
+
+            scopedPermissionsFields.each( function () {
+                const scopedField = $( this );
+
+                scopedField.find( "option" ).each( function () {
+                    const option = $( this );
+                    const isAllowed = allowedRoles.indexOf( this.value ) !== -1;
+                    const cachedData = option.data( "data" );
+
+                    option.prop( "disabled", ! isAllowed );
+
+                    // select2 builds option data once and reuses it afterwards
+                    if ( cachedData ) {
+                        cachedData.disabled = ! isAllowed;
+                    }
+                } );
+
+                const keptRoles = ( scopedField.val() || [] ).filter( function ( role ) {
+                    return allowedRoles.indexOf( role ) !== -1;
+                } );
+
+                scopedField.val( keptRoles ).trigger( "change" );
+            } );
+        } );
+    }
+
     $( ".pys-tags-pysselect2" ).pysselect2( {
         tags: true,
         tokenSeparators: [ ",", " " ],
@@ -1093,6 +1145,8 @@ jQuery(document).ready(function($) {
     $( 'input[name="pys[core][woo_cog_source]"]' ).on( 'change', function () {
         toggleCogSourceOption();
     } );
+
+    $( 'input[name="pys[facebook][woo_content_id_logic]"]' ).on( 'change', toggleFacebookContentIdLogic );
 
     //toggle all events
     $( "#pys_select_all_events" ).on( 'change', function () {
@@ -2305,3 +2359,75 @@ jQuery(document).ready(function($) {
     })();
     // ---- / Meta CAPI dynamic warnings ----
 } );
+
+/* ------------------------------------------------------------------------
+ * Cookie domain detection (admin side of the PHP <-> JS handshake).
+ *
+ * PHP has no Public Suffix List, so it learns which Domain attribute the
+ * browser accepts from the front end (cookie pys_cd). That answer is per
+ * site, but it travelled per visitor, so on every new visitor's first
+ * request PHP did not know it yet and withheld _fbp / _fbc. The same probe
+ * run once here, in an administrator's browser, stores the answer in the
+ * cookie_domain option, and PHP writes both cookies on the first request
+ * again. Posted only while PHP asks for it (option empty, no filter).
+ *
+ * probeCookieDomain() and cookieDomainAccepted() are the public.js ones,
+ * verbatim; tools/tests/probe.js asserts the two copies stay identical.
+ * ---------------------------------------------------------------------- */
+(function () {
+    function probeCookieDomain() {
+        var host = '';
+        try { host = String(location.hostname || ''); } catch (e) { return ''; }
+
+        // No Domain attribute is valid for an IP literal or a dotless host.
+        if (!host || host.indexOf('.') === -1) return '';
+        if (host.indexOf(':') !== -1) return '';          // IPv6 literal
+        if (/^[\d.]+$/.test(host)) return '';             // IPv4 literal
+
+        var labels = host.split('.');
+        // Broadest first: last two labels, then three, ... up to the full host.
+        for (var take = 2; take <= labels.length; take++) {
+            var candidate = '.' + labels.slice(labels.length - take).join('.');
+            if (cookieDomainAccepted(candidate)) return candidate;
+        }
+        return '';
+    }
+
+    function cookieDomainAccepted(candidate) {
+        var name = 'pys_dt';
+        var value = String(Math.floor(Math.random() * 1e9));
+        var accepted = false;
+        try {
+            document.cookie = name + '=' + value + '; path=/; domain=' + candidate + '; SameSite=Lax';
+            accepted = ('; ' + document.cookie + ';').indexOf('; ' + name + '=' + value + ';') !== -1;
+        } catch (e) {
+            return false;
+        } finally {
+            // Remove either way; deleting an unset cookie is a no-op.
+            try {
+                document.cookie = name + '=; path=/; domain=' + candidate + '; max-age=0';
+            } catch (e) {}
+        }
+        return accepted;
+    }
+
+    function detectCookieDomain() {
+        var data = (typeof window !== 'undefined') ? window.pysCookieDomainDetect : null;
+        if (!data || !(data.detect === '1' || data.detect === 1 || data.detect === true)) return;
+        if (!data.action || !data.nonce) return;
+        var resolved = probeCookieDomain();
+        var bare = resolved ? String(resolved).replace(/^\./, '') : '';
+        // Host-only is an answer for the browser, but nothing to store: PHP
+        // keeps waiting for a visitor's report, which is correct on such hosts.
+        if (!bare || bare.indexOf('.') === -1) return;
+        try {
+            jQuery.post(ajaxurl, { action: data.action, nonce: data.nonce, domain: bare });
+        } catch (e) {}
+    }
+
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', detectCookieDomain);
+    } else {
+        detectCookieDomain();
+    }
+})();

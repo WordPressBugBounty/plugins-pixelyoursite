@@ -3,7 +3,8 @@
  * Capability checks for MCP tools (Free variant). Free has no Pro-feature gate
  * — every tool Free ships is fully available — so the only runtime gate is the
  * admin read-only toggle. `isPro()` stays (returning false) so files shared
- * with Pro keep compiling, but writes are gated ONLY on read-only.
+ * with Pro keep compiling, but writes are gated ONLY on read-only. Also holds
+ * the external-access gate (`isAccessAllowedInThisContext()`).
  *
  * @package PixelYourSite\MCP
  */
@@ -26,6 +27,13 @@ final class Capabilities {
 	public const OPTION_READ_ONLY_ENABLED = 'mcp_read_only_enabled';
 
 	/**
+	 * PYS Settings option key for the "Other MCP servers" toggle: may abilities
+	 * be used outside our own MCP endpoint? Default off. Registered alongside
+	 * the read-only option.
+	 */
+	public const OPTION_EXTERNAL_ACCESS_ENABLED = 'mcp_external_access_enabled';
+
+	/**
 	 * WP capability every ability requires from the current user — the same
 	 * one that gates the PYS admin pages and the site-profile REST routes.
 	 */
@@ -34,9 +42,10 @@ final class Capabilities {
 	/**
 	 * Does the current user hold the capability every ability requires?
 	 * On our own endpoint `Auth::verify()` sets the token owner as the current
-	 * user, but abilities are also published to every other MCP server on the
-	 * site (`meta.mcp.public`), and those transports only require `read`. The
-	 * capability therefore has to be enforced here, in the ability itself.
+	 * user, but when external access is allowed abilities are also usable by
+	 * other MCP servers on the site and by the core abilities REST API, whose
+	 * transports only require `read`. The capability therefore has to be
+	 * enforced here, in the ability itself.
 	 *
 	 * @return bool
 	 */
@@ -82,6 +91,65 @@ final class Capabilities {
 		\PixelYourSite\PYS()->updateOptions( array( self::OPTION_READ_ONLY_ENABLED => $enabled ) );
 
 		return true;
+	}
+
+	/**
+	 * Has the admin allowed abilities to be used outside our own MCP endpoint
+	 * (the official MCP Adapter, other plugins' MCP servers, the core
+	 * abilities REST API)? Fails closed: false when PYS isn't loaded or the
+	 * option is missing.
+	 *
+	 * @return bool
+	 */
+	public static function isExternalAccessAllowed(): bool {
+		if ( !function_exists( '\\PixelYourSite\\PYS' ) ) {
+			return false;
+		}
+
+		return self::toBool( \PixelYourSite\PYS()->getOption( self::OPTION_EXTERNAL_ACCESS_ENABLED, false ) );
+	}
+
+	/**
+	 * Toggle external access via `PYS()->updateOptions()`.
+	 *
+	 * @param bool $enabled Whether other MCP servers may use the abilities.
+	 * @return bool True on success, false if PYS isn't loaded.
+	 */
+	public static function setExternalAccessAllowed( bool $enabled ): bool {
+		if ( !function_exists( '\\PixelYourSite\\PYS' ) ) {
+			return false;
+		}
+		\PixelYourSite\PYS()->updateOptions( array( self::OPTION_EXTERNAL_ACCESS_ENABLED => $enabled ) );
+
+		return true;
+	}
+
+	/**
+	 * Is the current ability call coming through a channel PYS controls?
+	 *  - our MCP endpoint: `Auth::verify()` ran and set the active token;
+	 *  - WP-CLI: an operator-level shell.
+	 * Everything else is external: the official MCP Adapter, other plugins'
+	 * MCP servers, the `wp-abilities/v1` REST API, admin-ajax, cron and
+	 * direct PHP calls.
+	 *
+	 * @return bool
+	 */
+	public static function isTrustedContext(): bool {
+		if ( null !== Auth::activeTokenId() ) {
+			return true;
+		}
+
+		return defined( 'WP_CLI' ) && WP_CLI;
+	}
+
+	/**
+	 * May an ability call proceed in the current context at all? Checked
+	 * first by every ability's permission callback.
+	 *
+	 * @return bool
+	 */
+	public static function isAccessAllowedInThisContext(): bool {
+		return self::isTrustedContext() || self::isExternalAccessAllowed();
 	}
 
 	/**

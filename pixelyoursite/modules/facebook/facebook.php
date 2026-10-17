@@ -94,7 +94,7 @@ class Facebook extends Settings implements Pixel {
 			'advancedMatching'           => $this->getOption( 'advanced_matching_enabled' ) ? Helpers\getAdvancedMatchingParams() : array(),
 			'advancedMatchingEnabled'    => $this->getOption( 'advanced_matching_enabled' ),
 			'removeMetadata'             => $this->getOption( 'remove_metadata' ),
-			'wooVariableAsSimple'        => $this->getOption( 'woo_variable_as_simple' ),
+			'wooVariableAsSimple'        => Helpers\facebookVariableAsSimple(),
 			'serverApiEnabled'           => $serverApiEnabled,
 			'metaEnabledCapiPixels'      => $metaEnabledCapiPixels,
 			// Meta dedupes the API events it generates for Meta-Enabled CAPI
@@ -191,7 +191,7 @@ class Facebook extends Settings implements Pixel {
             case 'automatic_event_search' :{
                 $event->addPayload(["name" => "Search"]);
                 if(!empty( $_GET['s'] )) {
-                    $event->addParams(["search_string" => $_GET['s']]);
+                    $event->addParams(["search_string" => sanitize_text_field( wp_unslash( $_GET['s'] ) )]);
                 }
                 $isActive = $this->getOption($event->getId().'_enabled');
             } break;
@@ -456,7 +456,7 @@ class Facebook extends Settings implements Pixel {
                     $src = str_replace("]","%5D",$src);
 					// ALT tag used to pass ADA compliance
 					printf( '<noscript><img height="1" width="1" style="display: none;" src="%s" alt=""></noscript>',
-                        $src);
+                        esc_url( $src ) );
 
 					echo "\r\n";
 
@@ -486,13 +486,17 @@ class Facebook extends Settings implements Pixel {
 
 		$params = array();
 
-		$product = wc_get_product( $post->ID );
+		$product = pysWooGetProduct( $post->ID );
         if(!$product) return false;
 		$content_id = Helpers\getFacebookWooProductContentId( $post->ID );
 		$params['content_ids']  =  $content_id ;
 
-		if ( wooProductIsType( $product, 'variable' ) && ! $this->getOption( 'woo_variable_as_simple' ) ) {
+		if ( wooProductIsType( $product, 'variable' ) && ! Helpers\facebookVariableAsSimple() ) {
 			$params['content_type'] = 'product_group';
+			// A product_group event carries the group ID (parent post ID), not the parent's item ID.
+			if ( Helpers\isDefaultWooContentIdLogic() ) {
+				$params['content_ids'] = Helpers\getFacebookWooProductGroupId( $post->ID );
+			}
 		} else {
 			$params['content_type'] = 'product';
 		}
@@ -524,7 +528,7 @@ class Facebook extends Settings implements Pixel {
 			// Facebook for WooCommerce plugin does not support new Dynamic Ads parameters
 			$params['contents'] =  array(
 				array(
-					'id'         => (string) reset( $content_id ),
+					'id'         => (string) reset( $params['content_ids'] ),
 					'quantity'   => 1,
 					//'item_price' => getWooProductPriceToDisplay( $post->ID ),
 				)
@@ -559,7 +563,7 @@ class Facebook extends Settings implements Pixel {
             'params' => $params,
         );
 
-        $product = wc_get_product($product_id);
+        $product = pysWooGetProduct($product_id);
         if(!$product) return false;
         if($product->get_type() == 'grouped') {
             $grouped = array();

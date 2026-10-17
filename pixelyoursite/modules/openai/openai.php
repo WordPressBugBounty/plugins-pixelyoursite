@@ -96,10 +96,13 @@ class OpenAI extends Settings implements Pixel {
     public function getPixelOptions() {
 
         $options = array(
-            'pixelIds'         => $this->getPixelIDs(),
-            'serverApiEnabled' => $this->isServerApiEnabled(),
-            'debug'            => (bool) $this->getOption( 'debug_enabled' ),
-            'opt_out'          => $this->getConsentMode(),
+            'pixelIds'            => $this->getPixelIDs(),
+            'serverApiEnabled'    => $this->isServerApiEnabled(),
+            'debug'               => (bool) $this->getOption( 'debug_enabled' ),
+            'opt_out'             => $this->getConsentMode(),
+            // The browser AddToCart needs this to choose between the parent id and the
+            // selected variation, the way every other pixel's handler does.
+            'wooVariableAsSimple' => $this->getOption( 'woo_variable_as_simple' ),
         );
 
         if ( $this->getOption( 'advanced_matching_enabled' ) ) {
@@ -837,7 +840,7 @@ class OpenAI extends Settings implements Pixel {
             return false;
         }
 
-        $product = wc_get_product( $post->ID );
+        $product = pysWooGetProduct( $post->ID );
 
         if ( ! $product ) {
             return false;
@@ -892,7 +895,7 @@ class OpenAI extends Settings implements Pixel {
                 return false;
             }
 
-            $product = wc_get_product( $product_id );
+            $product = pysWooGetProduct( $product_id );
 
             if ( ! $product ) {
                 return false;
@@ -999,7 +1002,7 @@ class OpenAI extends Settings implements Pixel {
             ) );
 
             $content_id = Helpers\getOpenAiWooProductContentId( $product_id );
-            $product    = wc_get_product( $product_id );
+            $product    = pysWooGetProduct( $product_id );
             $quantity   = (int) $line_item['qty'];
 
             $contents[] = Helpers\pys_openai_content_item(
@@ -1242,7 +1245,7 @@ class OpenAI extends Settings implements Pixel {
                 'parent_id'  => empty( $cart_item['variation_id'] ) ? 0 : $cart_item['product_id'],
             ) );
 
-            $product = wc_get_product( $product_id );
+            $product = pysWooGetProduct( $product_id );
 
             $contents[] = Helpers\pys_openai_content_item(
                 Helpers\getOpenAiWooProductContentId( $product_id ),

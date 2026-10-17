@@ -58,6 +58,7 @@ final class ArgKeyMapper {
 			'content_id_source'             => 'woo_content_id',
 			'content_id_prefix'             => 'woo_content_id_prefix',
 			'content_id_suffix'             => 'woo_content_id_suffix',
+			'content_id_variation_sku'      => 'woo_content_id_variation_sku',
 			'content_id_custom_field_name'  => 'woo_content_id_custom_field_name',
 			'content_id_logic'              => 'woo_content_id_logic',
 			'variable_as_simple'            => 'woo_variable_as_simple',

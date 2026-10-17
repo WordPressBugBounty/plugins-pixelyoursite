@@ -250,7 +250,7 @@ class PYS_Logger
     }
 
 	public function downloadLogFile() {
-        if ( ! current_user_can( 'manage_pys' ) ) {
+        if ( ! current_user_can( 'manage_pys' ) || ! current_user_can( 'manage_pys_data_export' ) ) {
             return;
         }
 		$file = static::get_log_file_path();
@@ -343,7 +343,7 @@ class PYS_Logger
      */
     public function remove( )
     {
-        if ( ! current_user_can( 'manage_pys' ) ) {
+        if ( ! current_user_can( 'manage_pys' ) || ! current_user_can( 'manage_pys_data_export' ) ) {
             return;
         }
         $removed = false;

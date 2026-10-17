@@ -15,6 +15,8 @@
   "session_disable": "checkbox",
   "do_not_track_user_roles": "multi_select",
   "admin_permissions": "multi_select",
+  "woo_edd_reports_permissions": "multi_select",
+  "woo_edd_export_permissions": "multi_select",
 
   "block_robot_enabled": "checkbox",
   "exclude_blocked_robots": "multi_select",
@@ -153,6 +155,7 @@
   "send_external_id": "checkbox",
   "external_id_expire": "number",
   "track_cookie_for_subdomains": "checkbox",
+  "cookie_domain": "text",
   "server_event_use_ajax" : "checkbox",
   "server_static_event_use_ajax": "checkbox",
   "google_consent_mode": "checkbox",

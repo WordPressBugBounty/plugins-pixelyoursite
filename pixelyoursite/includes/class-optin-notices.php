@@ -89,8 +89,8 @@ class OptinNotice
             return;
         }
 
-        $first_time_dismissed_at = get_option( 'pys_core_optin_first_time_dismissed_at' ) ?? get_user_meta( $user_id, 'pys_core_optin_first_time_dismissed_at', true );
-        $second_time_dismissed_at = get_option( 'pys_core_optin_second_time_dismissed_at' ) ?? get_user_meta( $user_id, 'pys_core_optin_second_time_dismissed_at', true );
+        $first_time_dismissed_at = get_option( 'pys_core_optin_first_time_dismissed_at' );
+        $second_time_dismissed_at = get_option( 'pys_core_optin_second_time_dismissed_at' );
 
         if ($second_time_dismissed_at) {
             /*$month_ago = time() - MONTH_IN_SECONDS;
