@@ -47,12 +47,19 @@ class ServerEventHelper {
         // same: a gateway webhook carries no browser to mint a browser id for.
         $order_bound = $order || !empty( $eddOrder );
 
+        // An EDD order supplies the same IP and user agent through an adapter
+        // built from its stored snapshot.
+        $signalOrder = $order;
+        if ( ! $signalOrder && $eddOrder && PixelYourSite\isEddActive() ) {
+            $signalOrder = pys_edd_order_signal_source( $eddOrder );
+        }
+
         // The request this runs in is not always the customer's: an admin
         // changing an order's status, a gateway webhook, cron. IP and user
         // agent therefore come from the order when it has them, and the
         // request's own cookies are read only when the request is a visitor's.
         // See includes/functions-event-signals.php.
-        $signals = pys_event_client_signals( $order, self::getIpAddress(), self::getHttpUserAgent(), pys_is_admin_page_request() );
+        $signals = pys_event_client_signals( $signalOrder, self::getIpAddress(), self::getHttpUserAgent(), pys_is_admin_page_request() );
 
         $user_data = ServerEventHelper::getUserData($wooOrder,$eddOrder)
             ->setClientUserAgent( $signals['user_agent'] );
@@ -96,6 +103,12 @@ class ServerEventHelper {
                 $fbp = null;
             }
             $fbc = ServerEventHelper::getFbStatFromOrder('fbc', $wooOrder);
+        } elseif ( $eddOrder ) {
+            $fbp = ServerEventHelper::getFbStatFromEddOrder('fbp', $eddOrder);
+            if ( ! pys_fbp_is_valid( $fbp ) ) {
+                $fbp = null;
+            }
+            $fbc = ServerEventHelper::getFbStatFromEddOrder('fbc', $eddOrder);
         }
 
 // Checking that the values are not empty and setting alternative values if they are missing.
@@ -228,6 +241,30 @@ class ServerEventHelper {
         return null;
     }
 
+    /**
+     * Same snapshot as getFbStatFromOrder(), read from an EDD payment.
+     *
+     * @param string $key fbp|fbc
+     * @param $eddOrder
+     * @return string|null
+     */
+    private static function getFbStatFromEddOrder( $key, $eddOrder ) {
+
+        // $eddOrder arrives from the client payload too. function_exists() is
+        // checked FIRST for the reason getFbStatFromOrder() gives.
+        if ( ! $eddOrder
+             || ! function_exists( 'edd_get_payment_meta' )
+             || ! PixelYourSite\isEddActive() ) {
+            return null;
+        }
+
+        $fbCookie = edd_get_payment_meta( $eddOrder, 'pys_fb_cookie', true );
+        if ( is_array( $fbCookie ) && ! empty( $fbCookie[ $key ] ) ) {
+            return $fbCookie[ $key ];
+        }
+
+        return null;
+    }
 
     /**
      * The client IP address to send to Meta.

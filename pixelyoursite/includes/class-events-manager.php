@@ -66,8 +66,12 @@ class EventsManager {
             }
         }
 
-        if ( 'js-cookie-pys' === $handle && isCookiebotPluginActivated()) {
-            $tag = str_replace( 'src=', 'data-cookieconsent="true" src=', $tag );
+        // js.cookie is a helper library that writes nothing by itself (PYS gates
+        // every cookie write by consent). Cookiebot's Automatic Blocking would
+        // block it before consent otherwise, and public.js then fails at load.
+        // The attribute is inert on sites without Cookiebot.
+        if ( 'js-cookie-pys' === $handle ) {
+            $tag = str_replace( 'src=', 'data-cookieconsent="ignore" src=', $tag );
         }
         return $tag;
     }

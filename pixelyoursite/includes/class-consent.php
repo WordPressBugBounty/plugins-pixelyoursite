@@ -11,7 +11,7 @@ class Consent {
 	private static $_instance;
 	private string $consentKey    = "pys_consent";
 	private bool   $consentLoaded = false;
-	private bool   $consentPlugin = false;
+	private ?bool  $consentPlugin = null;
 
 	private array $consentData = array(
 		'facebook'   => true,
@@ -30,10 +30,6 @@ class Consent {
 		}
 
 		return self::$_instance;
-	}
-
-	public function __construct() {
-		$this->checkConsentPlugin();
 	}
 
 	/**
@@ -110,8 +106,22 @@ class Consent {
 		}
 	}
 
-	private function checkConsentPlugin(): void {
-		$this->consentPlugin = isCookiebotPluginActivated() || isCookieNoticePluginActivated() || isRealCookieBannerPluginActivated() || isConsentMagicPluginActivated() || isCookieLawInfoPluginActivated();
+	/**
+	 * Is a supported consent plugin present? Resolved on first use, not at
+	 * construction: this file loads before the theme, and pys_cookiebot_active
+	 * may be registered in a theme. Cached only once the theme has had its
+	 * chance to hook (after_setup_theme); earlier calls are answered but not
+	 * remembered.
+	 */
+	private function consentPluginActive(): bool {
+		if ( null !== $this->consentPlugin ) {
+			return $this->consentPlugin;
+		}
+		$active = isCookiebotPluginActivated() || isCookieNoticePluginActivated() || isRealCookieBannerPluginActivated() || isConsentMagicPluginActivated() || isCookieLawInfoPluginActivated();
+		if ( did_action( 'after_setup_theme' ) ) {
+			$this->consentPlugin = $active;
+		}
+		return $active;
 	}
 
 	private function disableAllPixels(): void {
@@ -178,7 +188,7 @@ class Consent {
 
 	public function checkConsent( $pixel ): bool {
 
-		if ( $this->consentPlugin ) {
+		if ( $this->consentPluginActive() ) {
 			$this->loadConsent();
 		}
 

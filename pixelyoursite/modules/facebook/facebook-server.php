@@ -54,6 +54,7 @@ class FacebookServer {
             add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'saveFbTagsInOrder' ), 10, 1 );
             // Hook for Store API (passes WC_Order object instead of order_id)
             add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'saveFbTagsInOrder' ), 10, 1 );
+            add_action( 'edd_insert_payment', array( $this, 'saveFbTagsInEddOrder' ), 10, 1 );
             add_action( 'wp_ajax_pys_api_event',array($this,"catchAjaxEvent"));
             add_action( 'wp_ajax_nopriv_pys_api_event', array($this,"catchAjaxEvent"));
             add_action( 'woocommerce_remove_cart_item', array($this, 'trackRemoveFromCartEvent'), 10, 2);
@@ -380,6 +381,21 @@ class FacebookServer {
                 update_post_meta($order_param, 'pys_fb_cookie', $pysData);
             }
         }
+    }
+
+    public function saveFbTagsInEddOrder( $payment_id ) {
+        // Same snapshot the Woo order gets: a gateway webhook, cron or wp-admin
+        // sends the Purchase later without the buyer's cookies.
+        if ( ! pys_edd_order_snapshot_allowed( $payment_id ) || ! function_exists( 'edd_update_payment_meta' ) ) {
+            return;
+        }
+
+        $pysData = [];
+        $pysData['fbc'] = ServerEventHelper::getFbc();
+        $fbp = ServerEventHelper::getFbp();
+        $pysData['fbp'] = pys_fbp_is_valid( $fbp ) ? $fbp : null;
+
+        edd_update_payment_meta( (int) $payment_id, 'pys_fb_cookie', $pysData );
     }
 
 }

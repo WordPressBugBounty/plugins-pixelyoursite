@@ -538,6 +538,14 @@ class OpenAIServer {
             wp_send_json_error( 'OpenAI Conversions API is disabled', 400 );
         }
 
+        // Same gate as Facebook::catchAjaxEvent(): the nonce the page put into
+        // pysOptions.ajax_event. It is not authorization (the anonymous nonce is
+        // public), it ties the request to a page this site served, so the
+        // handler is not a bare relay to the Conversions API for any client.
+        if ( empty( $_REQUEST['ajax_event'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['ajax_event'] ) ), 'ajax-event-nonce' ) ) {
+            wp_send_json_error( 'Invalid request', 403 );
+        }
+
         $event_name = isset( $_POST['event'] ) ? sanitize_text_field( wp_unslash( $_POST['event'] ) ) : '';
         $ids        = isset( $_POST['ids'] ) ? (array) wp_unslash( $_POST['ids'] ) : array();
 

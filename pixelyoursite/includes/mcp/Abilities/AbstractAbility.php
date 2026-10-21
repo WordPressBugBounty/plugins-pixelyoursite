@@ -222,9 +222,33 @@ abstract class AbstractAbility {
 	 * `mcp_note` field). Subclasses keep returning their schema in
 	 * `inputSchema()`.
 	 *
+	 * Two adjustments for the core REST run endpoint (`wp-abilities/v1`):
+	 *
+	 * - Empty `properties` (an `stdClass` or `array()`) are dropped. The core
+	 *   validator does `isset( $args['properties'][ $key ] )` for every input
+	 *   key, which is a fatal on an `stdClass`; the MCP adapter strips them
+	 *   anyway (`SchemaTransformer::normalize()`), so nothing is lost.
+	 * - A schema with no required field gets `default: {}`: the run endpoint
+	 *   (and its JS client) send no input for a GET without arguments, and
+	 *   `WP_Ability::normalize_input()` substitutes only the schema default,
+	 *   so without one a `type: object` schema fails validation on `null`.
+	 *
 	 * @return array
 	 */
 	protected static function resolvedInputSchema(): array {
-		return static::inputSchema();
+		$schema = static::inputSchema();
+
+		if ( array_key_exists( 'properties', $schema )
+		     && ( is_object( $schema[ 'properties' ] ) || is_array( $schema[ 'properties' ] ) )
+		     && empty( (array) $schema[ 'properties' ] ) ) {
+			unset( $schema[ 'properties' ] );
+		}
+
+		if ( isset( $schema[ 'type' ] ) && 'object' === $schema[ 'type' ]
+		     && empty( $schema[ 'required' ] ) && !array_key_exists( 'default', $schema ) ) {
+			$schema[ 'default' ] = (object) array();
+		}
+
+		return $schema;
 	}
 }

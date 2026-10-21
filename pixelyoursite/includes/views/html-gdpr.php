@@ -180,6 +180,7 @@ if ( !defined( 'ABSPATH' ) ) {
                             <p>
                                 <span class="mb-8">Website: <a href="https://www.cookiebot.com/" class="link" target="_blank">https://www.cookiebot.com/</a></span>
                                 <span>Plugin: <a href="https://wordpress.org/plugins/cookiebot/" class="link" target="_blank">https://wordpress.org/plugins/cookiebot/</a></span>
+                                <span>Cookiebot added by hand (theme or tag manager), without the plugin? Return true from the <code>pys_cookiebot_active</code> filter to unlock this integration.</span>
                             </p>
                         </div>
                         <div class="d-flex align-items-center mb-24">

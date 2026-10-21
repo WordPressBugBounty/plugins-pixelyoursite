@@ -165,6 +165,8 @@ final class PYS extends Settings implements Plugin {
 		 */
         // Hook for EDD payment insertion to save external_id
         add_action( 'edd_insert_payment', array( $this, 'saveExternalIDInEddOrder' ), 10, 2 );
+        add_action( 'edd_insert_payment', __NAMESPACE__ . '\pys_save_client_signals_in_edd_order', 10, 1 );
+        add_action( 'edd_anonymize_payment', __NAMESPACE__ . '\pys_anonymize_edd_order_snapshots', 10, 1 );
 
         if(!$this->isCachePreload()){
 			add_action( 'edd_recurring_record_payment', array( $this, 'edd_recurring_payment' ), 10, 1 );
@@ -1875,7 +1877,7 @@ final class PYS extends Settings implements Plugin {
 	}
 
     public function saveExternalIDInEddOrder($payment_id, $payment_data) {
-        if ( empty( $payment_id ) ) {
+        if ( ! pys_edd_order_snapshot_allowed( $payment_id ) ) {
             return;
         }
 

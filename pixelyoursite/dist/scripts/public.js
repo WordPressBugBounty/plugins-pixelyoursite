@@ -263,7 +263,9 @@
             }
         } catch (e) {}
 
-        if (!value) {
+        // Runs at script load; a consent tool's automatic blocking can hold
+        // js.cookie back until consent, and the whole file must survive that.
+        if (!value && typeof Cookies !== 'undefined') {
             var cookieValue = Cookies.get(PYS_SESSION_ENTRY_REFERRER_KEY);
             if (cookieValue && cookieValue !== 'undefined') {
                 value = cookieValue;
@@ -631,7 +633,10 @@
         }
 
         function checkSession() {
-            if( Cookies.get('pys_start_session') === undefined ||
+            // Runs at script load; without js.cookie nothing can be known, and
+            // "new session" is the answer every caller already handles.
+            if( typeof Cookies === 'undefined' ||
+                Cookies.get('pys_start_session') === undefined ||
                 Cookies.get('pys_session_limit') === undefined) {
                 firstVisit = true;
                 return true
@@ -4847,10 +4852,24 @@
 
                 Utils.copyProperties(window.pysWooProductData[product_id][this.tag()]['params'], event.params);
 
-                if (qty && event.params && event.params.data && Array.isArray(event.params.data.contents)) {
-                    event.params.data.contents.forEach(function (item) {
-                        item.quantity = qty;
-                    });
+                // The server priced one unit; scale the quantity and the money that
+                // depends on it. Amounts are already integer minor units, so the
+                // multiplication stays integral. A global value is a fixed number
+                // per event and is left alone.
+                if (qty && event.params && event.params.data) {
+                    let data = event.params.data;
+
+                    if (Array.isArray(data.contents)) {
+                        data.contents.forEach(function (item) {
+                            item.quantity = qty;
+                        });
+                    }
+
+                    if (typeof data.amount === 'number'
+                        && options.woo.addToCartOnButtonValueEnabled
+                        && options.woo.addToCartOnButtonValueOption !== 'global') {
+                        data.amount = Math.round(data.amount * qty);
+                    }
                 }
 
                 this.fireEvent(event.name, event);
@@ -4882,10 +4901,21 @@
 
                 Utils.copyProperties(window.pysEddProductData[download_id][index][this.tag()].params, event.params);
 
-                if (qty && event.params && event.params.data && Array.isArray(event.params.data.contents)) {
-                    event.params.data.contents.forEach(function (item) {
-                        item.quantity = qty;
-                    });
+                // Same as the Woo handler: the server priced one unit.
+                if (qty && event.params && event.params.data) {
+                    let data = event.params.data;
+
+                    if (Array.isArray(data.contents)) {
+                        data.contents.forEach(function (item) {
+                            item.quantity = qty;
+                        });
+                    }
+
+                    if (typeof data.amount === 'number'
+                        && options.edd.addToCartOnButtonValueEnabled
+                        && options.edd.addToCartOnButtonValueOption !== 'global') {
+                        data.amount = Math.round(data.amount * qty);
+                    }
                 }
 
                 this.fireEvent(event.name, event);

@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, O
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.1
-Stable tag: 11.4.3
+Stable tag: 11.4.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -324,6 +324,27 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+
+= PixelYourSite 11.4.4 =
+
+21 October 20226
+
+* New: Support for Cookiebot added directly to a theme or through a tag manager, without the Cookiebot WordPress plugin.
+
+* Improvement: Meta Conversions API events for Easy Digital Downloads orders now include the buyer's IP address, browser, _fbp and _fbc, also when they are sent later by a payment gateway, cron or an admin.
+
+* Improvement: The Easy Digital Downloads privacy eraser now also removes the tracking data PixelYourSite saves on orders.
+
+* Fix: OpenAI Add to Cart events sent from the button now use the correct value when the quantity is more than 1.
+
+* Fix: Conflict with GTM4WP. Google tag snippets from other plugins are moved to the PixelYourSite data layer only when they are standard Google tag code.
+
+* Fix: Meta Conversions API events sent in the background could fail in some cases.
+
+* Fix: MCP tools without parameters returned an error when called through the WordPress REST API.
+
+* Security: The OpenAI AJAX endpoint now checks a security token, the same way the Meta one does.
 
 
 = PixelYourSite 11.4.3 =

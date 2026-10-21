@@ -91,6 +91,7 @@ class FunctionsMigrate {
         $pys_free_version = get_option( 'pys_core_free_version', false );
 
         $migrations = [
+            '11.4.4' => [ $this, 'migrate_11_4_4' ],
             '11.4.3' => [ $this, 'migrate_11_4_3' ],
             '11.4.2' => [ $this, 'migrate_11_4_2' ],
             '11.1.0' => [ $this, 'migrate_11_1_0' ],
@@ -165,7 +166,7 @@ class FunctionsMigrate {
      * Fresh vs. existing is decided by the stored core options row, not by
      * guessing from other settings.
      */
-    protected function migrate_variation_sku_default() {
+    protected function migrate_11_4_4() {
 
         if ( null !== $this->getStoredCoreOptions() ) {
             return; // existing install: keep the legacy default
@@ -185,10 +186,6 @@ class FunctionsMigrate {
      * Reads raw stored options: backfilled defaults look like a deliberate choice.
      */
     protected function migrate_11_4_3() {
-
-        // Fresh installs: variations without their own SKU use the variation ID.
-        // Runs before the fresh-install return below.
-        $this->migrate_variation_sku_default();
 
         $stored = $this->getStoredCoreOptions();
 
