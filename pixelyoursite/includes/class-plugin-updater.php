@@ -383,6 +383,27 @@ class Plugin_Updater {
 
         global $wp_version;
 
+        // Agency Mode: don't ping the server for a plugin whose domain is
+        // already recorded as blocked — no version check, no update.
+        if ( ! empty( $this->api_data['pys_slug'] )
+            && function_exists( 'PixelYourSite\\is_domain_blocked' )
+            && is_domain_blocked( $this->api_data['pys_slug'] )
+        ) {
+            return false;
+        }
+
+        // Only query the store for updates while the license is actually valid.
+        // A not-activated / expired / invalid license must not generate any
+        // get_version request, otherwise the store gets flooded with pointless
+        // update checks from sites that cannot download an update anyway. The
+        // status is passed in at registration time (see functions-update-plugin.php);
+        // when it is absent we keep the previous behaviour and do not block.
+        if ( isset( $this->api_data['license_status'] )
+            && 'valid' !== $this->api_data['license_status']
+        ) {
+            return false;
+        }
+
         $data = array_merge( $this->api_data, $_data );
 
         if ( $data['slug'] != $this->slug ) {
@@ -406,11 +427,36 @@ class Plugin_Updater {
         );
 
         $verify_ssl = $this->verify_ssl();
-        $request    = wp_remote_post( $this->api_url,
-            array( 'timeout' => 15, 'sslverify' => $verify_ssl, 'body' => $api_params ) );
+        $request    = wp_remote_post( $this->api_url, array(
+            'timeout'   => 15,
+            'sslverify' => $verify_ssl,
+            'body'      => $api_params,
+            'headers'   => array(
+                'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url(),
+                'Accept'     => 'application/json',
+            ),
+        ) );
 
         if ( ! is_wp_error( $request ) ) {
             $request = json_decode( wp_remote_retrieve_body( $request ) );
+        }
+
+        // Agency Mode: if the licence server reports this domain as blocked,
+        // record the block locally and return no update, so WordPress neither
+        // offers nor downloads one — independent of the licence-check cron.
+        if ( ! is_wp_error( $request )
+            && function_exists( 'PixelYourSite\\pys_response_is_blocked' )
+            && pys_response_is_blocked( $request )
+        ) {
+            if ( ! empty( $this->api_data['pys_slug'] ) ) {
+                set_domain_block(
+                    $this->api_data['pys_slug'],
+                    pys_response_block_message( $request ),
+                    pys_response_blocked_at( $request ),
+                    pys_response_block_type( $request )
+                );
+            }
+            return false;
         }
 
         if ( $request && isset( $request->sections ) ) {
@@ -467,8 +513,15 @@ class Plugin_Updater {
             );
 
             $verify_ssl = $this->verify_ssl();
-            $request    = wp_remote_post( $this->api_url,
-                array( 'timeout' => 15, 'sslverify' => $verify_ssl, 'body' => $api_params ) );
+            $request    = wp_remote_post( $this->api_url, array(
+                'timeout'   => 15,
+                'sslverify' => $verify_ssl,
+                'body'      => $api_params,
+                'headers'   => array(
+                    'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url(),
+                    'Accept'     => 'application/json',
+                ),
+            ) );
 
             if ( ! is_wp_error( $request ) ) {
                 $version_info = json_decode( wp_remote_retrieve_body( $request ) );

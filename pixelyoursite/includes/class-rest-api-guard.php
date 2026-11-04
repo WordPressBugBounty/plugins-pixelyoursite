@@ -111,6 +111,16 @@ if ( ! class_exists( 'PixelYourSite\\RestAPIGuard' ) ) {
                 return $result;
             }
 
+            // Crawlers that execute our inline scripts (the HTML carries them on
+            // purpose, so cached pages keep tracking) must not reach the platform
+            // APIs. Answer 200, never 4xx: an error would send the JS to the
+            // admin-ajax fallback. Runs before the rate-limit transient in
+            // check_permission() and logs nothing, as a log line per hit would
+            // grow the log on its own.
+            if ( apply_filters( 'pys_rest_skip_bot_events', PYS()->is_user_agent_bot(), $request ) ) {
+                return new \WP_REST_Response( array( 'success' => true ), 200 );
+            }
+
             // Master switch for site owners / edge setups.
             if ( ! apply_filters( 'pys_rest_purchase_guard_enabled', true ) ) {
                 return $result;

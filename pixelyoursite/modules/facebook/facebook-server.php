@@ -238,6 +238,12 @@ class FacebookServer {
      * we send data by ajax request from js and send the same data like browser event
      */
     function catchAjaxEvent() {
+        // Crawlers run our inline scripts; drop their events before any work
+        // or logging. wp_send_json_success() dies.
+        if ( PYS()->is_user_agent_bot() ) {
+            wp_send_json_success();
+        }
+
         PYS()->getLog()->debug('catchAjaxEvent send fb server from ajax');
         $event = $_POST['event'];
         $data = isset($_POST['data']) ? $_POST['data'] : array();

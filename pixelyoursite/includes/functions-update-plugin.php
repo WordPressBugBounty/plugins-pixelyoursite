@@ -16,6 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function updatePlugin( $plugin ) {
 
+	// Stop checking for updates while this plugin's domain is blocked.
+	if ( is_domain_blocked( $plugin->getSlug() ) ) {
+		return;
+	}
+
 	if ( ! class_exists( 'PixelYourSite\Plugin_Updater' ) ) {
 		require_once 'class-plugin-updater.php';
 	}
@@ -23,10 +28,12 @@ function updatePlugin( $plugin ) {
 	$license_key = $plugin->getOption( 'license_key' );
 
 	new Plugin_Updater( 'https://www.pixelyoursite.com', $plugin->getPluginFile(), array(
-			'version'   => $plugin->getPluginVersion(),
-			'license'   => $license_key,
-			'item_name' => $plugin->getPluginName(),
-			'author'    => 'PixelYourSite'
+			'version'        => $plugin->getPluginVersion(),
+			'license'        => $license_key,
+			'item_name'      => $plugin->getPluginName(),
+			'author'         => 'PixelYourSite',
+			'pys_slug'       => $plugin->getSlug(),
+			'license_status' => $plugin->getOption( 'license_status' )
 		)
 	);
 

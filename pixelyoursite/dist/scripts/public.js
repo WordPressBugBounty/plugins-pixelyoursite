@@ -1391,10 +1391,19 @@
                     })
                         .then(response => {
                             if (!response.ok) {
-                                throw new Error(platform + ' REST API request failed: ' + response.status);
+                                const err = new Error(platform + ' REST API request failed: ' + response.status);
+                                // Server overloaded: admin-ajax would only add load, so do not fall back
+                                err.noFallback = [429, 502, 503, 504, 520, 521, 522, 523, 524].indexOf(response.status) !== -1;
+                                throw err;
                             }
                         })
                         .catch(error => {
+                            if (error && error.noFallback) {
+                                if (options.debug) {
+                                    console.log('PYS: ' + platform + ' REST API overloaded, AJAX fallback skipped:', error);
+                                }
+                                return;
+                            }
                             // Fallback to AJAX if REST API fails
                             if (options.debug) {
                                 console.log('PYS: ' + platform + ' REST API failed, falling back to AJAX:', error);
@@ -2174,7 +2183,7 @@
                             cli_cookie &&
                             (cli_cookie === Cookies.get('cookieyes-consent') || cli_cookie === Cookies.get('wt_consent'))
                         ) {
-                            if (getCookieYes('analytics') === 'yes') {
+                            if (getCookieYes(getCookieYesCategory(pixel)) === 'yes') {
                                 return true;
                             }
                         } else if (cli_cookie && cli_cookie === Cookies.get('viewed_cookie_policy')) {
@@ -2187,7 +2196,7 @@
                             cli_cookie &&
                             (cli_cookie === Cookies.get('cookieyes-consent') || cli_cookie === Cookies.get('wt_consent'))
                         ) {
-                            if (getCookieYes('analytics') === 'yes') {
+                            if (getCookieYes(getCookieYesCategory(pixel)) === 'yes') {
                                 return true;
                             }
                         } else if (cli_cookie && cli_cookie === Cookies.get('viewed_cookie_policy')) {
@@ -2525,50 +2534,90 @@
                  */
                 if (options.gdpr.cookie_law_info_integration_enabled) {
 
-                    $(document).onFirst('click', '#wt-cli-accept-all-btn,#cookie_action_close_header, .cky-btn-accept', function () {
-                        setTimeout(function (){
-                            let cli_cookie = Cookies.get('cookieyes-consent') ?? Cookies.get('wt_consent') ?? Cookies.get('viewed_cookie_policy');
-                            if (typeof cli_cookie !== 'undefined') {
-                                if (cli_cookie === Cookies.get('cookieyes-consent') || cli_cookie === Cookies.get('wt_consent')) {
-                                    if (getCookieYes('analytics') === 'yes') {
-                                        Utils.manageCookies();
-                                    }
-                                } else if (cli_cookie === Cookies.get('viewed_cookie_policy') && cli_cookie == 'yes') {
-                                    Utils.manageCookies();
-                                }
+                    // The visitor's per-category answer, as stored by CookieYes / WebToffee.
+                    const applyCookieYesConsent = function () {
+                        const analytics = getCookieYes(getCookieYesCategory('analytics')) === 'yes';
+                        const ads = getCookieYes(getCookieYesCategory('facebook')) === 'yes';
+                        // Initial-state event (no choice yet): do not switch off pixels that run before consent.
+                        const explicit = getCookieYes('action') === 'yes' || !Cookies.get('cookieyes-consent');
+
+                        ads ? Facebook.loadPixel() : explicit && Facebook.disable();
+                        analytics ? Analytics.loadPixel() : explicit && Analytics.disable();
+                        ads ? Pinterest.loadPixel() : explicit && Pinterest.disable();
+                        ads ? Bing.loadPixel() : explicit && Bing.disable();
+                        ads ? OpenAI.loadPixel() : explicit && OpenAI.disable();
+                        ads ? Reddit.loadPixel() : explicit && Reddit.disable();
+
+                        if (analytics) {
+                            Utils.manageCookies();
+                        }
+
+                        Utils.setupGDPRData({
+                            facebook: ads,
+                            ga: analytics,
+                            bing: ads,
+                            pinterest: ads,
+                            gtm: analytics,
+                            openai: ads,
+                            reddit: ads,
+                        });
+                    };
+                    document.addEventListener('cookieyes_consent_update', applyCookieYesConsent);
+
+                    // Older banners write their cookie after our handler, so wait for it.
+                    // No CookieYes cookie afterwards means legacy mode: all or nothing.
+                    const onCookieYesClick = function (legacy) {
+                        setTimeout(function () {
+                            if (typeof (Cookies.get('cookieyes-consent') ?? Cookies.get('wt_consent')) !== 'undefined') {
+                                applyCookieYesConsent();
+                            } else {
+                                legacy();
                             }
-                        },1000)
-                        Facebook.loadPixel();
-                        Analytics.loadPixel();
-                        Pinterest.loadPixel();
-                        Bing.loadPixel();
+                        }, 300);
+                    };
 
-                        let consent = {
-                            facebook: true,
-                            ga: true,
-                            bing: true,
-                            pinterest: true,
-                            gtm: true,
-                        };
-                        Utils.setupGDPRData( consent );
+                    $(document).onFirst('click', '#wt-cli-accept-all-btn,#cookie_action_close_header', function () {
+                        onCookieYesClick(function () {
+                            if (Cookies.get('viewed_cookie_policy') === 'yes') {
+                                Utils.manageCookies();
+                            }
+                            Facebook.loadPixel();
+                            Analytics.loadPixel();
+                            Pinterest.loadPixel();
+                            Bing.loadPixel();
+                            OpenAI.loadPixel();
+                            Reddit.loadPixel();
+                            Utils.setupGDPRData({
+                                facebook: true,
+                                ga: true,
+                                bing: true,
+                                pinterest: true,
+                                gtm: true,
+                                openai: true,
+                                reddit: true,
+                            });
+                        });
                     });
 
-                    $(document).onFirst('click', '#cookie_action_close_header_reject, .cky-btn-reject', function () {
-                        Facebook.disable();
-                        Analytics.disable();
-                        Pinterest.disable();
-                        Bing.disable();
-
-                        let consent = {
-                            facebook: false,
-                            ga: false,
-                            bing: false,
-                            pinterest: false,
-                            gtm: false,
-                        };
-                        Utils.setupGDPRData( consent );
+                    $(document).onFirst('click', '#cookie_action_close_header_reject', function () {
+                        onCookieYesClick(function () {
+                            Facebook.disable();
+                            Analytics.disable();
+                            Pinterest.disable();
+                            Bing.disable();
+                            OpenAI.disable();
+                            Reddit.disable();
+                            Utils.setupGDPRData({
+                                facebook: false,
+                                ga: false,
+                                bing: false,
+                                pinterest: false,
+                                gtm: false,
+                                openai: false,
+                                reddit: false,
+                            });
+                        });
                     });
-
                 }
 
             },
@@ -3170,7 +3219,15 @@
                     }
                     let advancedMatching = Facebook.advancedMatching();
 
-                    if ( +options.facebook.meta_ldu === 1  ) {
+                    let lduMode = +options.facebook.meta_ldu === 1;
+
+                    // On a cached page only CS_Data is refreshed for the current visitor
+                    if ( options.gdpr.consent_magic_integration_enabled && typeof CS_Data !== 'undefined'
+                        && typeof CS_Data.cs_meta_ldu_mode !== 'undefined' ) {
+                        lduMode = Utils.csModeEnabled( CS_Data.cs_meta_ldu_mode );
+                    }
+
+                    if ( lduMode ) {
                         fbq( 'dataProcessingOptions', [ 'LDU' ], 0, 0 );
                     }
 
@@ -5755,6 +5812,9 @@ function getUrlParameter(sParam) {
     }
     return false;
 };
+function getCookieYesCategory(pixel) {
+    return ['analytics', 'ga', 'gtm'].indexOf(pixel) !== -1 ? 'analytics' : 'advertisement';
+}
 function getCookieYes(key) {
     const cookiesObj = document.cookie
         .split(";")

@@ -166,5 +166,7 @@
   "rest_order_validation_enabled": "checkbox",
 
   "enable_advanced_form_data_cookie": "checkbox",
-  "data_persistency": "radio"
+  "data_persistency": "radio",
+  "logs_lines_general": "number",
+  "logs_lines_pinterest": "number"
 }

@@ -181,5 +181,7 @@
   "rest_order_validation_enabled": true,
 
   "enable_advanced_form_data_cookie": true,
-  "data_persistency": "recent_data"
+  "data_persistency": "recent_data",
+  "logs_lines_general": 5000,
+  "logs_lines_pinterest": 5000
 }

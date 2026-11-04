@@ -56,19 +56,70 @@ class Facebook_REST_API {
 
         $singleEvent = $this->data_to_single_event( $event, $data, $eventID, $ids, $woo_order, $edd_order, $referrer_url, $event_source_url );
 
-        $authenticated = $this->authenticateVisitor();
-
-        try {
-            // Send event using existing Facebook server logic
-            FacebookServer()->sendEventsNow( array( $singleEvent ) );
-        } finally {
-            if ( $authenticated ) {
-                // Back to the state this request had before us: anonymous.
-                wp_set_current_user( 0 );
+        // Authentication and the send both run inside the task: the user is needed
+        // while the payload is built in sendEventsNow(), and it may run after the
+        // response (see pys_run_after_rest_response()).
+        $send = function () use ( $singleEvent ) {
+            $authenticated = false;
+            try {
+                $authenticated = $this->authenticateVisitor();
+                // Send event using existing Facebook server logic
+                FacebookServer()->sendEventsNow( array( $singleEvent ) );
+            } catch ( \Throwable $e ) {
+                PYS()->getLog()->error( 'Facebook REST event send failed', $e );
+            } finally {
+                if ( $authenticated ) {
+                    // Back to the state this request had before us: anonymous.
+                    wp_set_current_user( 0 );
+                }
             }
+        };
+
+        // Headers are already sent at shutdown, so _fbp/_fbc can only be set
+        // now; the send then finds them in the statics. The send path returns
+        // early for an event without an ID (mapEventToServerEvent), so it mints
+        // nothing for it and neither do we.
+        if ( $eventID ) {
+            $this->mintCookiesBeforeDeferral( $data, $woo_order, $edd_order );
         }
+        pys_run_after_rest_response( $send );
 
         return new \WP_REST_Response( array( 'success' => true ), 200 );
+    }
+
+    /**
+     * The cookie step of ServerEventHelper::mapEventToServerEvent(), run while
+     * the response headers can still be sent. The deferred send runs at
+     * shutdown, when they are gone: _fbp/_fbc would no longer be minted. After
+     * this the statics are set, so the send does not mint a second time.
+     */
+    private function mintCookiesBeforeDeferral( $params, $woo_order, $edd_order ) {
+        $order = null;
+        if ( $woo_order && isWooCommerceActive() ) {
+            $order = \wc_get_order( $woo_order ) ?: null;
+        }
+        $order_bound = $order || ! empty( $edd_order );
+
+        $signal_order = $order;
+        if ( ! $signal_order && $edd_order && isEddActive() ) {
+            $signal_order = pys_edd_order_signal_source( $edd_order );
+        }
+        $signals = pys_event_client_signals(
+            $signal_order,
+            pys_client_ip_for_capi(),
+            ! empty( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : null,
+            pys_is_admin_page_request()
+        );
+
+        // Same conditions as the send path.
+        if ( ! $signals['request_cookies'] ) {
+            return;
+        }
+        if ( ParamBuilderAdapter::is_enabled() ) {
+            ParamBuilderAdapter::for_request()->flush_cookies();
+        } elseif ( Consent()->checkConsent( 'facebook' ) ) {
+            ServerEventHelper::mintBrowserCookies( is_array( $params ) ? $params : array(), $order_bound );
+        }
     }
 
     /**
@@ -152,9 +203,13 @@ class Facebook_REST_API {
         // The limit is configured via the 'pys_check_permission_rate_limit'
         // option (Global Settings > Ajax options). Default is 60 (1 req/sec).
         if ( $is_same_origin ) {
-            $ip    = PYS()->get_user_ip();
-            $key   = 'pys_rl_' . md5( $ip . '_pys-facebook/v1' );
-            $count = (int) get_transient( $key );
+            // Fixed one-minute window: the minute is part of the key, because
+            // set_transient() below restarts the TTL on every write, so a
+            // single key would never expire under steady traffic.
+            $ip     = PYS()->get_user_ip();
+            $window = (int) floor( time() / 60 );
+            $key    = 'pys_rl_' . md5( $ip . '_pys-facebook/v1_' . $window );
+            $count  = (int) get_transient( $key );
 
             // Maximum allowed requests per minute, per IP, per pixel namespace.
             $limit = max( 1, (int) PYS()->getOption( 'pys_check_permission_rate_limit' ) );

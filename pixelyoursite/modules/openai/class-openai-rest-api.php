@@ -74,15 +74,25 @@ class OpenAI_REST_API {
             $source_url
         );
 
-        $authenticated = $this->authenticateVisitor();
-
-        try {
-            OpenAIServer()->sendEventsNow( array( $single_event ) );
-        } finally {
-            if ( $authenticated ) {
-                wp_set_current_user( 0 );
+        // Authentication and the send both run inside the task: the user is needed
+        // while the payload is built in sendEventsNow(), and it may run after the
+        // response (see pys_run_after_rest_response()).
+        $send = function () use ( $single_event ) {
+            $authenticated = false;
+            try {
+                $authenticated = $this->authenticateVisitor();
+                OpenAIServer()->sendEventsNow( array( $single_event ) );
+            } catch ( \Throwable $e ) {
+                PYS()->getLog()->error( 'OpenAI REST event send failed', $e );
+            } finally {
+                if ( $authenticated ) {
+                    // Back to the state this request had before us: anonymous.
+                    wp_set_current_user( 0 );
+                }
             }
-        }
+        };
+
+        pys_run_after_rest_response( $send );
 
         return new \WP_REST_Response( array( 'success' => true ), 200 );
     }
@@ -143,9 +153,13 @@ class OpenAI_REST_API {
         // Per-IP rate limit, per namespace, configured in Global Settings.
         if ( $is_same_origin ) {
 
-            $ip    = PYS()->get_user_ip();
-            $key   = 'pys_rl_' . md5( $ip . '_pys-openai/v1' );
-            $count = (int) get_transient( $key );
+            // Fixed one-minute window: the minute is part of the key, because
+            // set_transient() below restarts the TTL on every write, so a
+            // single key would never expire under steady traffic.
+            $ip     = PYS()->get_user_ip();
+            $window = (int) floor( time() / 60 );
+            $key    = 'pys_rl_' . md5( $ip . '_pys-openai/v1_' . $window );
+            $count  = (int) get_transient( $key );
 
             $limit = max( 1, (int) PYS()->getOption( 'pys_check_permission_rate_limit' ) );
 

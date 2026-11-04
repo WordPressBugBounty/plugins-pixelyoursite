@@ -533,6 +533,11 @@ class OpenAIServer {
      * The browser's AJAX fallback, used when the REST route is unreachable.
      */
     public function catchAjaxEvent() {
+        // Crawlers run our inline scripts; drop their events before any work.
+        // wp_send_json_success() dies.
+        if ( PYS()->is_user_agent_bot() ) {
+            wp_send_json_success();
+        }
 
         if ( ! OpenAI()->isServerApiEnabled() ) {
             wp_send_json_error( 'OpenAI Conversions API is disabled', 400 );

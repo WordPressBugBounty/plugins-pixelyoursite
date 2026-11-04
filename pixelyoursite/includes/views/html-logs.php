@@ -17,6 +17,10 @@ $download_nonce = wp_create_nonce('download_logs_nonce');
                 <h4 class="secondary_heading_type2 switcher-label"><?php _e( 'General plugin logs', 'pys' ); ?></h4>
             </div>
             <div class="head-button-block">
+                <div class="d-flex align-items-center logs-lines">
+                    <span class="font-medium mr-8"><?php _e( 'Lines to show', 'pys' ); ?></span>
+                    <?php PYS()->render_number_input( 'logs_lines_general', '', false, 100000, 100, 100 ); ?>
+                </div>
                 <a class="btn btn-small btn-gray font-medium ico-button ico-trash" href="<?php echo esc_url( add_query_arg(['clear_plugin_logs' => 'true', '_wpnonce_clear_logs' => $clear_nonce],buildAdminUrl( 'pixelyoursite', 'logs' ))); ?>">
                     <span><?php _e( 'Clear General logs', 'pys' ); ?></span>
                 </a>
@@ -27,7 +31,9 @@ $download_nonce = wp_create_nonce('download_logs_nonce');
         </div>
         <div class="card-body">
         <textarea readonly <?php disabled( !PYS()->getOption('pys_logs_enable') ); ?>><?php
-            echo esc_html(PYS()->getLog()->getLogs());
+            // Cap an already-oversized file before reading it, even with logging off.
+            PYS()->getLog()->maybe_trim();
+            echo esc_html(PYS()->getLog()->getLogs( max( 100, (int) PYS()->getOption( 'logs_lines_general' ) ) ));
             ?></textarea>
         </div>
     </div>
@@ -40,6 +46,10 @@ $download_nonce = wp_create_nonce('download_logs_nonce');
                     <h4 class="secondary_heading_type2 switcher-label">Pinterest API Logs</h4>
                 </div>
                 <div class="head-button-block">
+                    <div class="d-flex align-items-center logs-lines">
+                        <span class="font-medium mr-8"><?php _e( 'Lines to show', 'pys' ); ?></span>
+                        <?php PYS()->render_number_input( 'logs_lines_pinterest', '', false, 100000, 100, 100 ); ?>
+                    </div>
                     <a class="btn btn-small btn-gray font-medium ico-button ico-trash"
                        href="<?php echo esc_url( add_query_arg(['clear_pinterest_logs' => 'true', '_wpnonce_clear_logs' => $clear_nonce],buildAdminUrl( 'pixelyoursite', 'logs' ))); ?>">
                         <span>Clear Pinterest API Logs</span>
@@ -52,7 +62,9 @@ $download_nonce = wp_create_nonce('download_logs_nonce');
             </div>
             <div class="card-body">
                 <textarea readonly <?php disabled( !Pinterest()->getOption('logs_enable') ); ?>><?php
-                    echo esc_html(Pinterest()->getLog()->getLogs());
+                    // Cap an already-oversized file before reading it, even with logging off.
+                    Pinterest()->getLog()->maybe_trim();
+                    echo esc_html(Pinterest()->getLog()->getLogs( max( 100, (int) PYS()->getOption( 'logs_lines_pinterest' ) ) ));
                     ?></textarea>
             </div>
         </div>

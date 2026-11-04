@@ -96,6 +96,14 @@ final class PYS extends Settings implements Plugin {
         add_action( 'admin_menu', array( $this, 'adminMenu' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'adminEnqueueScripts' ) );
         add_action( 'admin_notices', 'PixelYourSite\adminRenderNotices' );
+        // Registered as a closure on purpose. Easy Digital Downloads hooks
+        // EDD_Notices::remove_notices() on `admin_notices` at priority 0 and strips
+        // every callback whose function is a plain name without "edd" in it, and it
+        // counts the WordPress Dashboard as one of its own admin pages. A closure is
+        // not a named callback, so the domain block notice survives there.
+        add_action( 'admin_notices', function () {
+            pys_render_domain_block_admin_notices();
+        } );
         add_action( 'admin_init', array( $this, 'adminProcessRequest' ), 11 );
         add_action( 'admin_init', function () {
 
@@ -595,6 +603,9 @@ final class PYS extends Settings implements Plugin {
 	 * @param Pixel|Settings $pixel
 	 */
     public function registerPixel( &$pixel ) {
+        // No Agency Mode gate here on purpose: in the free plugin a Hard block
+        // changes nothing about tracking, not even for a blocked add-on. See
+        // is_hard_blocked().
         if(!is_admin() && !PYS()->getOption('enable_all_tracking_ids') && $pixel->getSlug() != 'gtm'){
             return;
         }
@@ -973,6 +984,7 @@ final class PYS extends Settings implements Plugin {
                 echo "<script type='application/javascript'  id='pys-version-script'>console.log('PixelYourSite Free version " . PYS_FREE_VERSION . "');</script>\r\n";
             }, 1);
         }
+
 	    if ( isDisabledForCurrentRole() ) {
 	    	return;
 	    }
@@ -1056,16 +1068,18 @@ final class PYS extends Settings implements Plugin {
                 'ClaudeBot', 'SeekportBot', 'GPTBot', 'Applebot',
                 'DuckDuckBot', 'Sogou', 'facebookexternalhit', 'Swiftbot', 'Slurp', 'CCBot', 'Go-http-client',
                 'Sogou Spider', 'Facebot', 'Alexa Crawler', 'Cốc Cốc Bot', 'Majestic-12', 'SemrushBot',
-                'DotBot', 'Qwantify', 'Pinterest', 'GrapeshotCrawler', 'archive.org_bot', 'LinkpadBot',
+                'DotBot', 'Qwantify', 'Pinterestbot', 'Pinterest/0.', 'GrapeshotCrawler', 'archive.org_bot', 'LinkpadBot',
                 'uptimebot', 'Wget', 'curl', 'Google-Structured-Data-Testing-Tool', 'Google-PageSpeed Insights',
                 'Google-Site-Verification', 'BingPreview', 'Slackbot', 'TelegramBot', 'DiscordBot', 'WhatsApp',
-                'RedditBot', 'Yahoo! Slurp', 'Tumblr', 'PetalBot', 'FlipboardProxy', 'LinkedInBot',
+                'RedditBot', 'Yahoo! Slurp', 'Tumblr/14.', 'PetalBot', 'FlipboardProxy', 'LinkedInBot',
                 'SkypeUriPreview', 'Google-Firebase-Storage', 'BitlyBot', 'FeedlyBot', 'AppleNewsBot',
                 'ZyBorg', 'ia_archiver-web.archive.org', 'Mediatoolkitbot', 'DeuSu', 'SMTBot', 'MegaIndex.ru',
                 'Seomoz', 'BLEXBot', 'YisouSpider', '360Spider', 'AddThis', 'TweetmemeBot', 'ContextAd Bot',
                 'Screaming Frog SEO Spider', 'Nutch', 'Baiduspider-image', 'Panscient.com', 'Twitterbot',
                 'YoudaoBot', 'OpenSiteExplorer', 'Linkfluence', 'YaK', 'ContentKing', 'Spinn3r', 'PhantomJS',
-                'HeadlessChrome', 'Snapchat', 'Pingdom', 'Googlebot-Mobile', 'Barkrowler'
+                'HeadlessChrome', 'snapchat_preview', 'Snap URL Preview', 'Pingdom', 'Googlebot-Mobile', 'Barkrowler',
+                // CrawlerDetect does not flag a bare "meta-externalads/1.1".
+                'meta-externalads', 'meta-externalagent'
             );
 
             foreach($options as $row) {

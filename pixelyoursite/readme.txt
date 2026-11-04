@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, O
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.1
-Stable tag: 11.4.4
+Stable tag: 11.4.5
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -324,6 +324,24 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.4.5 =
+
+4 October 20226
+
+* New: Domain Block support for add-on licenses. Tracking keeps running.
+
+* New: Bot requests to the event endpoints are no longer sent to Meta.
+
+* Improvement: Log files are capped at 10 MB, and the Logs page shows the last 5000 lines.
+
+* Fix: Visitors using the Pinterest, Snapchat or Tumblr in-app browsers were treated as bots.
+
+* Fix: The REST API rate limit returned false “Too many requests” errors during normal browsing.
+
+* Fix: With CookieYes, a Meta server PageView was sent before consent, and Meta followed the Analytics category instead of Advertisement.
+
+* Fix: Meta Limited Data Use was missing on cached pages after “Deny all” in ConsentMagic.
 
 
 = PixelYourSite 11.4.4 =

@@ -45,7 +45,13 @@ class Consent {
 
 		$has_cookie = false;
 
-		if ( isset( $_COOKIE[ $this->consentKey ] ) && !empty( $_COOKIE[ $this->consentKey ] ) ) {
+		if ( $this->cookieYesActive() ) {
+
+			// CookieYes writes its own cookie from JS; it is the source of truth.
+			$this->consentData = $this->readCookieYesConsent();
+			$has_cookie        = true;
+
+		} elseif ( isset( $_COOKIE[ $this->consentKey ] ) && !empty( $_COOKIE[ $this->consentKey ] ) ) {
 
 			$consent = json_decode( base64_decode( sanitize_text_field( $_COOKIE[ $this->consentKey ] ) ), true );
 
@@ -122,6 +128,65 @@ class Consent {
 			$this->consentPlugin = $active;
 		}
 		return $active;
+	}
+
+	/**
+	 * CookieYes (not its legacy mode) with the integration switched on.
+	 *
+	 * @return bool
+	 */
+	private function cookieYesActive(): bool {
+		return isCookieLawInfoPluginActivated()
+			&& PYS()->getOption( 'gdpr_cookie_law_info_integration_enabled' )
+			&& !( function_exists( 'cky_is_legacy' ) && cky_is_legacy() );
+	}
+
+	/**
+	 * CookieYes category a pixel belongs to.
+	 *
+	 * @param string $slug Pixel slug.
+	 * @return string
+	 */
+	private function cookieYesCategory( string $slug ): string {
+		return in_array( $slug, array( 'analytics', 'ga', 'gtm' ), true ) ? 'analytics' : 'advertisement';
+	}
+
+	/**
+	 * Per-pixel consent from the CookieYes / WebToffee cookie. No cookie means
+	 * no answer yet, so nothing is allowed.
+	 *
+	 * @return array
+	 */
+	private function readCookieYesConsent(): array {
+
+		$raw = '';
+
+		if ( !empty( $_COOKIE[ 'cookieyes-consent' ] ) ) {
+			$raw = $_COOKIE[ 'cookieyes-consent' ];
+		} elseif ( !empty( $_COOKIE[ 'wt_consent' ] ) ) {
+			$raw = $_COOKIE[ 'wt_consent' ];
+		}
+
+		$categories = array();
+
+		if ( is_string( $raw ) && '' !== $raw ) {
+			foreach ( explode( ',', sanitize_text_field( wp_unslash( $raw ) ) ) as $pair ) {
+				$parts = explode( ':', $pair, 2 );
+
+				if ( 2 === count( $parts ) ) {
+					$categories[ trim( $parts[ 0 ] ) ] = trim( $parts[ 1 ] );
+				}
+			}
+		}
+
+		$consent = array();
+
+		foreach ( array_keys( $this->consentData ) as $slug ) {
+			$category         = $this->cookieYesCategory( $slug );
+			$consent[ $slug ] = isset( $categories[ $category ] ) && 'yes' === $categories[ $category ];
+		}
+
+		return $consent;
 	}
 
 	private function disableAllPixels(): void {

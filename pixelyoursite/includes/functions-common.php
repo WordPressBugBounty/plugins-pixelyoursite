@@ -107,6 +107,80 @@ function pys_is_background_request() {
 }
 
 /**
+ * Hand the response to the client and keep this PHP worker running.
+ *
+ * Call it once the body is fully written (e.g. on late `shutdown`). Without
+ * fastcgi_finish_request()/litespeed_finish_request() nothing can be detached,
+ * so only ignore_user_abort() is set and the visitor keeps waiting.
+ *
+ * @return bool True when the connection was released.
+ */
+function pys_detach_response() {
+    ignore_user_abort( true );
+
+    if ( function_exists( 'fastcgi_finish_request' ) ) {
+        $finish = 'fastcgi_finish_request';
+    } elseif ( function_exists( 'litespeed_finish_request' ) ) {
+        $finish = 'litespeed_finish_request';
+    } else {
+        return false;
+    }
+
+    // Fixed number of levels, like wp_ob_end_flush_all(): a buffer callback
+    // that re-opens a buffer must not trap us in an endless loop.
+    $levels = ob_get_level();
+    for ( $i = 0; $i < $levels; $i++ ) {
+        @ob_end_flush();
+    }
+    flush();
+
+    $finish();
+
+    // Nobody waits any more, so outgoing requests may use the background
+    // timeouts (see pys_is_background_request()).
+    if ( ! defined( 'PYS_RESPONSE_DETACHED' ) ) {
+        define( 'PYS_RESPONSE_DETACHED', true );
+    }
+
+    return true;
+}
+
+/**
+ * Run $task after the REST response has reached the visitor.
+ *
+ * WP REST echoes the JSON in serve_request() and then die()s, so by `shutdown`
+ * the body is already written; wp_ob_end_flush_all() runs at priority 1.
+ *
+ * This only improves the VISITOR's latency. The FPM worker stays busy for the
+ * whole API call, so it does not reduce server load; the bot gate does that.
+ *
+ * Outside REST (or with the filter off) the task runs immediately.
+ *
+ * @param callable $task
+ */
+function pys_run_after_rest_response( $task ) {
+    if ( ! defined( 'REST_REQUEST' ) || ! REST_REQUEST
+        || ! apply_filters( 'pys_rest_send_after_response', true ) ) {
+        call_user_func( $task );
+        return;
+    }
+
+    // The client may hang up once it has its answer; the task must survive it.
+    ignore_user_abort( true );
+
+    add_action( 'shutdown', function () use ( $task ) {
+        pys_detach_response();
+        // A slow platform API must not be cut off by max_execution_time.
+        @set_time_limit( 60 );
+        try {
+            call_user_func( $task );
+        } catch ( \Throwable $e ) {
+            // The task reports its own failures; this only keeps shutdown quiet.
+        }
+    }, 1000 );
+}
+
+/**
  * Total transfer timeout, in seconds, for an outgoing server-side event request.
  *
  * Deliberately generous: these calls carry conversion data we do not want to
@@ -509,7 +583,18 @@ function isPixelCogActive() {
     if ( ! function_exists( 'is_plugin_active' ) ) {
         include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
     }
-    $cache = is_plugin_active( 'pixel-cost-of-goods/pixel-cost-of-goods.php' );
+    $active = is_plugin_active( 'pixel-cost-of-goods/pixel-cost-of-goods.php' );
+
+    // Agency Mode: a HARD-blocked Cost of Goods behaves as if deactivated, so its
+    // integration inside PixelYourSite (profit calc, toggles, columns) turns off.
+    if ( $active ) {
+        $block = get_option( 'pys_am_pixel-cost-of-goods_domain_block' );
+        if ( is_array( $block ) && ! empty( $block['blocked'] ) && isset( $block['type'] ) && 'hard' === $block['type'] ) {
+            $active = false;
+        }
+    }
+
+    $cache = $active;
     return $cache;
 }
 
