@@ -855,6 +855,20 @@
             PRODUCT_GROUPED : 3,
             utmTerms : utmTerms,
             utmId : utmId,
+            /**
+             * True when the visitor is a crawler. Reads the decision made by the inline
+             * head script (window.pysIsBot, EventsManager::outputBotDetection()). Its list
+             * is narrower than the server's is_user_agent_bot(): no CrawlerDetect.
+             * Missing head script (old cached HTML, stripped by an optimizer/CMP) -> false,
+             * tracking runs.
+             */
+            isBot: function () {
+                try {
+                    return window.pysIsBot === true;
+                } catch ( e ) {}
+
+                return false;
+            },
             fireEventForAllPixel:function(functionName,events){
                 Utils.refreshAddonPixels();
 
@@ -5668,6 +5682,11 @@
     }
 
     $(document).ready(function () {
+        if ( Utils.isBot() ) {
+            if ( options.debug ) { console.log( '[PYS] bot user agent, tracking skipped' ); }
+            return;
+        }
+
         if ( options.dynamicDataUrl ) {
             fetch( options.dynamicDataUrl, {
                 method: 'GET',

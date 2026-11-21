@@ -78,7 +78,7 @@ final class GetWooEventsConfigAbility extends AbstractAbility {
 	 * @return string
 	 */
 	public static function description(): string {
-		return 'Returns the WooCommerce event configuration for PixelYourSite (Free). Returns `{ "available": false }` immediately if WooCommerce is not active. Sections: `funnel_events` (compact `{ all_enabled: true }` when all are in their default-enabled state, else the full per-event map: ViewContent, ViewCategory, AddToCart, InitiateCheckout, Purchase, ViewCart, RemoveFromCart — these are the GLOBAL master toggles), `platform_events` (the PER-PLATFORM event-firing matrix: for each active platform, which events it is set to fire — an event actually reaches a platform ONLY when BOTH its global toggle in `funnel_events` AND that platform toggle here are on; only events a platform registers are listed and the sets differ per platform. ALWAYS consult this before answering "is event X firing on platform Y" — the global toggle alone is NOT enough. A value of `false` means the platform SUPPORTS the event but it is currently OFF — it IS available and you CAN enable it; do NOT report a `false` entry as "unavailable"/"unsupported". ONLY a platform/event pair that is entirely ABSENT from this map is unsupported (the admin shows no switcher). NEVER mark a platform as firing an event just because `funnel_events`/`all_enabled` is true. Example: ViewCart appears only under `google_analytics`, so Facebook does NOT fire ViewCart (absent = unsupported) even when the global ViewCart master is on. Write these via `set_woo_event_config` `platform_event_toggles`), `add_to_cart_triggers` (where the AddToCart event fires: on the add-to-cart button click, on the cart page, on the checkout page), and `content_id_by_platform` (per active platform: `source` [`product_id` | `product_sku`], `prefix`, `suffix`, and `variable_as_simple` [bool — "Treat variable products like simple products"; Free, write via set_woo_event_config `variable_as_simple`; for facebook it is the stored value and is not applied while Facebook uses the Facebook for WooCommerce content_id logic — that mode is reported by get_tracking_audit, not by this field], plus `wpml_unified_id` [bool — present ONLY when the WPML plugin is active; the "WPML Unified ID logic" toggle; Free, write via `wpml_unified_id`; NB choosing the default language is a Pro-only option not exposed here] — content IDs are genuinely per-platform in PYS; Google GA4/Tags share the unified `gatags` entry). NOTE on OpenAI: it fires the same four stems as everyone else, but its own event names differ — `view_content` is sent as `contents_viewed`, `add_to_cart` as `items_added`, `initiate_checkout` as `checkout_started` and `purchase` as `order_created`. Use the stem names in this tool\'s args, and use the OpenAI names when explaining to the user what they will see in OpenAI Ads Manager. OpenAI has no counterpart for `view_category`, `remove_from_cart` or `view_cart`, which is why they are absent from its row. Call this when the audit shows `woo_events: warning`, or when the user asks about WooCommerce tracking (including whether a specific event fires on a specific pixel). Lifecycle events, POAS, subscriptions and the `custom_field` content-ID source are PixelYourSite Pro features and are not included here.';
+		return 'Returns the WooCommerce event configuration for PixelYourSite (Free). Returns `{ "available": false }` immediately if WooCommerce is not active. Sections: `funnel_events` (compact `{ all_enabled: true }` when all are in their default-enabled state, else the full per-event map: ViewContent, ViewCategory, AddToCart, InitiateCheckout, Purchase, ViewCart, RemoveFromCart — these are the GLOBAL master toggles), `platform_events` (the PER-PLATFORM event-firing matrix: for each active platform, which events it is set to fire — an event actually reaches a platform ONLY when BOTH its global toggle in `funnel_events` AND that platform toggle here are on; only events a platform registers are listed and the sets differ per platform. ALWAYS consult this before answering "is event X firing on platform Y" — the global toggle alone is NOT enough. A value of `false` means the platform SUPPORTS the event but it is currently OFF — it IS available and you CAN enable it; do NOT report a `false` entry as "unavailable"/"unsupported". ONLY a platform/event pair that is entirely ABSENT from this map is unsupported (the admin shows no switcher). NEVER mark a platform as firing an event just because `funnel_events`/`all_enabled` is true. Example: ViewCart appears only under `google_analytics`, so Facebook does NOT fire ViewCart (absent = unsupported) even when the global ViewCart master is on. Write these via `set_woo_event_config` `platform_event_toggles`), `add_to_cart_triggers` (where the AddToCart event fires: on the add-to-cart button click, on the cart page, on the checkout page), and `content_id_by_platform` (per active platform: `source` [`product_id` | `product_sku`], `prefix`, `suffix`, and `variable_as_simple` [bool — "Treat variable products like simple products"; Free, write via set_woo_event_config `variable_as_simple`; for facebook it is the stored value and is not applied while Facebook uses the Facebook for WooCommerce content_id logic — that mode is reported by get_tracking_audit, not by this field], plus `wpml_unified_id` [bool — present ONLY when the WPML plugin is active; the "WPML Unified ID logic" toggle; Free, write via `wpml_unified_id`; NB choosing the default language is a Pro-only option not exposed here] — content IDs are genuinely per-platform in PYS; Google GA4/Tags share the unified `gatags` entry). NOTE on OpenAI: it fires the same four stems as everyone else, but its own event names differ — `view_content` is sent as `contents_viewed`, `add_to_cart` as `items_added`, `initiate_checkout` as `checkout_started` and `purchase` as `order_created`. Use the stem names in this tool\'s args, and use the OpenAI names when explaining to the user what they will see in OpenAI Ads Manager. OpenAI has no counterpart for `view_category`, `remove_from_cart` or `view_cart`, which is why they are absent from its row. Call this when the audit shows `woo_events: warning`, or when the user asks about WooCommerce tracking (including whether a specific event fires on a specific pixel). `value_settings` (read-only Cost of Goods and Meta net_revenue state: `cog_source` [`auto` | `pixel_cog` | `wc_cog`; changed in the PixelYourSite admin, not writable here], `cog_source_available`, `cog_addon_active`, `cog_wc_ready`, `cog_wc_include_tax`, `cog_wc_include_shipping`, and `meta_net_revenue_enabled` [Free: Meta Conversions API Purchase `net_revenue` = the order profit, server event only; writable via `set_woo_event_config` `meta_net_revenue_enabled`]). Lifecycle events, POAS (profit sent as the event value for ad optimisation; Free has Cost of Goods and `net_revenue` only), subscriptions, the Event Value Settings (tax / shipping / fees) and the `custom_field` content-ID source are PixelYourSite Pro features and are not included here.';
 	}
 
 	/**
@@ -123,6 +123,10 @@ final class GetWooEventsConfigAbility extends AbstractAbility {
 					'description'          => 'Per-platform content_id values keyed by slug => { source, prefix, suffix }.',
 					'additionalProperties' => array( 'type' => 'object' ),
 				),
+				'value_settings'         => array(
+					'type'        => 'object',
+					'description' => 'Cost of Goods and Meta net_revenue, read-only: `cog_source` (`auto` = Pixel Cost of Goods add-on, then WooCommerce native COGS, then the add-on global cost | `pixel_cog` | `wc_cog`), `cog_source_available`, `cog_addon_active`, `cog_wc_ready` (bool), `cog_wc_include_tax`, `cog_wc_include_shipping` (WooCommerce-sourced lines), `meta_net_revenue_enabled` (bool; Meta Conversions API Purchase `net_revenue` = order profit, server event only, omitted without full cost data / positive profit / whole order). The Event Value Settings (tax / shipping / fees) and the Transaction ID prefix are Pro and not listed.',
+				),
 				'not_this_tool'          => array( 'type' => 'string' ),
 			),
 		);
@@ -151,7 +155,17 @@ final class GetWooEventsConfigAbility extends AbstractAbility {
 			'platform_events'        => EventToggleMap::platformMatrix( 'woo' ),
 			'add_to_cart_triggers'   => self::addToCartTriggers( $pys ),
 			'content_id_by_platform' => self::contentIdByPlatform(),
-			'not_this_tool'          => 'This tool covers the GLOBAL WooCommerce funnel events (ViewContent = "Track product pages", etc.). It does NOT cover the per-platform CUSTOM-EVENT switchers "Track WooCommerce product data on single product pages" (track_single_woo_data) and "Track WooCommerce cart data when possible" (track_cart_woo_data) — those live INSIDE a custom event (get_custom_event / set_custom_event, per platform) and in Free are functional only for reddit (Pro for facebook/pinterest/bing/openai/google_analytics/gtm). If the user asked to enable one of THOSE "for facebook" etc., this is the wrong tool — do not report the ViewContent funnel state; go to the custom event instead.',
+			'value_settings'         => array(
+				// Cost of Goods source + Meta CAPI net_revenue switch (read-only here; cog_source is changed in the PYS admin).
+				'cog_source'               => self::cogSource(),
+				'cog_source_available'     => self::cogCall( 'pys_cog_source_is_available' ),
+				'cog_addon_active'         => self::cogCall( 'isPixelCogActive' ),
+				'cog_wc_ready'             => self::cogCall( 'pys_cog_wc_is_ready' ),
+				'cog_wc_include_tax'       => self::toBool( $pys->getOption( 'woo_cog_wc_include_tax' ) ),
+				'cog_wc_include_shipping'  => self::toBool( $pys->getOption( 'woo_cog_wc_include_shipping' ) ),
+				'meta_net_revenue_enabled' => self::toBool( $pys->getOption( 'woo_meta_net_revenue_enabled' ) ),
+			),
+			'not_this_tool'         => 'This tool covers the GLOBAL WooCommerce funnel events (ViewContent = "Track product pages", etc.). It does NOT cover the per-platform CUSTOM-EVENT switchers "Track WooCommerce product data on single product pages" (track_single_woo_data) and "Track WooCommerce cart data when possible" (track_cart_woo_data) — those live INSIDE a custom event (get_custom_event / set_custom_event, per platform) and in Free are functional only for reddit (Pro for facebook/pinterest/bing/openai/google_analytics/gtm). If the user asked to enable one of THOSE "for facebook" etc., this is the wrong tool — do not report the ViewContent funnel state; go to the custom event instead.',
 		);
 	}
 
@@ -247,6 +261,22 @@ final class GetWooEventsConfigAbility extends AbstractAbility {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Active Cost of Goods source (`auto` | `pixel_cog` | `wc_cog`).
+	 */
+	private static function cogSource(): string {
+		$fn = '\\PixelYourSite\\pys_cog_get_source';
+		return function_exists( $fn ) ? (string) $fn() : 'auto';
+	}
+
+	/**
+	 * Boolean result of a Cost-of-Goods helper in the PixelYourSite namespace; false when missing.
+	 */
+	private static function cogCall( string $name ): bool {
+		$fn = '\\PixelYourSite\\' . $name;
+		return function_exists( $fn ) ? (bool) $fn() : false;
 	}
 
 	/**

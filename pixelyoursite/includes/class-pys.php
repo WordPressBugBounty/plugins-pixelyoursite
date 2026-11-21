@@ -651,6 +651,12 @@ final class PYS extends Settings implements Plugin {
         delete_user_meta( $user->ID, 'pys_just_login' );
         add_user_meta( $user->ID, 'pys_just_login', true, true );
 
+		// The account keeps the id this browser was using. Only the cookie's own
+		// value: the id this request resolved is the shared visitor key.
+		if ( ! empty( $_COOKIE['pbid'] ) ) {
+			pys_append_user_external_id( $user->ID, sanitize_text_field( wp_unslash( $_COOKIE['pbid'] ) ) );
+		}
+
 		if ( !pys_advanced_form_data_cookie_disabled() ) {
 			$user_persistence_data = get_persistence_user_data( $user->user_email, $user->first_name, $user->last_name, '' );
 			$userData = array(
@@ -1030,6 +1036,105 @@ final class PYS extends Settings implements Plugin {
         return (string) apply_filters( 'pys_client_ip', $ip, 'resolved' );
     }
 
+    /**
+     * Crawler user-agent substrings (matched case-insensitively). Shared by the
+     * server-side check and by the JS bot check (see get_js_bot_detection_options()).
+     *
+     * @return string[]
+     */
+    public function get_bot_user_agents() {
+        return array(
+            'YandexBot', 'YandexAccessibilityBot', 'YandexMobileBot', 'YandexDirectDyn', 'YandexScreenshotBot',
+            'YandexImages', 'YandexVideo', 'YandexVideoParser', 'YandexMedia', 'YandexBlogs',
+            'YandexFavicons', 'YandexWebmaster', 'YandexPagechecker', 'YandexImageResizer', 'YandexAdNet',
+            'YandexDirect', 'YaDirectFetcher', 'YandexCalendar', 'YandexSitelinks', 'YandexMetrika',
+            'YandexNews', 'YandexNewslinks', 'YandexCatalog', 'YandexAntivirus', 'YandexMarket',
+            'YandexVertis', 'YandexForDomain', 'YandexSpravBot', 'YandexSearchShop', 'YandexMedianaBot',
+            'YandexOntoDB', 'YandexOntoDBAPI', 'Googlebot', 'Googlebot-Image', 'Googlebot-News',
+            'Googlebot-Video', 'Mediapartners-Google', 'AdsBot-Google', 'Chrome-Lighthouse', 'Lighthouse',
+            'Mail.RU_Bot', 'bingbot', 'Accoona', 'ia_archiver', 'Ask Jeeves', 'OmniExplorer_Bot',
+            'W3C_Validator', 'WebAlta', 'YahooFeedSeeker', 'Yahoo!', 'Ezooms', 'Tourlentabot', 'MJ12bot',
+            'AhrefsBot', 'SearchBot', 'SiteStatus', 'Nigma.ru', 'Baiduspider', 'Statsbot', 'SISTRIX',
+            'AcoonBot', 'findlinks', 'proximic', 'OpenindexSpider', 'statdom.ru', 'Exabot', 'Spider',
+            'SeznamBot', 'oBot', 'C-T bot', 'Updownerbot', 'Snoopy', 'heritrix', 'Yeti', 'DomainVader',
+            'DCPbot', 'PaperLiBot', 'APIs-Google', 'AdsBot-Google-Mobile', 'AdsBot-Google-Mobile-Apps',
+            'FeedFetcher-Google', 'Google-Read-Aloud', 'DuplexWeb-Google', 'Storebot-Google',
+            'ClaudeBot', 'SeekportBot', 'GPTBot', 'Applebot',
+            'DuckDuckBot', 'Sogou', 'facebookexternalhit', 'Swiftbot', 'Slurp', 'CCBot', 'Go-http-client',
+            'Sogou Spider', 'Facebot', 'Alexa Crawler', 'Cốc Cốc Bot', 'Majestic-12', 'SemrushBot',
+            'DotBot', 'Qwantify', 'Pinterestbot', 'Pinterest/0.', 'GrapeshotCrawler', 'archive.org_bot', 'LinkpadBot',
+            'uptimebot', 'Wget', 'curl', 'Google-Structured-Data-Testing-Tool', 'Google-PageSpeed Insights',
+            'Google-Site-Verification', 'BingPreview', 'Slackbot', 'TelegramBot', 'DiscordBot', 'WhatsApp',
+            'RedditBot', 'Yahoo! Slurp', 'Tumblr/14.', 'PetalBot', 'FlipboardProxy', 'LinkedInBot',
+            'SkypeUriPreview', 'Google-Firebase-Storage', 'BitlyBot', 'FeedlyBot', 'AppleNewsBot',
+            'ZyBorg', 'ia_archiver-web.archive.org', 'Mediatoolkitbot', 'DeuSu', 'SMTBot', 'MegaIndex.ru',
+            'Seomoz', 'BLEXBot', 'YisouSpider', '360Spider', 'AddThis', 'TweetmemeBot', 'ContextAd Bot',
+            'Screaming Frog SEO Spider', 'Nutch', 'Baiduspider-image', 'Panscient.com', 'Twitterbot',
+            'YoudaoBot', 'OpenSiteExplorer', 'Linkfluence', 'YaK', 'ContentKing', 'Spinn3r', 'PhantomJS',
+            'HeadlessChrome', 'snapchat_preview', 'Snap URL Preview', 'Pingdom', 'Googlebot-Mobile', 'Barkrowler',
+            // CrawlerDetect does not flag a bare "meta-externalads/1.1".
+            'meta-externalads', 'meta-externalagent'
+        );
+    }
+
+    /**
+     * Bot detection settings printed in <head> (EventsManager::outputBotDetection()).
+     * Identical for every visitor, so it is safe in cached HTML.
+     *
+     * 'webdriver' => true treats navigator.webdriver === true as a bot. Sites whose
+     * own automated tests (Playwright/Selenium/Cypress) must fire pixels can set it
+     * to false through the pys_js_bot_detection_options filter.
+     *
+     * The filter result is normalised: a non-array falls back to the defaults,
+     * enabled/webdriver are bools (webdriver defaults to true when omitted),
+     * agents/excluded are lists (anything else becomes an empty list).
+     *
+     * @return array
+     */
+    public function get_js_bot_detection_options() {
+        $agents = array();
+        foreach ( $this->get_bot_user_agents() as $agent ) {
+            $agent = strtolower( trim( (string) $agent ) );
+            if ( $agent !== '' ) {
+                $agents[] = $agent;
+            }
+        }
+
+        $excluded = array();
+        $excludedOption = PYS()->getOption( 'exclude_blocked_robots' );
+        if ( is_array( $excludedOption ) ) {
+            foreach ( $excludedOption as $robot ) {
+                if ( ! is_scalar( $robot ) ) {
+                    continue;
+                }
+                $robot = strtolower( trim( (string) $robot ) );
+                if ( $robot !== '' ) {
+                    $excluded[] = $robot;
+                }
+            }
+        }
+
+        $options = array(
+            'enabled'  => (bool) PYS()->getOption( 'block_robot_enabled' ),
+            'agents'   => array_values( array_unique( $agents ) ),
+            'excluded' => array_values( array_unique( $excluded ) ),
+            'webdriver' => true,
+        );
+
+        $filtered = apply_filters( 'pys_js_bot_detection_options', $options );
+        if ( ! is_array( $filtered ) ) {
+            $filtered = $options;
+        }
+
+        $filtered['enabled']   = ! empty( $filtered['enabled'] );
+        $filtered['webdriver'] = ! array_key_exists( 'webdriver', $filtered ) || (bool) $filtered['webdriver'];
+        foreach ( array( 'agents', 'excluded' ) as $key ) {
+            $filtered[ $key ] = ( isset( $filtered[ $key ] ) && is_array( $filtered[ $key ] ) ) ? array_values( $filtered[ $key ] ) : array();
+        }
+
+        return $filtered;
+    }
+
     function is_user_agent_bot(){
         if (!PYS()->getOption('block_robot_enabled')) {
             return false;
@@ -1049,38 +1154,7 @@ final class PYS extends Settings implements Plugin {
                 }
             }
 
-            $options = array(
-                'YandexBot', 'YandexAccessibilityBot', 'YandexMobileBot', 'YandexDirectDyn', 'YandexScreenshotBot',
-                'YandexImages', 'YandexVideo', 'YandexVideoParser', 'YandexMedia', 'YandexBlogs',
-                'YandexFavicons', 'YandexWebmaster', 'YandexPagechecker', 'YandexImageResizer', 'YandexAdNet',
-                'YandexDirect', 'YaDirectFetcher', 'YandexCalendar', 'YandexSitelinks', 'YandexMetrika',
-                'YandexNews', 'YandexNewslinks', 'YandexCatalog', 'YandexAntivirus', 'YandexMarket',
-                'YandexVertis', 'YandexForDomain', 'YandexSpravBot', 'YandexSearchShop', 'YandexMedianaBot',
-                'YandexOntoDB', 'YandexOntoDBAPI', 'Googlebot', 'Googlebot-Image', 'Googlebot-News',
-                'Googlebot-Video', 'Mediapartners-Google', 'AdsBot-Google', 'Chrome-Lighthouse', 'Lighthouse',
-                'Mail.RU_Bot', 'bingbot', 'Accoona', 'ia_archiver', 'Ask Jeeves', 'OmniExplorer_Bot',
-                'W3C_Validator', 'WebAlta', 'YahooFeedSeeker', 'Yahoo!', 'Ezooms', 'Tourlentabot', 'MJ12bot',
-                'AhrefsBot', 'SearchBot', 'SiteStatus', 'Nigma.ru', 'Baiduspider', 'Statsbot', 'SISTRIX',
-                'AcoonBot', 'findlinks', 'proximic', 'OpenindexSpider', 'statdom.ru', 'Exabot', 'Spider',
-                'SeznamBot', 'oBot', 'C-T bot', 'Updownerbot', 'Snoopy', 'heritrix', 'Yeti', 'DomainVader',
-                'DCPbot', 'PaperLiBot', 'APIs-Google', 'AdsBot-Google-Mobile', 'AdsBot-Google-Mobile-Apps',
-                'FeedFetcher-Google', 'Google-Read-Aloud', 'DuplexWeb-Google', 'Storebot-Google',
-                'ClaudeBot', 'SeekportBot', 'GPTBot', 'Applebot',
-                'DuckDuckBot', 'Sogou', 'facebookexternalhit', 'Swiftbot', 'Slurp', 'CCBot', 'Go-http-client',
-                'Sogou Spider', 'Facebot', 'Alexa Crawler', 'Cốc Cốc Bot', 'Majestic-12', 'SemrushBot',
-                'DotBot', 'Qwantify', 'Pinterestbot', 'Pinterest/0.', 'GrapeshotCrawler', 'archive.org_bot', 'LinkpadBot',
-                'uptimebot', 'Wget', 'curl', 'Google-Structured-Data-Testing-Tool', 'Google-PageSpeed Insights',
-                'Google-Site-Verification', 'BingPreview', 'Slackbot', 'TelegramBot', 'DiscordBot', 'WhatsApp',
-                'RedditBot', 'Yahoo! Slurp', 'Tumblr/14.', 'PetalBot', 'FlipboardProxy', 'LinkedInBot',
-                'SkypeUriPreview', 'Google-Firebase-Storage', 'BitlyBot', 'FeedlyBot', 'AppleNewsBot',
-                'ZyBorg', 'ia_archiver-web.archive.org', 'Mediatoolkitbot', 'DeuSu', 'SMTBot', 'MegaIndex.ru',
-                'Seomoz', 'BLEXBot', 'YisouSpider', '360Spider', 'AddThis', 'TweetmemeBot', 'ContextAd Bot',
-                'Screaming Frog SEO Spider', 'Nutch', 'Baiduspider-image', 'Panscient.com', 'Twitterbot',
-                'YoudaoBot', 'OpenSiteExplorer', 'Linkfluence', 'YaK', 'ContentKing', 'Spinn3r', 'PhantomJS',
-                'HeadlessChrome', 'snapchat_preview', 'Snap URL Preview', 'Pingdom', 'Googlebot-Mobile', 'Barkrowler',
-                // CrawlerDetect does not flag a bare "meta-externalads/1.1".
-                'meta-externalads', 'meta-externalagent'
-            );
+            $options = $this->get_bot_user_agents();
 
             foreach($options as $row) {
                 if (stripos($userAgent, strtolower($row)) !== false) {
@@ -1603,7 +1677,7 @@ final class PYS extends Settings implements Plugin {
             // allow 3rd party plugins to by-pass option value
             $core_options['gdpr_ajax_enabled'] = apply_filters( 'pys_gdpr_ajax_enabled', $gdpr_ajax_enabled );
 
-	        if (isPixelCogActive() ) {
+	        if ( pys_cog_source_is_available() ) {
 
 		        if (isset($core_options['woo_purchase_value_option'])) {
                     $core_options = $this->updateDefaultNoCogOption($core_options,'woo_purchase_value_option','woo_purchase_value_cog');
@@ -1637,6 +1711,7 @@ final class PYS extends Settings implements Plugin {
             if ( class_exists( 'PixelYourSite\FeedIdCheck' ) ) {
                 FeedIdCheck::refreshState();
             }
+            PurchaseReportCache::onSettingsSaved();
 
         }
 
@@ -1722,6 +1797,12 @@ final class PYS extends Settings implements Plugin {
     }
 
     function restoreSettingsAfterCog() {
+
+        // The add-on is still active while its deactivation hook runs (and
+        // isPixelCogActive() is cached), so decide from the source setting.
+        if ( ! pys_cog_restore_needed_after_addon_deactivation( pys_cog_get_source(), pys_cog_wc_is_ready() ) ) {
+            return;
+        }
 
         $params = array();
         $oldPurchase = $this->getOption("woo_purchase_value_cog");
@@ -1866,6 +1947,23 @@ final class PYS extends Settings implements Plugin {
     public function get_wp_cookie_domain() {
         return pys_cookie_domain();
     }
+	/**
+	 * Keep the order's id on the account, but only when it is the browser's own:
+	 * it must equal this request's pbid cookie. Without a cookie the order holds
+	 * the server's no-cookie fallback key, which is shared and names nobody.
+	 */
+	private function appendCheckoutExternalId( $user_id, $external_id ) {
+		if ( empty( $_COOKIE['pbid'] ) || '' === (string) $external_id ) {
+			return;
+		}
+
+		$cookie = sanitize_text_field( wp_unslash( $_COOKIE['pbid'] ) );
+
+		if ( '' !== $cookie && $cookie === (string) $external_id ) {
+			pys_append_user_external_id( $user_id, $external_id );
+		}
+	}
+
 	public function saveExternalIDInOrder($order_param) {
 		// Determine whether the WC_Order object or order ID is passed
 		if ( $order_param instanceof WC_Order ) {
@@ -1882,6 +1980,7 @@ final class PYS extends Settings implements Plugin {
 		if (isWooCommerceVersionGte('3.0.0') && !empty($order)) {
 			// WooCommerce >= 3.0
 			$order->update_meta_data("external_id", $external_id);
+			$this->appendCheckoutExternalId( $order->get_user_id(), $external_id );
 			$order->save();
 		} elseif ( ! empty( $order_param ) ) {
 			// WooCommerce < 3.0
@@ -1899,6 +1998,9 @@ final class PYS extends Settings implements Plugin {
 
         if ( ! empty( $external_id ) ) {
             edd_update_payment_meta( $payment_id, 'external_id', $external_id );
+
+            $payment_user = (int) edd_get_payment_user_id( $payment_id );
+            $this->appendCheckoutExternalId( $payment_user, $external_id );
         }
     }
 }

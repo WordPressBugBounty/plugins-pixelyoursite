@@ -35,6 +35,90 @@ function pys_is_admin_page_request() {
 }
 
 /**
+ * True when the current request is one where the buyer is present: the order's
+ * thank-you or order-pay page, the checkout submission, or a PYS event call.
+ *
+ * Everything else - wp-admin, cron, WP-CLI, gateway callbacks (wc-api), other
+ * REST routes and other admin-ajax actions - runs in someone else's request, so
+ * its cookies and current user say nothing about the buyer.
+ *
+ * @param string        $type        'woo' | 'edd'
+ * @param \WC_Order|int $order_or_id
+ * @return bool
+ */
+function pys_is_buyer_request( $type, $order_or_id ) {
+	if ( pys_is_admin_page_request() ) {
+		return false;
+	}
+	if ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) {
+		return false;
+	}
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		return false;
+	}
+
+	$uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+
+	if ( false !== strpos( $uri, 'wc-api' ) || isset( $_REQUEST['wc-api'] ) ) {
+		return false;
+	}
+
+	// Our own routes live under /wp-json/pys*/; WooCommerce's Store API checkout
+	// is the buyer submitting the form. rest_route is the same thing without
+	// pretty permalinks.
+	$route = isset( $GLOBALS['wp']->query_vars['rest_route'] ) ? (string) $GLOBALS['wp']->query_vars['rest_route'] : '';
+	if ( '' === $route && isset( $_GET['rest_route'] ) ) {
+		$route = (string) $_GET['rest_route'];
+	}
+	if ( '' === $route && preg_match( '#/wp-json(/[^?]*)#', $uri, $m ) ) {
+		$route = $m[1];
+	}
+	if ( '' !== $route ) {
+		$route = '/' . ltrim( $route, '/' );
+		return 0 === strpos( $route, '/pys' ) || 0 === strpos( $route, '/wc/store/v1/checkout' );
+	}
+	if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+		return false;
+	}
+
+	$wc_ajax = isset( $_GET['wc-ajax'] ) ? (string) $_GET['wc-ajax'] : '';
+	if ( '' === $wc_ajax && preg_match( '/[?&]wc-ajax=([^&]*)/', $uri, $m ) ) {
+		$wc_ajax = $m[1];
+	}
+	if ( '' !== $wc_ajax ) {
+		return 'checkout' === $wc_ajax;
+	}
+
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		$action = isset( $_REQUEST['action'] ) ? (string) $_REQUEST['action'] : '';
+		return in_array( $action, array( 'pys_api_event', 'pys_openai_api_event', 'pys_pinterest_api_event', 'edd_process_checkout' ), true );
+	}
+
+	$order_id = is_object( $order_or_id ) ? (int) $order_or_id->get_id() : (int) $order_or_id;
+	if ( $order_id <= 0 ) {
+		return false;
+	}
+
+	if ( 'edd' === $type ) {
+		// Same resolution the EDD purchase build uses.
+		if ( ! function_exists( 'edd_is_success_page' ) || ! edd_is_success_page()
+			|| ! function_exists( 'PixelYourSite\getEddPaymentKey' ) || ! function_exists( 'edd_get_purchase_id_by_key' ) ) {
+			return false;
+		}
+		return (int) edd_get_purchase_id_by_key( getEddPaymentKey() ) === $order_id;
+	}
+
+	if ( function_exists( 'is_checkout_pay_page' ) && is_checkout_pay_page() ) {
+		return (int) get_query_var( 'order-pay' ) === $order_id;
+	}
+	if ( function_exists( 'is_order_received_page' ) && PYS()->woo_is_order_received_page() ) {
+		return function_exists( 'PixelYourSite\wooGetOrderIdFromRequest' ) && (int) wooGetOrderIdFromRequest() === $order_id;
+	}
+
+	return false;
+}
+
+/**
  * The IP and user agent for a server event, and whether the request's own
  * cookies may be read for it.
  *

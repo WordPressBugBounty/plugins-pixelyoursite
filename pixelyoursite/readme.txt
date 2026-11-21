@@ -4,7 +4,7 @@ Tags: Meta Pixel, Meta Conversion API, Google Analytics 4, Google Tag Manager, O
 Requires at least: 3.0.1
 Requires PHP: 5.4
 Tested up to: 7.1
-Stable tag: 11.4.5
+Stable tag: 11.4.7
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -324,6 +324,45 @@ NO, absolutely not! We don't track any type of data about your website. We simpl
 
 
 == Changelog ==
+
+= PixelYourSite 11.4.7 =
+
+21 October 20226
+
+* New: Purchase tracking for WooCommerce and Easy Digital Downloads. Each order shows whether the thank-you page sent the Purchase and to which tags, with the landing page, traffic source, UTMs and ad click. The admin orders list gets a Purchase column and a summary, and there is a dashboard widget and an optional weekly or monthly summary email. It replaces the old PixelYourSite box on the order page.
+
+* New: Meta Conversions API Purchase events can now include net_revenue (the order's profit), so Meta can optimise for profit. It is sent only through the API, never by the browser pixel, and only when every product in the order has a cost.
+
+* New: A new Cost of Goods source, "PixelYourSite Cost of Goods Plugin & WooCommerce", is now the default. It uses the PixelYourSite Cost of Goods values first and falls back to WooCommerce Cost of Goods. Sites set to the PixelYourSite Cost of Goods plugin are moved to it.
+
+* New: Warnings when the Meta or OpenAI API is not set up, with links to setup videos. The API switch is now on by default, and nothing is sent until a token is added. The one-time "configure Meta CAPI" email and notice are removed.
+
+* New: When PixelYourSite sees an order as "direct" with no UTMs, it now uses WooCommerce's own order attribution for the last visit (for example, Google / cpc from a gclid click).
+
+* Improvement: Bot detection now also runs in the browser, so crawlers are skipped on cached pages too. They no longer load the tracking scripts or call the event endpoints.
+
+* Improvement: Faster WooCommerce product grids. Each product card is built once per page instead of once per pixel.
+
+* Improvement: OpenAI events can send up to 20 external IDs for a customer. Customer accounts now remember the browser IDs they were seen under.
+
+* Improvement: "Price minus Cost of Goods" Purchase values now count a product without a cost at zero cost, so the value is never 0 just because one product has no cost.
+
+* Fix: Server events sent from the browser (REST and AJAX) to Meta and OpenAI now respect consent, and so does the Meta Remove from Cart server event.
+
+* Fix: Purchase events built in wp-admin, by cron or by a payment gateway callback no longer use the admin's profile or the request's cookies as customer data.
+
+* Fix: On sites where WP Rocket delays jQuery, Meta and OpenAI server events were sent through admin-ajax.php instead of the REST API.
+
+* Fix: 401 "rest_forbidden" on the Meta and OpenAI API endpoints on Polylang and WPML sites with a different domain per language.
+
+* Fix: OpenAI rejected custom events such as Refund (400: data.type not supported for type custom).
+
+* Fix: "Price minus Cost of Goods" sent the wrong Add to Cart and View Content value for simple products whose cost type was empty.
+
+* Fix: "Price minus Cost of Goods" could stop with an error when the source was set to the PixelYourSite Cost of Goods plugin.
+
+* Cleaning up code. 
+
 
 = PixelYourSite 11.4.5 =
 

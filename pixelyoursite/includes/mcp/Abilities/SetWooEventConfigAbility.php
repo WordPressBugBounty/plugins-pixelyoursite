@@ -6,6 +6,9 @@
  * whitelist; unknown keys ignored. Two-step confirm (call without `confirm`
  * for a preview, then again with `confirm: true`).
  *
+ * Also writable: the global `meta_net_revenue_enabled` switch (Meta Conversions
+ * API Purchase `net_revenue`; core only, boolean).
+ *
  * Free scope: no lifecycle / POAS / subscriptions / WPML / custom_field source /
  * value settings / per-platform event matrix (all Pro).
  *
@@ -45,6 +48,11 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 		'add_to_cart_on_checkout_page' => 'woo_add_to_cart_on_checkout_page',
 	);
 
+	/** Global (core-only, boolean) switch args => core option key. */
+	private const GLOBAL_SWITCH_ARGS = array(
+		'meta_net_revenue_enabled' => 'woo_meta_net_revenue_enabled',
+	);
+
 	/** Per-platform content_id args => platform option key. */
 	private const CONTENT_ID_ARGS = array(
 		'content_id_source'        => 'woo_content_id',
@@ -77,7 +85,7 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 	 * @return string
 	 */
 	public static function description(): string {
-		return 'Writes a partial update to WooCommerce event configuration (PixelYourSite Free). Strict whitelist — keys not listed are ignored. Writable: GLOBAL funnel master toggles (`view_content`, `view_category`, `add_to_cart`, `initiate_checkout`, `purchase`, `view_cart`, `remove_from_cart` — master on/off for the event across ALL platforms). These 7 are the ONLY WooCommerce events in Free; anything else the user names — ViewItemList / "product list performance", affiliate button clicks, PayPal Standard clicks, CheckoutSteps / checkout progress, SelectContent, AdvancePurchase — is a Pro WooCommerce event and is NOT toggleable here (say so plainly; do not offer a custom event as a substitute for a click-based Pro event). Also writable: AddToCart firing points (`add_to_cart_on_button_click`, `add_to_cart_on_cart_page`, `add_to_cart_on_checkout_page`); and per-platform content_id (`content_id_source` [`product_id` | `product_sku`], `content_id_prefix`, `content_id_suffix`). content_id is stored PER-PLATFORM: by default the content_id args write to every active platform; pass `content_id_platform` (a platform slug) to scope them to ONE. When changing `content_id_source`, first ASK the user whether the platform catalog feed uses a prefix/suffix and pass `content_id_prefix`/`content_id_suffix` in the same call — mismatched IDs break dynamic ads. Lifecycle events, POAS, subscriptions, the `custom_field` content-ID source, the Transaction/Order ID prefix (`woo_order_id_prefix` — the prefix for the ORDER id in Purchase events; NOT the same as content_id_prefix, which is for product ids), and Event Value Settings (tax/shipping/fees) are PixelYourSite Pro — NOT writable here (say plainly it requires Pro; do not claim the setting "does not exist"). **Two-step write (server-enforced):** call FIRST without `confirm` to get a `confirmation_required` preview with the current→new diff; show it to the user, get their go-ahead, then call again with `confirm: true` and the same args. A call without `confirm: true` never writes. Pass `mcp_note`.';
+		return 'Writes a partial update to WooCommerce event configuration (PixelYourSite Free). Strict whitelist — keys not listed are ignored. Writable: GLOBAL funnel master toggles (`view_content`, `view_category`, `add_to_cart`, `initiate_checkout`, `purchase`, `view_cart`, `remove_from_cart` — master on/off for the event across ALL platforms). These 7 are the ONLY WooCommerce events in Free; anything else the user names — ViewItemList / "product list performance", affiliate button clicks, PayPal Standard clicks, CheckoutSteps / checkout progress, SelectContent, AdvancePurchase — is a Pro WooCommerce event and is NOT toggleable here (say so plainly; do not offer a custom event as a substitute for a click-based Pro event). Also writable: AddToCart firing points (`add_to_cart_on_button_click`, `add_to_cart_on_cart_page`, `add_to_cart_on_checkout_page`); the global `meta_net_revenue_enabled` switch (Meta Conversions API Purchase `net_revenue` = the order profit; boolean, core only; its current state and the cost source `cog_source` [`auto` | `pixel_cog` | `wc_cog`, changed in the PixelYourSite admin, not writable here] are in get_woo_events_config `value_settings`); and per-platform content_id (`content_id_source` [`product_id` | `product_sku`], `content_id_prefix`, `content_id_suffix`). content_id is stored PER-PLATFORM: by default the content_id args write to every active platform; pass `content_id_platform` (a platform slug) to scope them to ONE. When changing `content_id_source`, first ASK the user whether the platform catalog feed uses a prefix/suffix and pass `content_id_prefix`/`content_id_suffix` in the same call — mismatched IDs break dynamic ads. Lifecycle events, POAS, subscriptions, the `custom_field` content-ID source, the Transaction/Order ID prefix (`woo_order_id_prefix` — the prefix for the ORDER id in Purchase events; NOT the same as content_id_prefix, which is for product ids), and Event Value Settings (tax/shipping/fees) are PixelYourSite Pro — NOT writable here (say plainly it requires Pro; do not claim the setting "does not exist"). **Two-step write (server-enforced):** call FIRST without `confirm` to get a `confirmation_required` preview with the current→new diff; show it to the user, get their go-ahead, then call again with `confirm: true` and the same args. A call without `confirm: true` never writes. Pass `mcp_note`.';
 	}
 
 	/**
@@ -102,6 +110,7 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 				'add_to_cart_on_button_click'  => $bool + array( 'description' => 'A firing POINT of the AddToCart event: fire it when the add-to-cart button is clicked. NOT a separate event.' ),
 				'add_to_cart_on_cart_page'     => $bool + array( 'description' => 'A firing POINT of the AddToCart event: fire it on the cart page. NOT the ViewCart / "Track cart pages" event — to disable cart-page tracking use `view_cart`, not this.' ),
 				'add_to_cart_on_checkout_page' => $bool + array( 'description' => 'Fire AddToCart on the checkout page.' ),
+				'meta_net_revenue_enabled'     => $bool + array( 'description' => 'GLOBAL switch (core `woo_meta_net_revenue_enabled`, default on): send the order profit as `net_revenue` in the Meta Conversions API Purchase `custom_data` (server event only, never the browser Pixel; requires Meta CAPI and a Cost of Goods source). Omitted automatically when any product has no cost, the profit is not positive, or the event does not cover the whole order. The cost source (`cog_source`) is changed in the PixelYourSite admin, not here.' ),
 				'content_id_source'            => array( 'type' => 'string', 'enum' => array( 'product_id', 'product_sku' ), 'description' => 'Content-ID source. `product_id` = the WooCommerce product/variation post ID (always present). `product_sku` = the product SKU (blank for products without one → they drop from catalog matching). The `custom_field` source is Pro-only.' ),
 				'content_id_prefix'            => array( 'type' => 'string', 'description' => 'Content-ID prefix (must match the platform catalog feed). Pass an empty string to clear.' ),
 				'content_id_suffix'            => array( 'type' => 'string', 'description' => 'Content-ID suffix (must match the platform catalog feed). Pass an empty string to clear.' ),
@@ -192,6 +201,16 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 		}
 		// AddToCart firing-point sub-options (not events — no availability gate).
 		foreach ( self::ADD_TO_CART_ARGS as $arg => $key ) {
+			if ( !array_key_exists( $arg, $input ) ) {
+				continue;
+			}
+			$new             = (bool) $input[ $arg ];
+			$coreNew[ $key ] = $new;
+			$pending[ $arg ] = array( 'current' => self::toBool( $pys->getOption( $key ) ), 'new' => $new );
+		}
+
+		// Global switches (core only; not events, no availability gate).
+		foreach ( self::GLOBAL_SWITCH_ARGS as $arg => $key ) {
 			if ( !array_key_exists( $arg, $input ) ) {
 				continue;
 			}
@@ -317,7 +336,7 @@ final class SetWooEventConfigAbility extends AbstractWriteAbility {
 		if ( empty( $coreNew ) && empty( $platformWrite ) && empty( $togglePlan ) ) {
 			return new \WP_Error(
 				'pys_mcp_woo_no_args',
-				'No writable WooCommerce config args provided (or platform_event_toggles targeted only platforms that do not register the event). Pass a funnel toggle, an add_to_cart trigger, a content_id field, variable_as_simple, wpml_unified_id, or platform_event_toggles.',
+				'No writable WooCommerce config args provided (or platform_event_toggles targeted only platforms that do not register the event). Pass a funnel toggle, an add_to_cart trigger, meta_net_revenue_enabled, a content_id field, variable_as_simple, wpml_unified_id, or platform_event_toggles.',
 				array( 'status' => 400 )
 			);
 		}

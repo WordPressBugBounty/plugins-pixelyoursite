@@ -40,6 +40,7 @@ final class ArgKeyMapper {
 			// Subscriptions / POAS.
 			'track_subscriptions'           => 'woo_track_subscriptions',
 			'poas_enabled'                  => 'woo_poas_enabled',
+			'meta_net_revenue_enabled'      => 'woo_meta_net_revenue_enabled',
 			'purchase'                      => 'woo_purchase_enabled',
 			'view_content'                  => 'woo_view_content_enabled',
 			'view_category'                 => 'woo_view_category_enabled',

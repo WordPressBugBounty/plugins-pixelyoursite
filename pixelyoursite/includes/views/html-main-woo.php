@@ -1002,72 +1002,7 @@ use PixelYourSite\Facebook\Helpers;
         </div>
     </div>
     <!-- Native Data Tracking and Reporting settings-->
-    <div class="card card-style5">
-        <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <h4 class="secondary_heading_type2">Native Data Tracking and Reporting</h4>
-            </div>
-
-            <?php cardCollapseSettings(); ?>
-        </div>
-        <div class="card-body">
-            <div class="gap-24">
-                <div>
-                    <div class="d-flex align-items-center mb-4">
-                        <?php PYS()->render_switcher_input( 'woo_enabled_save_data_to_orders' ); ?>
-                        <h4 class="switcher-label secondary_heading">Enable WooCommerce Reports</h4>
-                    </div>
-
-                    <p class="text-gray">
-                        Save the <i>landing page, UTMs, client's browser's time, day, and month, the number of orders,
-                            lifetime value, and average order</i>. You can view this data when you open an order, or on
-                        the WooCommerce <a
-                                href="<?php echo esc_url( admin_url( 'admin.php?page=pixelyoursite_woo_reports' ) ); ?>"
-                                class="link">Reports page</a>
-                    </p>
-                </div>
-
-                <div>
-                    <div class="d-flex align-items-center mb-4">
-                        <?php PYS()->render_switcher_input( 'woo_add_enrich_to_admin_email' ); ?>
-                        <h4 class="switcher-label secondary_heading">Send reports data to the New Order email</h4>
-                    </div>
-
-                    <p class="text-gray">
-                        You will see the landing page, UTMs, client's browser's time, day, and month, the number of
-                        orders,
-                        lifetime value, and average order in your WooCommerce's default "New Order" email.
-                        Your clients will NOT get this info.
-                    </p>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center mb-4">
-                        <?php PYS()->render_switcher_input( 'woo_enabled_display_data_to_orders' ); ?>
-                        <h4 class="switcher-label secondary_heading">Display the tracking data on the order's page</h4>
-                    </div>
-
-                    <p class="text-gray">
-                        Show the <i>landing page, traffic source,</i> and <i>UTMs</i> on the order's edit page.
-                    </p>
-                </div>
-                <div class="pro-feature-container d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <div class="d-flex align-items-center flex-with-badge">
-                                <?php renderDummySwitcher( false); ?>
-                                <h4 class="switcher-label secondary_heading">Display orders data on the user's profile page</h4>
-                            </div>
-                        </div>
-
-                        <p class="text-gray">
-                            Display <i>the number of orders, lifetime value, and average order</i>.
-                        </p>
-                    </div>
-                    <?php renderProBadge(); ?>
-                </div>
-            </div>
-        </div>
-    </div>
+    <?php PurchaseReportAdmin::renderSettingsCard( 'woo' ); ?>
     <!-- General settings-->
     <div class="card card-style5">
         <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
@@ -1139,7 +1074,7 @@ use PixelYourSite\Facebook\Helpers;
     <div id="pys-cog-section" class="card card-style5">
         <div class="card-header card-header-style3 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <h4 class="secondary_heading_type2"><?php esc_html_e( 'Cost of Goods', 'pys' ); ?></h4>
+                <h4 class="secondary_heading_type2"><?php esc_html_e( 'Cost of Goods and Profit', 'pys' ); ?></h4>
             </div>
             <?php cardCollapseSettings(); ?>
         </div>
@@ -1152,24 +1087,36 @@ use PixelYourSite\Facebook\Helpers;
                         <label class="primary_heading"><?php esc_html_e( 'Cost of Goods source:', 'pys' ); ?></label>
                     </div>
                     <div class="radio-inputs-wrap">
+                        <?php PYS()->render_radio_input( 'woo_cog_source', 'auto', __( 'PixelYourSite Cost of Goods Plugin & WooCommerce (we will prioritise our plugin)', 'pys' ) ); ?>
                         <?php PYS()->render_radio_input( 'woo_cog_source', 'pixel_cog', 'PixelYourSite Cost of Goods plugin' ); ?>
                         <?php PYS()->render_radio_input( 'woo_cog_source', 'wc_cog', 'WooCommerce Cost of Goods (native)' ); ?>
                     </div>
                 </div>
 
+                <?php $cogMode = pys_cog_get_source(); ?>
                 <?php if ( ! isPixelCogActive() ) : ?>
-                    <p class="pys-cog-pixel-warning text-gray" style="color: #d63638; display: none;">
+                    <p class="pys-cog-pixel-warning text-gray" style="color: #d63638;<?php echo $cogMode === 'pixel_cog' ? '' : ' display: none;'; ?>">
                         <?php esc_html_e( 'The PixelYourSite Cost of Goods plugin is not active. Please install and activate it, or switch to WooCommerce native Cost of Goods.', 'pys' ); ?>
                     </p>
+                    <?php if ( ! pys_cog_wc_is_ready() ) : ?>
+                        <p class="pys-cog-auto-warning text-gray" style="color: #d63638;<?php echo $cogMode === 'auto' ? '' : ' display: none;'; ?>">
+                            <?php esc_html_e( 'No Cost of Goods source is available. Install the PixelYourSite Cost of Goods plugin or enable WooCommerce Cost of Goods.', 'pys' ); ?>
+                        </p>
+                    <?php endif; ?>
                 <?php endif; ?>
 
-                <div class="pys-cog-wc-options" style="display: none;">
+                <div class="pys-cog-wc-options"<?php echo in_array( $cogMode, array( 'auto', 'wc_cog' ), true ) ? '' : ' style="display: none;"'; ?>>
+                    <?php if ( isPixelCogActive() && ! pys_cog_wc_is_ready() ) : ?>
+                        <p class="pys-cog-auto-only text-gray"<?php echo $cogMode === 'auto' ? '' : ' style="display: none;"'; ?>>
+                            <?php esc_html_e( 'WooCommerce Cost of Goods is not available — only PixelYourSite Cost of Goods values will be used.', 'pys' ); ?>
+                        </p>
+                    <?php endif; ?>
                     <?php if ( ! isWcCogAvailable() ) : ?>
-                        <p class="text-gray" style="color: #d63638;">
+                        <p class="pys-cog-wc-only text-gray" style="color: #d63638;<?php echo $cogMode === 'wc_cog' ? '' : ' display: none;'; ?>">
                             <?php esc_html_e( 'WooCommerce Cost of Goods requires WooCommerce 10.3 or later. Please update WooCommerce.', 'pys' ); ?>
                         </p>
                     <?php elseif ( ! isWcCogFeatureEnabled() ) : ?>
-                        <p class="text-gray" style="color: #d63638;">
+                        <p class="pys-cog-wc-only text-gray" style="color: #d63638;<?php echo $cogMode === 'wc_cog' ? '' : ' display: none;'; ?>">
                             <?php
                             printf(
                                     wp_kses(
@@ -1183,18 +1130,22 @@ use PixelYourSite\Facebook\Helpers;
                     <?php else : ?>
                         <div>
                             <?php PYS()->render_checkbox_input( 'woo_cog_wc_include_tax',
-                                    esc_html__( 'Include tax in profit calculation', 'pys' ) ); ?>
+                                    esc_html__( 'Include tax in profit calculation for WooCommerce source', 'pys' ) ); ?>
                         </div>
                         <div style="margin-top: 12px;">
                             <?php PYS()->render_checkbox_input( 'woo_cog_wc_include_shipping',
-                                    esc_html__( 'Include shipping in profit calculation', 'pys' ) ); ?>
+                                    esc_html__( 'Include shipping in profit calculation for WooCommerce source', 'pys' ) ); ?>
+                            <p class="pys-cog-auto-only text-gray"<?php echo $cogMode === 'auto' ? '' : ' style="display: none;"'; ?>>
+                                <?php esc_html_e( 'When the PixelYourSite Cost of Goods plugin is active, its shipping cost settings are used.', 'pys' ); ?>
+                            </p>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <p class="text-gray">
-                    <?php esc_html_e( 'Select the source for Cost of Goods data. This setting applies to all WooCommerce events that support profit as the event value, and to the ConversionProfit event.', 'pys' ); ?>
+                    <?php esc_html_e( 'Select the source for Cost of Goods data. This setting applies to all WooCommerce events that support profit as the event value and to the Purchase event net_revenue parameter sent to Meta.', 'pys' ); ?>
                 </p>
+
 
             </div>
         </div>
@@ -1439,6 +1390,26 @@ use PixelYourSite\Facebook\Helpers;
                         <div>
                             <?php PYS()->renderValueOptionsBlock( 'woo_purchase', false ); ?>
                         </div>
+
+                        <div>
+                            <div class="d-flex align-items-center">
+                                <?php PYS()->render_switcher_input( 'woo_meta_net_revenue_enabled' ); ?>
+                                <h4 class="switcher-label secondary_heading"><?php esc_html_e( 'Send net_revenue to Meta using API', 'pys' ); ?></h4>
+                            </div>
+                            <p class="text-gray">
+                                <?php esc_html_e( 'Net revenue helps Meta optimise your ads for products that generate higher profits for your business. This requires Cost of Goods (COG) data, which you can configure using our WooCommerce Cost of Goods plugin or WooCommerce’s built-in COG option.', 'pys' ); ?>
+                            </p>
+                            <p class="text-gray">
+                                <?php esc_html_e( 'Net revenue is sent exclusively through Meta Conversions API events, ensuring that the value is not exposed to browser-based pixel testing tools.', 'pys' ); ?>
+                            </p>
+                            <?php if ( ! Facebook()->enabled() || ! Facebook()->isServerApiEnabled() ) : ?>
+                                <p class="text-gray">
+                                    <?php esc_html_e( 'Requires the Meta Conversions API.', 'pys' ); ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="line"></div>
 
                         <div class="d-flex pro-feature-container">
                             <?php renderDummyCheckbox( 'Fire the event only once for each order (disable when testing)', true ); ?>

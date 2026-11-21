@@ -1441,7 +1441,7 @@ abstract class Settings {
                     <?php !$disabled ? $this->render_radio_input( $context . '_value_option', 'price', $priceText ) : renderDummyRadioInput($priceText); ?>
 
                     <?php if ( strpos( $context, 'edd_' ) !== 0 ) { ?>
-                        <?php if ( !isPixelCogActive() ) { ?>
+                        <?php if ( ! pys_cog_source_is_available() ) { ?>
                             <?php !$disabled ? $this->render_radio_input( $context . '_value_option', 'cog', 'Price minus Cost of Goods.', true, true ): renderDummyRadioInput('Price minus Cost of Goods'); ?>
                         <?php } else { ?>
                             <?php !$disabled ? $this->render_radio_input( $context . '_value_option', 'cog', 'Price minus Cost of Goods', false ): renderDummyRadioInput('Price minus Cost of Goods'); ?>

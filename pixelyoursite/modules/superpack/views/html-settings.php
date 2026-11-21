@@ -41,7 +41,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <div class="gap-24">
                     <div>
                         <p class="text-gray mb-24">
-                            <?php _e('Add support for multiple pixels (Meta, Google, TikTok), enable pixel display conditions, and add extra controls for automated events for each pixel.', 'pys'); ?>
+                            <?php _e('Add support for multiple pixels (Meta, Google), enable pixel display conditions, and add extra controls for automated events for each pixel.', 'pys'); ?>
                         </p>
                         <div class="d-flex align-items-center">
                             <?php renderDummySwitcher(); ?>

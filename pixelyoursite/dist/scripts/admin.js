@@ -88,12 +88,28 @@ jQuery(document).ready(function($) {
 
     function toggleCogSourceOption() {
         var val = $( 'input[name="pys[core][woo_cog_source]"]:checked' ).val();
-        if ( val === "wc_cog" ) {
+        if ( val === "wc_cog" || val === "auto" ) {
             $( ".pys-cog-wc-options" ).slideDown( 400 );
-            $( ".pys-cog-pixel-warning" ).slideUp( 400 );
         } else {
             $( ".pys-cog-wc-options" ).slideUp( 400 );
+        }
+        // Per-mode notes inside the WooCommerce block and the per-mode warnings.
+        if ( val === "auto" ) {
+            $( ".pys-cog-auto-only" ).slideDown( 400 );
+            $( ".pys-cog-auto-warning" ).slideDown( 400 );
+        } else {
+            $( ".pys-cog-auto-only" ).slideUp( 400 );
+            $( ".pys-cog-auto-warning" ).slideUp( 400 );
+        }
+        if ( val === "wc_cog" ) {
+            $( ".pys-cog-wc-only" ).slideDown( 400 );
+        } else {
+            $( ".pys-cog-wc-only" ).slideUp( 400 );
+        }
+        if ( val === "pixel_cog" ) {
             $( ".pys-cog-pixel-warning" ).slideDown( 400 );
+        } else {
+            $( ".pys-cog-pixel-warning" ).slideUp( 400 );
         }
     }
 
@@ -2338,26 +2354,39 @@ jQuery(document).ready(function($) {
         passwordBlock.find(".maskedInput").attr("disabled", true);
     });
 
-    // ---- Meta CAPI dynamic warnings ----
+    // ---- Server API dynamic warnings ----
     (function () {
-        function updateMetaCapiWarnings($container) {
-            var $toggle  = $container.find('#pys_facebook_use_server_api');
-            var $token   = $container.find('textarea[name*="facebook"][name*="server_access_api_token"]').first();
-            var on       = $toggle.is(':checked');
-            var hasToken = $token.val().trim() !== '';
+        // data-pys-api-account (optional) names a second required field.
+        function updateApiWarnings($container) {
+            var $toggle = $container.find($container.attr('data-pys-api-toggle')).first();
+            var $token = $container.find($container.attr('data-pys-api-token')).first();
+            if (!$toggle.length || !$token.length) {
+                return;
+            }
+            var accountSelector = $container.attr('data-pys-api-account');
+            var $account = accountSelector ? $container.find(accountSelector).first() : $();
+            var on = $toggle.is(':checked');
+            var hasToken = $.trim($token.val() || '') !== '';
+            var hasAccount = !$account.length || $.trim($account.val() || '') !== '';
             $container.find('.pys-capi-enable-warning').toggleClass('pys-capi-hidden', on);
             $container.find('.pys-capi-token-warning').toggleClass('pys-capi-hidden', !(on && !hasToken));
+            $container.find('.pys-capi-account-warning').toggleClass('pys-capi-hidden', !(on && !hasAccount));
+            $container.find('.pys-capi-warning-triangle').toggleClass('pys-capi-hidden', !(!on || !hasToken || !hasAccount));
         }
 
-        $( document ).on('change', '#pys_facebook_use_server_api', function () {
-            updateMetaCapiWarnings($( this ).closest('.pixel-data-wrap'));
-        });
-
-        $( document ).on('input', 'textarea[name*="facebook"][name*="server_access_api_token"]', function () {
-            updateMetaCapiWarnings($( this ).closest('.pixel-data-wrap'));
+        $( document ).off('.pysApiWarnings').on('change.pysApiWarnings input.pysApiWarnings', '[data-pys-api-toggle] :input', function () {
+            var $container = $( this ).closest('[data-pys-api-toggle]');
+            var $field = $( this );
+            var watched = [ 'data-pys-api-toggle', 'data-pys-api-token', 'data-pys-api-account' ].some(function (attr) {
+                var selector = $container.attr(attr);
+                return selector && $field.is(selector);
+            });
+            if (watched) {
+                updateApiWarnings($container);
+            }
         });
     })();
-    // ---- / Meta CAPI dynamic warnings ----
+    // ---- / Server API dynamic warnings ----
 } );
 
 /* ------------------------------------------------------------------------

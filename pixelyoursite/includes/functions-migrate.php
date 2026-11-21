@@ -91,6 +91,7 @@ class FunctionsMigrate {
         $pys_free_version = get_option( 'pys_core_free_version', false );
 
         $migrations = [
+            '11.4.7' => [ $this, 'migrate_11_4_7' ],
             '11.4.4' => [ $this, 'migrate_11_4_4' ],
             '11.4.3' => [ $this, 'migrate_11_4_3' ],
             '11.4.2' => [ $this, 'migrate_11_4_2' ],
@@ -154,6 +155,23 @@ class FunctionsMigrate {
         $legacy = get_option( 'pys_core', null );
 
         return is_array( $legacy ) ? $legacy : null;
+    }
+
+    /**
+     * Cost of Goods source: a stored 'pixel_cog' becomes 'auto' (11.4.7).
+     *
+     * 'wc_cog' and 'auto' are left alone; nothing stored means a fresh install,
+     * which already gets the 'auto' default.
+     */
+    protected function migrate_11_4_7() {
+
+        $stored = $this->getStoredCoreOptions();
+
+        if ( ! is_array( $stored ) || ! isset( $stored['woo_cog_source'] ) || 'pixel_cog' !== $stored['woo_cog_source'] ) {
+            return;
+        }
+
+        PYS()->updateOptions( array( 'woo_cog_source' => 'auto' ) );
     }
 
     /**

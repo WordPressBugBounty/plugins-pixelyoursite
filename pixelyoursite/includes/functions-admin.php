@@ -293,19 +293,172 @@ function adminIncompatibleVersionNotice( $pluginName, $minVersion ) {
     <?php
 }
 
-function pys_meta_pixel_missing_capi() {
-    if (!Facebook()->enabled()) {
-        return false;
+/**
+ * Server API state of a single pixel.
+ *
+ * @param bool   $active True when the pixel is enabled and has an ID.
+ * @param bool   $api_on The pixel's API toggle.
+ * @param string $token  The pixel's token or API key.
+ * @return string 'inactive', 'disabled', 'no_token' or 'ok'.
+ */
+function pys_server_api_pixel_state( $active, $api_on, $token ) {
+    if ( ! $active ) {
+        return 'inactive';
     }
-    $pixel_ids = (array) Facebook()->getOption('pixel_id');
-    $main_pixel_set = !empty($pixel_ids) && !empty($pixel_ids[0]);
-    if (!$main_pixel_set) {
-        return false;
+
+    if ( ! $api_on ) {
+        return 'disabled';
     }
-    $use_server_api = Facebook()->getOption('use_server_api');
-    $tokens = (array) Facebook()->getOption('server_access_api_token');
-    $token  = reset($tokens);
-    return (!$use_server_api || empty($token));
+
+    return trim( (string) $token ) === '' ? 'no_token' : 'ok';
+}
+
+/**
+ * Tags with a server API and how the warnings name the API.
+ *
+ * @return array
+ */
+function pys_server_api_platforms() {
+    return array(
+        'facebook' => array(
+            'api'     => 'Conversion API',
+            'section' => 'Meta Conversion API',
+            'token'   => 'Conversion API token',
+        ),
+        'openai'   => array(
+            'api'     => 'OpenAI Conversions API',
+            'section' => 'OpenAI Conversions API',
+            'token'   => 'OpenAI Conversions API key',
+        ),
+    );
+}
+
+/**
+ * Video linked from the server API warnings of a tag.
+ *
+ * @param string $slug
+ * @param string $place 'pixel' (per-pixel warnings) or 'section' (notice under the tag heading).
+ * @return string
+ */
+function pys_server_api_video_url( $slug, $place = 'pixel' ) {
+    // Meta has its own overview video for the notice under the heading.
+    if ( 'facebook' === $slug && 'section' === $place ) {
+        return 'https://www.youtube.com/watch?v=fAwsayYLo5s';
+    }
+
+    $videos = array(
+        'facebook' => 'https://www.youtube.com/watch?v=HM98mGZshvc',
+        'openai'   => 'https://www.youtube.com/watch?v=m2KWGlW-8cQ',
+    );
+
+    return $videos[ $slug ] ?? '';
+}
+
+/**
+ * Server API state of a tag's pixel.
+ *
+ * @param string $slug
+ * @return string See pys_server_api_pixel_state().
+ */
+function pys_server_api_main_pixel_state( $slug ) {
+    switch ( $slug ) {
+        case 'facebook':
+            $pixel = Facebook();
+            break;
+        case 'openai':
+            $pixel = OpenAI();
+            break;
+        default:
+            return 'inactive';
+    }
+
+    $pixel_ids = (array) $pixel->getOption( 'pixel_id' );
+    $tokens = (array) $pixel->getOption( 'server_access_api_token' );
+
+    return pys_server_api_pixel_state(
+        $pixel->enabled() && ! empty( $pixel_ids[0] ),
+        (bool) $pixel->getOption( 'use_server_api' ),
+        reset( $tokens )
+    );
+}
+
+/**
+ * Does the tag's pixel lack a working server API?
+ *
+ * @param string $slug
+ * @return bool
+ */
+function pys_server_api_missing( $slug ) {
+    return in_array( pys_server_api_main_pixel_state( $slug ), array( 'disabled', 'no_token' ), true );
+}
+
+/**
+ * "Configure the API" notice under a tag's heading.
+ *
+ * @param string $slug
+ */
+function pys_render_server_api_section_warning( $slug ) {
+    $platforms = pys_server_api_platforms();
+
+    if ( ! isset( $platforms[ $slug ] ) || ! pys_server_api_missing( $slug ) ) {
+        return;
+    }
+    ?>
+    <div class="notice notice-warning inline pys-capi-inline-warning" style="flex-basis:100%;width:100%;margin:12px 0 0;">
+        <p>
+            <strong>IMPORTANT:</strong> <?php echo esc_html( sprintf( 'Configure %s to improve tracking.', $platforms[ $slug ]['section'] ) ); ?>
+            <a href="<?php echo esc_url( pys_server_api_video_url( $slug, 'section' ) ); ?>" target="_blank" class="link">Watch this video to learn how to do it.</a>
+        </p>
+    </div>
+    <?php
+}
+
+/**
+ * Warning triangle next to "Enable Pixel".
+ *
+ * @param string $slug
+ * @param string $state See pys_server_api_pixel_state().
+ */
+function pys_render_server_api_triangle( $slug, $state ) {
+    $platforms = pys_server_api_platforms();
+    $hidden = in_array( $state, array( 'disabled', 'no_token' ), true ) ? '' : ' pys-capi-hidden';
+    ?>
+    <span class="pys-capi-warning-triangle ml-8<?php echo esc_attr( $hidden ); ?>" title="<?php echo esc_attr( sprintf( '%s is not configured for this pixel', $platforms[ $slug ]['api'] ?? '' ) ); ?>">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 2 L22 21 L2 21 Z" fill="#f0b849" stroke="#a8780f" stroke-width="1" stroke-linejoin="round"/>
+            <rect x="11" y="9" width="2" height="6" fill="#fff"/>
+            <circle cx="12" cy="18" r="1" fill="#fff"/>
+        </svg>
+    </span>
+    <?php
+}
+
+/**
+ * Per-pixel warning: 'enable' under the API toggle, 'token' under the token field.
+ *
+ * @param string $slug
+ * @param string $kind  'enable' or 'token'.
+ * @param string $state See pys_server_api_pixel_state().
+ */
+function pys_render_server_api_pixel_warning( $slug, $kind, $state ) {
+    $platforms = pys_server_api_platforms();
+
+    if ( ! isset( $platforms[ $slug ] ) ) {
+        return;
+    }
+
+    if ( 'enable' === $kind ) {
+        $text = sprintf( 'Enable %s for this pixel.', $platforms[ $slug ]['api'] );
+        $shown = 'disabled' === $state;
+    } else {
+        $text = sprintf( 'Add the %s for this pixel.', $platforms[ $slug ]['token'] );
+        $shown = 'no_token' === $state;
+    }
+    ?>
+    <div class="notice notice-warning inline pys-capi-pixel-warning pys-capi-<?php echo esc_attr( $kind ); ?>-warning<?php echo $shown ? '' : ' pys-capi-hidden'; ?>">
+        <p><?php echo esc_html( $text ); ?> <a href="<?php echo esc_url( pys_server_api_video_url( $slug ) ); ?>" target="_blank" class="link">Watch this video to learn how to do it.</a></p>
+    </div>
+    <?php
 }
 
 function adminRenderNotices() {
@@ -324,9 +477,6 @@ function adminRenderNotices() {
      */
 
     $now = time();
-    if (pys_meta_pixel_missing_capi()) {
-        adminRenderCapiNudgeNotice();
-    }
     adminRenderPageCacheMatchingNotice();
     if ( isPinterestActive( false ) && isPinterestVersionIncompatible() ) {
         adminIncompatibleVersionNotice( 'PixelYourSite Pinterest Add-On', PYS_FREE_PINTEREST_MIN_VERSION );
@@ -569,58 +719,6 @@ function adminNoticeDismissHandler() {
     $meta_key = 'pys_' . sanitize_text_field( $_REQUEST['addon_slug'] ) . '_' . sanitize_text_field( $_REQUEST['meta_key'] ) . '_dismissed_at';
     update_option( $meta_key, time() );
 
-}
-
-function adminRenderCapiNudgeNotice() {
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-    $user_id  = get_current_user_id();
-    $dismissed = get_user_meta($user_id, 'pys_capi_nudge_dismissed', true);
-    if ($dismissed) {
-        return;
-    }
-    ?>
-    <div class="notice notice-warning is-dismissible pys_capi_nudge_notice pys-notice">
-        <p>
-            <b>Configure Meta Conversion API in PixelYourSite!</b>
-            It will help with conversion measurement and optimisation.
-            <a href="https://www.youtube.com/watch?v=fAwsayYLo5s" target="_blank" class="notice-link">
-                Check this video to learn how to do it.
-            </a>
-        </p>
-    </div>
-    <script type="application/javascript">
-        jQuery(document).on('click', '.pys_capi_nudge_notice .notice-dismiss', function () {
-            jQuery.ajax({
-                url: ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'pys_capi_nudge_dismiss',
-                    nonce: '<?php echo esc_attr(wp_create_nonce('pys_capi_nudge_dismiss')); ?>',
-                    user_id: '<?php echo esc_attr($user_id); ?>'
-                }
-            });
-        });
-    </script>
-    <?php
-}
-
-add_action('wp_ajax_pys_capi_nudge_dismiss', 'PixelYourSite\adminCapiNudgeDismissHandler');
-
-function adminCapiNudgeDismissHandler() {
-    if (empty($_REQUEST['nonce']) || !wp_verify_nonce($_REQUEST['nonce'], 'pys_capi_nudge_dismiss')) {
-        wp_send_json_error(); return;
-    }
-    if (empty($_REQUEST['user_id'])) {
-        wp_send_json_error(); return;
-    }
-    $user_id = (int) $_REQUEST['user_id'];
-    if ($user_id !== get_current_user_id()) {
-        wp_send_json_error(); return;
-    }
-    update_user_meta($user_id, 'pys_capi_nudge_dismissed', true);
-    wp_send_json_success();
 }
 
 /**

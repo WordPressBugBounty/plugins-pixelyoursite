@@ -41,6 +41,8 @@
   "woo_enabled_save_data_to_orders": "checkbox",
   "woo_enabled_display_data_to_orders": "checkbox",
   "woo_add_enrich_to_admin_email": "checkbox",
+  "woo_enabled_show_tracking_type": "checkbox",
+  "woo_purchase_dashboard_widget": "checkbox",
 
   "edd_add_to_cart_on_button_click": "checkbox",
   "edd_add_to_cart_on_checkout_page": "checkbox",
@@ -58,6 +60,12 @@
   "edd_view_content_value_global": "number",
   "edd_enabled_save_data_to_orders": "checkbox",
   "edd_enabled_display_data_to_orders": "checkbox",
+  "edd_enabled_show_tracking_type": "checkbox",
+  "edd_purchase_dashboard_widget": "checkbox",
+  "edd_add_enrich_to_admin_email": "checkbox",
+  "purchase_summary_email": "checkbox",
+  "purchase_summary_email_period": "radio",
+  "purchase_summary_email_address": "text",
 
   "custom_events_enabled": "checkbox",
 
@@ -82,6 +90,7 @@
   "woo_cog_source": "radio",
   "woo_cog_wc_include_tax": "checkbox",
   "woo_cog_wc_include_shipping": "checkbox",
+  "woo_meta_net_revenue_enabled": "checkbox",
 
   "woo_purchase_value_cog": "radio",
   "woo_content_value_cog": "radio",

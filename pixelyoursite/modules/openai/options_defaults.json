@@ -4,7 +4,7 @@
   "advanced_matching_enabled": true,
   "debug_enabled": false,
 
-  "use_server_api": false,
+  "use_server_api": true,
   "server_access_api_token": "",
   "server_validate_only": false,
 

@@ -90,6 +90,11 @@ function pysWooProductCanBeAdded( $product ) {
 /**
  * A per-render product cache, open only while the AddToCart prerender runs.
  *
+ * Two prerenders open it: the single product page's, around all its variations, and a
+ * grid card's, around that one card (one enter/leave per card). The card's product is
+ * built afresh once, not taken from the card, so a plugin that changed the loop's
+ * in-memory product cannot change the payload.
+ *
  * The prerender builds every variation's event for every pixel, and each pixel's builder
  * and the shared helpers it calls rebuild the same product with wc_get_product() — 62
  * builds per variation on the stand, ~0.45 ms each, about half the prerender's time.
@@ -479,6 +484,40 @@ function getWooCartSubtotal() {
 
 }
 
+/**
+ * Price minus Cost of Goods of one product line under the 'pixel_cog' source: the PYS COG add-on
+ * cascade (product → parent → category → global) and its own tax setting.
+ *
+ * @param \WC_Product  $product
+ * @param int          $quantity
+ * @param float|string $price    Unit price (before tax adjustments).
+ * @return string
+ */
+function pys_woo_get_cog_product_value( $product, $quantity, $price ) {
+    $price_args = [ 'qty' => $quantity, 'price' => $price ];
+    if ( get_option( '_pixel_cog_tax_calculating' ) == 'no' ) {
+        $amount = wc_get_price_excluding_tax( $product, $price_args );
+    } else {
+        $amount = wc_get_price_including_tax( $product, $price_args );
+    }
+
+    $cog = getAvailableProductCog( $product );
+
+    if ( $cog['val'] ) {
+        if ( $cog['type'] === 'percent' ) {
+            // Percent: subtract percentage of the total taxed/untaxed amount
+            $value = (float) $amount - ( (float) $amount * (float) $cog['val'] / 100 );
+        } else {
+            // Fixed COG is per-unit: subtract (cost_per_unit × quantity) from total amount
+            $value = (float) $amount - ( (float) $cog['val'] * (int) $quantity );
+        }
+    } else {
+        $value = (float) $amount;
+    }
+
+    return formatPriceTrimZeros( $value );
+}
+
 function getWooEventValue( $valueOption, $global, $percent, $product_id,$qty ) {
 
     $product = wc_get_product($product_id);
@@ -523,9 +562,17 @@ function getWooEventValueOrder( $valueOption, $order, $global, $percent = 100 ) 
             break;
 
         case 'cog':
-            $cog_value = pys_cog_get_order_profit($order);
-            ($cog_value !== '') ? $value = (float) round($cog_value, 2) : $value = (float) $amount;
-            if ( !pys_cog_source_is_available() ) $value = (float) $amount;
+            // 'pixel_cog': the order profit (the add-on's stored meta, else its cascade), unchanged.
+            // 'auto' / 'wc_cog': profit per line with the resolver; a line without a cost stays in
+            // the total at zero cost, so the value is never 0 just because a product has no cost
+            // (the number the Pro Purchase builder reports). The order amount when no source is available.
+            if ( ! pys_cog_source_is_available() ) {
+                $value = (float) $amount;
+            } elseif ( pys_cog_get_source() === 'pixel_cog' ) {
+                $value = (float) round( pys_cog_get_order_profit( $order ), 2 );
+            } else {
+                $value = (float) round( getAvailableProductCogOrder( $order ), 2 );
+            }
             break;
 
         case 'percent':

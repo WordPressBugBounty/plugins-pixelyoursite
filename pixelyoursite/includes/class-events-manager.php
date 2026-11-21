@@ -26,6 +26,7 @@ class EventsManager {
         add_action( 'wp_enqueue_scripts', array( $this, 'setupEventsParams' ),14 );
         $this->setupEddButtonHooks();
         add_action( 'wp_enqueue_scripts', array( $this, 'outputData' ),15 );
+        add_action( 'wp_head', array( $this, 'outputBotDetection' ), 0 );
         add_action( 'wp_head', array( $this, 'outputPbidPrefetch' ), 1 );
 		add_action( 'wp_footer', array( $this, 'outputNoScriptData' ), 10 );
 
@@ -108,6 +109,56 @@ class EventsManager {
 	}
 
 	/**
+	 * Bot check printed in <head>, before the pbid prefetch and long before
+	 * public.js. The decision is made in the browser so it also works on cached
+	 * pages. Sets window.pysIsBot (boolean), read by outputPbidPrefetch() and
+	 * Utils.isBot() in public.js. If the script is missing (old cached HTML,
+	 * stripped by an optimizer) pysIsBot stays undefined and tracking runs.
+	 */
+	public function outputBotDetection() {
+		$options = PYS()->get_js_bot_detection_options();
+		if ( empty( $options['enabled'] ) ) {
+			// No script = not a bot for every reader (=== true), so blocking off stays unchanged.
+			return;
+		}
+
+		echo $this->getBotDetectionScript( $options ) . "\r\n";
+	}
+
+	/**
+	 * Builds the <script> tag for outputBotDetection(). Also renders enabled:false.
+	 *
+	 * Inline-script rules: the body has no `<`/`&` (the JSON is encoded with
+	 * JSON_HEX_*), and none of the "fbq"/"pysOptions"/"gtag" substrings, which
+	 * Consent Magic's script blocker parks.
+	 *
+	 * @param array $options See PYS::get_js_bot_detection_options().
+	 * @return string
+	 */
+	public function getBotDetectionScript( array $options ) {
+
+		$json = wp_json_encode( $options, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+		if ( false === $json ) {
+			$json = 'null'; // The IIFE then returns false (fail open).
+		}
+
+		return '<script id="pys-bot-detection">window.pysBotDetection=' . $json . ';'
+			. 'window.pysIsBot=(function(c){'
+			. 'try{'
+			. 'if(!c){return false;}'
+			. 'if(!c.enabled){return false;}'
+			. 'var u=String(navigator.userAgent||"").toLowerCase(),i,l,s;'
+			. 'l=Array.isArray(c.excluded)?c.excluded:[];'
+			. 'for(i=l.length;i--;){s=l[i];if(typeof s==="string"){s=s.toLowerCase();if(s!==""){if(u.indexOf(s)!==-1){return false;}}}}'
+			. 'if(c.webdriver!==false){if(navigator.webdriver===true){return true;}}'
+			. 'l=Array.isArray(c.agents)?c.agents:[];'
+			. 'for(i=l.length;i--;){s=l[i];if(typeof s==="string"){s=s.toLowerCase();if(s!==""){if(u.indexOf(s)!==-1){return true;}}}}'
+			. 'return false;'
+			. '}catch(e){return false;}'
+			. '})(window.pysBotDetection);</script>';
+	}
+
+	/**
 	 * Start the pys_get_pbid request from <head>, before public.js is even
 	 * downloaded.
 	 *
@@ -122,6 +173,9 @@ class EventsManager {
 	 * Printed regardless of the cookie: the page may come from a cache generated
 	 * by a cookie-holding visitor, so the cookie check lives in the snippet.
 	 *
+	 * Bails out when window.pysIsBot is true (see outputBotDetection()), so a
+	 * cookie-less JS crawler does not boot WordPress through admin-ajax.php.
+	 *
 	 * Inline-script rules: no `<`/`&`, and no "fbq"/"pysOptions" substrings,
 	 * which Consent Magic's script blocker parks.
 	 */
@@ -134,6 +188,7 @@ class EventsManager {
 		$url = add_query_arg( 'action', 'pys_get_pbid', admin_url( 'admin-ajax.php' ) );
 
 		echo '<script id="pys-pbid-prefetch">(function(){'
+			. 'if(window.pysIsBot===true){return;}'
 			. 'if(!window.fetch){return;}'
 			. 'if(/(^|;\s*)pbid=/.test(document.cookie)){return;}'
 			. 'try{window.pysPbidPrefetch=window.fetch(' . wp_json_encode( $url ) . ',{credentials:"same-origin"})'
@@ -705,25 +760,46 @@ class EventsManager {
 
         $product_id = $product->get_id();
 
+		// A card can be rendered more than once in a request: block content is rendered
+		// twice on some pages (the first output thrown away), and one product can sit in
+		// several grids. The first build is reused rather than run again; it is still
+		// printed every time, since the first render's output may never reach the page,
+		// and a later script only rewrites the same window.pysWooProductData key.
+		static $rendered = array();
+		if ( isset( $rendered[ $product_id ] ) ) {
+			echo $rendered[ $product_id ];
+			return;
+		}
+
 		$params = array();
         $event = new SingleEvent('woo_add_to_cart_on_button_click',EventTypes::$STATIC,'woo');
         $event->args = ['productId' => $product_id,'quantity' => 1];
         $eventID = EventIdGenerator::guidv4();
         $event->addPayload(['eventID'=>$eventID]);
-		foreach ( PYS()->getRegisteredPixels() as $pixel ) {
-			/** @var Pixel|Settings $pixel */
 
-            $events = $pixel->generateEvents( $event );
-            foreach ($events as $event) {
-                // prepare event data
-                $eventData = $event->getData();
-                $eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
+		// One build of this card's product for all pixels instead of one per pixel per
+		// helper; see WooProductScope. Closed in finally, or a throw here would leave
+		// every later wc_get_product() in this request served from the cache.
+		WooProductScope::enter();
+		try {
+			foreach ( PYS()->getRegisteredPixels() as $pixel ) {
+				/** @var Pixel|Settings $pixel */
 
-                $params[$pixel->getSlug()] = $eventData; // replace data!!(now use only one event)
-            }
-        }
+				$events = $pixel->generateEvents( $event );
+				foreach ($events as $event) {
+					// prepare event data
+					$eventData = $event->getData();
+					$eventData = EventsManager::filterEventParams($eventData,"woo",['event_id'=>$event->getId(),'pixel'=>$pixel->getSlug()]);
+
+					$params[$pixel->getSlug()] = $eventData; // replace data!!(now use only one event)
+				}
+			}
+		} finally {
+			WooProductScope::leave();
+		}
 
 		if ( empty( $params ) ) {
+			$rendered[ $product_id ] = '';
 			return;
 		}
 
@@ -732,16 +808,14 @@ class EventsManager {
 		// through content_name in getWooCustomAudiencesOptimizationParams().
 		$params = wp_json_encode( $params, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
 
-		?>
+		$rendered[ $product_id ] = "\n" . '<script type="application/javascript" style="display:none">' . "\n"
+			. '/* <![CDATA[ */' . "\n"
+			. 'window.pysWooProductData = window.pysWooProductData || {};' . "\n"
+			. 'window.pysWooProductData[ ' . (int) $product_id . ' ] = ' . $params . ';' . "\n"
+			. '/* ]]> */' . "\n"
+			. '</script>' . "\n";
 
-		<script type="application/javascript" style="display:none">
-            /* <![CDATA[ */
-            window.pysWooProductData = window.pysWooProductData || {};
-            window.pysWooProductData[ <?php echo (int) $product_id; ?> ] = <?php echo $params; ?>;
-            /* ]]> */
-		</script>
-
-		<?php
+		echo $rendered[ $product_id ];
 
 	}
 

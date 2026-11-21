@@ -55,6 +55,16 @@ class OpenAI_REST_API {
             );
         }
 
+        if ( ! pys_server_event_has_consent( 'openai', (string) $event ) ) {
+            return new \WP_REST_Response(
+                array(
+                    'success' => false,
+                    'reason'  => 'no_consent',
+                ),
+                200
+            );
+        }
+
         if ( empty( $source_url ) ) {
 
             $referer = $request->get_header( 'referer' );
@@ -131,24 +141,7 @@ class OpenAI_REST_API {
      */
     public function check_permission( $request ) {
 
-        $origin    = $request->get_header( 'origin' );
-        $referer   = $request->get_header( 'referer' );
-        $site      = wp_parse_url( home_url() );
-        $site_host = isset( $site['host'] ) ? strtolower( $site['host'] ) : '';
-
-        $is_same_origin = false;
-
-        if ( ! empty( $origin ) ) {
-            $origin_parts   = wp_parse_url( $origin );
-            $is_same_origin = ! empty( $site_host )
-                && isset( $origin_parts['host'] )
-                && strtolower( $origin_parts['host'] ) === $site_host;
-        } elseif ( ! empty( $referer ) ) {
-            $referer_parts  = wp_parse_url( $referer );
-            $is_same_origin = ! empty( $site_host )
-                && isset( $referer_parts['host'] )
-                && strtolower( $referer_parts['host'] ) === $site_host;
-        }
+        $is_same_origin = pys_rest_is_same_origin( $request );
 
         // Per-IP rate limit, per namespace, configured in Global Settings.
         if ( $is_same_origin ) {
@@ -299,7 +292,15 @@ class OpenAI_REST_API {
             return;
         }
 
-        wp_localize_script( 'jquery', 'pysOpenAIRest', array(
+        // Our own source-less handle, not 'jquery': see
+        // Facebook_REST_API::localize_rest_data().
+        if ( ! wp_script_is( 'pys-rest', 'registered' ) ) {
+            wp_register_script( 'pys-rest', false, array(), PYS_FREE_VERSION, false );
+        }
+
+        wp_enqueue_script( 'pys-rest' );
+
+        wp_localize_script( 'pys-rest', 'pysOpenAIRest', array(
             'restApiUrl' => rest_url( 'pys-openai/v1/event' ),
             'debug'      => PYS()->getOption( 'debug_enabled' ),
         ) );

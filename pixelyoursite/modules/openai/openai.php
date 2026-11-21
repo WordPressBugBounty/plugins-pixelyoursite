@@ -175,7 +175,7 @@ class OpenAI extends Settings implements Pixel {
     const MATCHING_LIMITS = array(
         'email_sha256'        => 3,
         'phone_number_sha256' => 2,
-        'external_id_sha256'  => 1,
+        'external_id_sha256'  => 20,
         'first_name_sha256'   => 1,
         'last_name_sha256'    => 1,
         'country'             => 1,
@@ -250,11 +250,12 @@ class OpenAI extends Settings implements Pixel {
 
         if ( EventsManager::isTrackExternalId() ) {
 
-            $external_id = $this->getExternalId( $wooOrder, $eddOrder );
-
-            if ( ! empty( $external_id ) ) {
-                $candidates['external_id_sha256'] = array( hash( 'sha256', (string) $external_id ) );
-            }
+            $candidates['external_id_sha256'] = array_map(
+                function ( $id ) {
+                    return hash( 'sha256', (string) $id );
+                },
+                $this->getExternalId( $wooOrder, $eddOrder )
+            );
         }
 
         // field => the function that turns a raw value into the wire value, or
@@ -434,9 +435,20 @@ class OpenAI extends Settings implements Pixel {
         }
 
         // --- the WordPress profile -------------------------------------------
+        // An order-bound event built outside the buyer's request (wp-admin, cron,
+        // Action Scheduler, a webhook) runs as the admin or as nobody: that
+        // profile says nothing about the customer.
         $user = wp_get_current_user();
 
-        if ( $user && $user->ID ) {
+        $someoneElses = false;
+
+        if ( $wooOrder ) {
+            $someoneElses = ! pys_is_buyer_request( 'woo', (int) $wooOrder );
+        } elseif ( $eddOrder ) {
+            $someoneElses = ! pys_is_buyer_request( 'edd', (int) $eddOrder );
+        }
+
+        if ( $user && $user->ID && ! $someoneElses ) {
 
             $add( $sources, array(
                 'email'       => $user->get( 'user_email' ),
@@ -464,48 +476,51 @@ class OpenAI extends Settings implements Pixel {
     }
 
     /**
-     * The stable pseudonymous visitor id behind external_id_sha256.
+     * The stable pseudonymous visitor ids behind external_id_sha256.
      *
      * Same sources the other Free pixels use, so one visitor keeps one identity
-     * across destinations: the order's own `external_id` meta when the event
-     * belongs to an order, otherwise the `pbid` cookie. Returned unhashed --
-     * the caller hashes it.
+     * across destinations. An order-bound event gets the order's own ids (the id
+     * saved on the order, the customer's other ids) and never the request's: in
+     * wp-admin the request is the admin, on cron it is one constant for the
+     * whole site. Only an event without an order names the current visitor.
+     * Returned unhashed -- the caller hashes them.
      *
      * @param int|null $wooOrder
      * @param int|null $eddOrder
-     * @return string
+     * @return string[] Ids, most specific first; empty when there is none.
      */
     public function getExternalId( $wooOrder = null, $eddOrder = null ) {
 
-        $external_id = '';
+        if ( $wooOrder || $eddOrder ) {
 
-        if ( $eddOrder && isEddActive() ) {
-            $external_id = edd_get_payment_meta( (int) $eddOrder, 'external_id', true );
-        }
-
-        if ( empty( $external_id ) && $wooOrder && isWooCommerceActive() ) {
-
-            $order = wc_get_order( (int) $wooOrder );
-
-            if ( $order ) {
-                $external_id = $order->get_meta( 'external_id' );
+            if ( $eddOrder && isEddActive() ) {
+                return pys_get_order_external_ids(
+                    edd_get_payment_meta( (int) $eddOrder, 'external_id', true ),
+                    (int) edd_get_payment_user_id( (int) $eddOrder )
+                );
             }
-        }
 
-        if ( empty( $external_id ) ) {
+            if ( $wooOrder && isWooCommerceActive() ) {
 
-            $user = wp_get_current_user();
+                $order = wc_get_order( (int) $wooOrder );
 
-            if ( $user && $user->ID && $user->get( 'external_id' ) ) {
-                $external_id = $user->get( 'external_id' );
+                if ( $order ) {
+                    return pys_get_order_external_ids( $order->get_meta( 'external_id' ), $order->get_user_id() );
+                }
             }
+
+            return array();
         }
 
-        if ( empty( $external_id ) ) {
-            $external_id = PYS()->get_pbid();
+        $user = wp_get_current_user();
+
+        if ( $user && $user->ID && $user->get( 'external_id' ) ) {
+            return array( (string) $user->get( 'external_id' ) );
         }
 
-        return is_string( $external_id ) ? $external_id : '';
+        $pbid = PYS()->get_pbid();
+
+        return $pbid ? array( (string) $pbid ) : array();
     }
 
     /**

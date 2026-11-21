@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'PYS_FREE_VERSION', '11.4.5' );
+define( 'PYS_FREE_VERSION', '11.4.7' );
 define( 'PYS_FREE_PINTEREST_MIN_VERSION', '6.2.7' );
 define( 'PYS_FREE_BING_MIN_VERSION', '4.2.0' );
 define( 'PYS_FREE_REDDIT_MIN_VERSION', '1.1.0' );
@@ -84,6 +84,16 @@ require_once PYS_FREE_PATH.'/modules/openai/openai-server.php';
 require_once PYS_FREE_PATH.'/modules/openai/class-openai-rest-api.php';
 require_once PYS_FREE_PATH.'/modules/head_footer/head_footer.php';
 require_once PYS_FREE_PATH.'/includes/enrich/class_enrich_order.php';
+require_once PYS_FREE_PATH.'/includes/purchase-report/class-purchase-report-order-data.php';
+require_once PYS_FREE_PATH.'/includes/purchase-report/class-purchase-report.php';
+require_once PYS_FREE_PATH.'/includes/purchase-report/class-purchase-report-state.php';
+require_once PYS_FREE_PATH.'/includes/purchase-report/class-purchase-report-cache.php';
+require_once PYS_FREE_PATH.'/includes/purchase-report/class-purchase-report-summary.php';
+require_once PYS_FREE_PATH.'/includes/purchase-report/class-purchase-report-admin.php';
+require_once PYS_FREE_PATH.'/includes/purchase-report/class-purchase-report-email.php';
+\PixelYourSite\PurchaseReportCache::init();
+\PixelYourSite\PurchaseReportAdmin::init();
+\PixelYourSite\PurchaseReportEmail::init();
 
 // Site Profile export/import feature (core classes; admin/REST/CLI wired later).
 require_once PYS_FREE_PATH.'/includes/export-import/class-site-profile-config.php';

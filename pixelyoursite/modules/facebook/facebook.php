@@ -1169,10 +1169,12 @@ class Facebook extends Settings implements Pixel {
     }
 
     /**
+     * The toggle alone is not enough: without a token there is nothing to send.
+     *
      * @return bool
      */
     public function isServerApiEnabled() {
-        return $this->getOption("use_server_api");
+        return (bool) $this->getOption( "use_server_api" ) && count( array_filter( $this->getApiToken() ) ) > 0;
     }
 
     /**

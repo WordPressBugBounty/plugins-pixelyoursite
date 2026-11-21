@@ -211,7 +211,7 @@ class FacebookServer {
         $item = $cart->get_cart_item($cart_item_key);
 
 
-        if(PYS()->getOption( 'woo_remove_from_cart_enabled')) {
+        if ( PYS()->getOption( 'woo_remove_from_cart_enabled' ) && pys_server_event_has_consent( 'facebook', 'RemoveFromCart' ) ) {
             PYS()->getLog()->debug('trackRemoveFromCartEvent send fb server with out browser event');
             $event = new SingleEvent("woo_remove_from_cart",EventTypes::$STATIC,'woo');
             $event->args=['item'=>$item];
@@ -262,7 +262,16 @@ class FacebookServer {
 
         if($event == "hCR") $event="CompleteRegistration"; // de mask completer registration event if it was hidden
 
-        $singleEvent = $this->dataToSingleEvent($event,$data,$eventID,$ids,$wooOrder,$eddOrder);
+        if ( ! pys_server_event_has_consent( 'facebook', (string) $event ) ) {
+            wp_die();
+            return;
+        }
+
+        // The browser's event id (e_id). The SingleEvent keeps an empty id; the slug
+        // only tells the server which kind of event this is (net_revenue is Purchase-only).
+        $eventSlug = isset($_POST['event_slug']) && is_scalar($_POST['event_slug']) ? sanitize_key(wp_unslash($_POST['event_slug'])) : '';
+
+        $singleEvent = $this->dataToSingleEvent($event,$data,$eventID,$ids,$wooOrder,$eddOrder,$eventSlug);
 
         $this->sendEventsNow([$singleEvent]);
 
@@ -276,9 +285,10 @@ class FacebookServer {
      * @param $ids
      * @param $wooOrder
      * @param $eddOrder
+     * @param string $eventSlug
      * @return SingleEvent
      */
-    private function dataToSingleEvent($eventName,$params,$eventID,$ids,$wooOrder,$eddOrder) {
+    private function dataToSingleEvent($eventName,$params,$eventID,$ids,$wooOrder,$eddOrder,$eventSlug = '') {
         $singleEvent = new SingleEvent("","");
 
         $payload = [
@@ -288,6 +298,9 @@ class FacebookServer {
             'edd_order' => $eddOrder,
             'pixelIds'  => $ids
         ];
+        if ( $eventSlug !== '' ) {
+            $payload['event_slug'] = $eventSlug;
+        }
         $singleEvent->addParams($params);
         $singleEvent->addPayload($payload);
 

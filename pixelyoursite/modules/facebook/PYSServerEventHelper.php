@@ -155,7 +155,7 @@ class ServerEventHelper {
         if(!empty($fbp)) { $user_data->setFbp( pys_fb_append_appendix( $fbp, false ) ); }
         if(!empty($fbc)) { $user_data->setFbc( pys_fb_append_appendix( $fbc, false ) ); }
 
-        $customData = self::paramsToCustomData($eventParams);
+        $customData = self::paramsToCustomData($eventParams, $event, $order);
         $uri = self::getRequestUri(PYS()->getOption('enable_remove_source_url_params'));
 
         // set custom uri use in ajax request
@@ -551,8 +551,10 @@ class ServerEventHelper {
         /**
          * Add purchase WooCommerce Advanced Matching params
          */
-        if ( PixelYourSite\isWooCommerceActive() && isEventEnabled( 'woo_purchase_enabled' ) &&
-            ($wooOrder || ( PYS()->woo_is_order_received_page() && wooIsRequestContainOrderId() ))
+        // An order in the payload decides the branch on its own: without it the
+        // event would carry the current user's profile (the admin's, in wp-admin).
+        if ( PixelYourSite\isWooCommerceActive() &&
+            ($wooOrder || ( isEventEnabled( 'woo_purchase_enabled' ) && PYS()->woo_is_order_received_page() && wooIsRequestContainOrderId() ))
         ) {
             if(wooIsRequestContainOrderId()) {
                 $order_id = wooGetOrderIdFromRequest();
@@ -625,8 +627,8 @@ class ServerEventHelper {
 
         } else {
 
-            if(PixelYourSite\isEddActive() && isEventEnabled( 'edd_purchase_enabled' ) &&
-                ($eddOrder ||  edd_is_success_page()) ) {
+            if(PixelYourSite\isEddActive() &&
+                ($eddOrder || ( isEventEnabled( 'edd_purchase_enabled' ) && edd_is_success_page() )) ) {
 
                 if($eddOrder)
                     $payment_id = $eddOrder;
@@ -739,7 +741,25 @@ class ServerEventHelper {
         return $userData;
     }
 
-    static function paramsToCustomData($data) {
+    /**
+     * @param array       $data         Event params.
+     * @param SingleEvent $singleEvent
+     * @param mixed       $profitOrder  The WooCommerce order already loaded by the caller (net_revenue only).
+     */
+    static function paramsToCustomData($data, $singleEvent = null, $profitOrder = null) {
+
+        // net_revenue is computed server-side from the order and nowhere else: a
+        // browser-relayed (AJAX/REST) Purchase carries the client's params, and
+        // a value from there is never trusted. Other events keep their params.
+        // A browser-relayed event has no id of its own (SingleEvent("", "")); the
+        // slug the browser sent travels in the payload.
+        $isPurchase = self::isWooPurchase( $singleEvent );
+        if ( $isPurchase ) {
+            unset( $data['net_revenue'] );
+        }
+
+        // contents is turned into SDK Content objects below; the net_revenue guard reads the raw params.
+        $rawParams = $data;
 
         if(isset($data['contents']) && is_array($data['contents'])) {
             $contents = array();
@@ -790,8 +810,86 @@ class ServerEventHelper {
             }
         }
 
+        if ( $isPurchase ) {
+            self::addNetRevenue( $customProperties, $rawParams, $profitOrder, $customData, $singleEvent );
+        }
+
         $customData->setCustomProperties($customProperties);
         return $customData;
+    }
+
+    /**
+     * The WooCommerce Purchase: built by PHP (id woo_purchase), or relayed by the
+     * browser through AJAX / REST, where the event has no id and the browser's
+     * event_slug is kept in the payload. Any other slug, including a custom
+     * event that is merely named "Purchase", is not.
+     *
+     * @param mixed $singleEvent
+     * @return bool
+     */
+    private static function isWooPurchase( $singleEvent ) {
+        if ( ! is_object( $singleEvent ) ) {
+            return false;
+        }
+        if ( $singleEvent->getId() === 'woo_purchase' ) {
+            return true;
+        }
+        return isset( $singleEvent->payload['event_slug'] ) && $singleEvent->payload['event_slug'] === 'woo_purchase';
+    }
+
+    /**
+     * Meta `net_revenue` (the order's profit) for a Conversions API Purchase.
+     * Omitted entirely, never 0/null/"", when it cannot be calculated or the
+     * event is not the whole order. Never sent by the browser Pixel.
+     *
+     * @param array $customProperties custom_data custom properties, by reference.
+     * @param array $data             Event params (num_items is compared with the order).
+     * @param mixed $order            WC_Order or null.
+     * @param mixed $customData       The CustomData being built.
+     * @param mixed $singleEvent      The event (its args['products'] is the event's own product list).
+     */
+    private static function addNetRevenue( &$customProperties, $data, $order, $customData, $singleEvent ) {
+        if ( ! PYS()->getOption( 'woo_meta_net_revenue_enabled' ) ) {
+            return;
+        }
+        if ( ! ( $order instanceof \WC_Order ) ) {
+            PYS()->getLog()->debug( 'Meta net_revenue skipped: no order' );
+            return;
+        }
+        $products = ( isset( $singleEvent->args['products'] ) && is_array( $singleEvent->args['products'] ) ) ? $singleEvent->args['products'] : null;
+        // A PHP-built Purchase always describes the whole order (Free's builder reads the
+        // order from the request and its args carry no product list), so its event side is
+        // the order's own lines, deleted-product lines included like num_items. A
+        // browser-relayed event keeps num_items / contents.
+        if ( null === $products && is_object( $singleEvent ) && $singleEvent->getId() === 'woo_purchase' ) {
+            $products = array();
+            foreach ( $order->get_items( 'line_item' ) as $item ) {
+                if ( $item instanceof \WC_Order_Item_Product ) {
+                    $products[] = array( 'quantity' => $item->get_quantity() );
+                }
+            }
+        }
+        if ( ! pys_meta_event_covers_whole_order( $order, $data, $products ) ) {
+            PYS()->getLog()->debug( "Meta net_revenue skipped for order #{$order->get_id()}: the event does not cover the whole order (products differ, or quantity unknown)" );
+            return;
+        }
+        $net = pys_cog_get_order_net_revenue( $order );
+        if ( $net === null ) {
+            PYS()->getLog()->debug( "Meta net_revenue skipped for order #{$order->get_id()}: profit unavailable, zero or negative" );
+            return;
+        }
+        // A future SDK may know the field itself; adding it as a custom
+        // property as well would make the SDK throw on the duplicate.
+        static $logged_sdk = false;
+        if ( in_array( 'net_revenue', $customData->attributeMap(), true ) ) {
+            if ( ! $logged_sdk ) {
+                $logged_sdk = true;
+                PYS()->getLog()->debug( 'Meta net_revenue not added: the SDK CustomData already defines it' );
+            }
+            return;
+        }
+        $customProperties['net_revenue'] = (float) $net;
+        PYS()->getLog()->debug( "Meta net_revenue added for order #{$order->get_id()}: {$net}" );
     }
 
     /**

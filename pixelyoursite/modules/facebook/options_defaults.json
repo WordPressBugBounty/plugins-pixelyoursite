@@ -53,7 +53,7 @@
   "fdp_add_to_cart_value" : "0",
   "fdp_purchase_value" : "0",
 
-  "use_server_api": false,
+  "use_server_api": true,
   "server_access_api_token": "",
   "test_api_event_code": "",
   "test_api_event_code_expiration_at": "",

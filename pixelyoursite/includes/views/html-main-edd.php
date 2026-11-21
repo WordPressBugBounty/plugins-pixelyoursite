@@ -101,40 +101,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <p>
                     <?php _e('Fire e-commerce related events. Meta, TikTok, Google Ads, Bing (paid add-on), and Pinterest (paid add-on) events are Dynamic Ads Ready. Monetization data is sent to Google Analytics.', 'pys');?>
                 </p>
-                <div>
-                    <div class="d-flex align-items-center mb-4">
-                        <?php PYS()->render_switcher_input( 'edd_enabled_save_data_to_orders' ); ?>
-                        <h4 class="switcher-label">Enable Easy Digital Downloads Reports</h4>
-                    </div>
-                    <p class="text-gray">
-                        Save the <i>landing page, UTMs, client's browser's time, day, and month, the number of orders, lifetime value, and average order</i>.
-                        You can view this data when you open an order, or on the <a class="link" href="<?=admin_url("admin.php?page=pixelyoursite_edd_reports")?>">Easy Digital Downloads Reports</a> page
-                    </p>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center mb-4">
-                        <?php PYS()->render_switcher_input( 'edd_enabled_display_data_to_orders' ); ?>
-                        <h4 class="switcher-label"><?php _e('Display the tracking data on the order\'s page', 'pys');?></h4>
-                    </div>
-                    <p class="text-gray">
-                        Show the <i>landing page, traffic source,</i> and <i>UTMs</i> on the order's edit page.
-                    </p>
-                </div>
-                <div class="pro-feature-container d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="d-flex align-items-center flex-with-badge">
-                                <?php renderDummySwitcher( false); ?>
-                                <h4 class="switcher-label"><?php _e('Display data to the user\'s profile', 'pys');?></h4>
-                            </div>
-                        </div>
-                        <p class="text-gray">
-                            Display <i>the number of orders, lifetime value, and average order</i>.
-                        </p>
-                    </div>
-                    <?php renderProBadge(); ?>
-                </div>
-                <hr>
                 <div class="pro-feature-container  d-flex align-items-center justify-content-between">
                     <div class="gap-24">
                         <h4 class="primary_heading"><?php _e('New customer parameter', 'pys');?></h4>
@@ -153,6 +119,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
     </div>
+    <?php PurchaseReportAdmin::renderSettingsCard( 'edd' ); ?>
     <div class="card card-style6 card-static">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between gap-24">

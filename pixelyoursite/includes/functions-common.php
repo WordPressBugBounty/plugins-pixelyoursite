@@ -329,6 +329,26 @@ function pys_snapshot_event_referrer_url() {
  * @param string                     $platform Pixel slug whose consent applies.
  * @return string
  */
+/**
+ * May a browser-originated event go to the platform's server API? The REST
+ * and AJAX endpoints are public, so the visitor's consent is checked here as
+ * well, not only in the browser. In restricted mode (Meta LDU, OpenAI opt-out)
+ * the event goes with that mode.
+ *
+ * @param string $platform   Pixel slug.
+ * @param string $event_name For the log.
+ * @return bool
+ */
+function pys_server_event_has_consent( $platform, $event_name = '' ) {
+    if ( Consent()->mayFire( $platform ) ) {
+        return true;
+    }
+
+    PYS()->getLog()->debug( "Server event {$event_name} to {$platform} not sent: no consent" );
+
+    return false;
+}
+
 function pys_resolve_event_referrer_url( $event, $platform = 'facebook' ) {
     if ( ! Consent()->checkConsent( $platform ) ) {
         return '';
@@ -641,36 +661,241 @@ function isWcCogFeatureEnabled() {
 
 /**
  * Return the active COG source selected in the global setting.
+ * Anything other than the three known values falls back to 'auto'.
  *
- * @return string 'pixel_cog' | 'wc_cog'
+ * @return string 'auto' | 'pixel_cog' | 'wc_cog'
  */
 function pys_cog_get_source() {
-    return PYS()->getOption( 'woo_cog_source' ) ?: 'pixel_cog';
+    $source = PYS()->getOption( 'woo_cog_source' );
+    return in_array( $source, array( 'auto', 'pixel_cog', 'wc_cog' ), true ) ? $source : 'auto';
+}
+
+/**
+ * True when WooCommerce native COGS can be read: WC 10.3+ AND the feature flag is on.
+ * WooCommerce guards its COGS methods and may emit "doing it wrong" while the feature
+ * is off, so never call get_cogs_value() / get_cogs_total_value() unless this is true.
+ *
+ * @return bool
+ */
+function pys_cog_wc_is_ready() {
+    return isWcCogAvailable() && isWcCogFeatureEnabled();
+}
+
+/**
+ * Whether value='cog' options must be reset once the PixelYourSite Cost of Goods
+ * add-on is deactivated: only when no source remains without it.
+ * 'pixel_cog' always loses its source; 'wc_cog' and 'auto' keep WooCommerce COGS.
+ *
+ * @param string $source   'auto' | 'pixel_cog' | 'wc_cog'
+ * @param bool   $wc_ready result of pys_cog_wc_is_ready()
+ * @return bool
+ */
+function pys_cog_restore_needed_after_addon_deactivation( $source, $wc_ready ) {
+    if ( $source === 'pixel_cog' ) {
+        return true;
+    }
+    return ! $wc_ready;
 }
 
 /**
  * Check whether the currently selected COG source is fully available and ready.
  * - 'wc_cog'    → WooCommerce 10.3+ AND feature flag enabled in WC Settings.
  * - 'pixel_cog' → PixelYourSite Cost of Goods plugin active.
+ * - 'auto'      → either of the two above.
  *
  * @return bool
  */
 function pys_cog_source_is_available() {
     $source = pys_cog_get_source();
     if ( $source === 'wc_cog' ) {
-        return isWcCogAvailable() && isWcCogFeatureEnabled();
+        return pys_cog_wc_is_ready();
+    }
+    if ( $source === 'auto' ) {
+        return isPixelCogActive() || pys_cog_wc_is_ready();
     }
     return isPixelCogActive();
 }
 
 /**
+ * Clean a stored cost value the way the PixelYourSite Cost of Goods add-on does:
+ * keep only digits, ',' and '.'.
+ *
+ * @param mixed $raw Meta / option value (may be '', false, null).
+ * @return string '' = no cost stored; '0' is a found cost of 0.
+ */
+function pys_cog_clean_cost( $raw ) {
+    if ( $raw === false || $raw === null || is_array( $raw ) || is_object( $raw ) ) {
+        return '';
+    }
+    return preg_replace( "/[^,.0-9]/", '', (string) $raw );
+}
+
+/**
+ * Cleaned cost as a float, with ',' read as the decimal point ('12,5' → 12.5). The add-on only
+ * does the ',' → '.' swap on its own cleaned string; we do it before the float cast on purpose.
+ *
+ * @param mixed $raw
+ * @return float|null null = no cost stored.
+ */
+function pys_cog_normalize_cost( $raw ) {
+    $clean = pys_cog_clean_cost( $raw );
+    return $clean === '' ? null : (float) str_replace( ',', '.', $clean );
+}
+
+/**
+ * Normalise a stored cost type: only 'percent' is percent, everything else is a fixed amount.
+ *
+ * @param mixed $raw
+ * @return string 'fix' | 'percent'
+ */
+function pys_cog_normalize_cost_type( $raw ) {
+    return $raw === 'percent' ? 'percent' : 'fix';
+}
+
+/**
+ * Category level of the PYS COG cascade for the resolver: highest value among the product's
+ * categories. Exactly like the add-on, a category counts when its cleaned string is truthy
+ * (PHP truthiness, before ',' → '.'): '' and '0' are not found, '0.0' / '0,00' / '00' are a
+ * found 0. On a tie the 'percent' category wins (the add-on sorts [val, type] pairs).
+ * Separate from get_product_cog_by_cat(), which skips non-numeric values such as '12,5' and
+ * must keep behaving as it does for existing callers.
+ *
+ * @param int $product_id Id of the product line itself (not its parent), as the add-on does.
+ * @return array{val: float, type: string}|null
+ */
+function pys_cog_resolve_category_cost( $product_id ) {
+    $term_list = wp_get_post_terms( $product_id, 'product_cat', [ 'fields' => 'ids' ] );
+    if ( empty( $term_list ) || is_wp_error( $term_list ) ) {
+        return null;
+    }
+
+    $best = null;
+    foreach ( $term_list as $term_id ) {
+        $clean = pys_cog_clean_cost( get_term_meta( $term_id, '_pixel_cost_of_goods_cost_val', true ) );
+        if ( ! $clean ) {
+            continue;
+        }
+        $val  = (float) str_replace( ',', '.', $clean );
+        $type = pys_cog_normalize_cost_type( get_term_meta( $term_id, '_pixel_cost_of_goods_cost_type', true ) );
+        if ( $best === null || $val > $best['val'] || ( $val === $best['val'] && $type === 'percent' ) ) {
+            $best = [ 'val' => $val, 'type' => $type ];
+        }
+    }
+    return $best;
+}
+
+/**
+ * Resolve the cost of one product for the selected COG source (pys_cog_get_source()).
+ *
+ * - 'pixel_cog': PYS cascade product → parent (variation) → category → global.
+ * - 'wc_cog':    WooCommerce native COGS (only when ready).
+ * - 'auto':      PYS product → PYS parent → PYS category → WooCommerce → PYS global.
+ * PYS levels need the PYS COG add-on active; the WC level needs pys_cog_wc_is_ready().
+ * WooCommerce stores a COGS of 0 as null on non-variations, so a found WC cost of 0 only occurs
+ * on variations.
+ *
+ * @param \WC_Product $product
+ * @return array{source: string, level: string, type: string, val: float}|null null = no cost.
+ */
+function pys_cog_resolve_product_cost( $product ) {
+    $source  = pys_cog_get_source();
+    $use_pys = $source !== 'wc_cog' && isPixelCogActive();
+    $use_wc  = $source !== 'pixel_cog' && pys_cog_wc_is_ready();
+    $is_var  = $product->is_type( 'variation' );
+    $id      = $product->get_id();
+
+    if ( $use_pys ) {
+        // Level 1: product
+        $val = pys_cog_normalize_cost( get_post_meta( $id, '_pixel_cost_of_goods_cost_val', true ) );
+        if ( $val !== null ) {
+            return [ 'source' => 'pixel_cog', 'level' => 'product', 'type' => pys_cog_normalize_cost_type( get_post_meta( $id, '_pixel_cost_of_goods_cost_type', true ) ), 'val' => $val ];
+        }
+        // Level 2: parent of a variation; the type is read from the variation's own id - mirrors the add-on on purpose
+        if ( $is_var ) {
+            $val = pys_cog_normalize_cost( get_post_meta( $product->get_parent_id(), '_pixel_cost_of_goods_cost_val', true ) );
+            if ( $val !== null ) {
+                return [ 'source' => 'pixel_cog', 'level' => 'parent', 'type' => pys_cog_normalize_cost_type( get_post_meta( $id, '_pixel_cost_of_goods_cost_type', true ) ), 'val' => $val ];
+            }
+        }
+        // Level 3: category, looked up by the line's own product id (a variation has no terms, so it skips this level) - mirrors the PYS COG add-on on purpose
+        $cat = pys_cog_resolve_category_cost( $id );
+        if ( $cat !== null ) {
+            return [ 'source' => 'pixel_cog', 'level' => 'category', 'type' => $cat['type'], 'val' => $cat['val'] ];
+        }
+    }
+
+    if ( $use_wc ) {
+        $has_cost = $product->get_cogs_value() !== null;
+        if ( ! $has_cost && $is_var ) {
+            $parent   = wc_get_product( $product->get_parent_id() );
+            $has_cost = $parent && $parent->get_cogs_value() !== null;
+        }
+        if ( $has_cost ) {
+            return [ 'source' => 'wc_cog', 'level' => 'wc', 'type' => 'fix', 'val' => (float) $product->get_cogs_total_value() ];
+        }
+    }
+
+    if ( $use_pys ) {
+        // Level 4: global option
+        $val = pys_cog_normalize_cost( get_option( '_pixel_cost_of_goods_cost_val' ) );
+        if ( $val !== null ) {
+            return [ 'source' => 'pixel_cog', 'level' => 'global', 'type' => pys_cog_normalize_cost_type( get_option( '_pixel_cost_of_goods_cost_type' ) ), 'val' => $val ];
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Whether a line is taxed when its profit is calculated (R4): a line resolved to the PYS COG
+ * add-on follows the add-on's own option, a line resolved to WooCommerce COGS follows ours.
+ *
+ * @param string $source 'pixel_cog' | 'wc_cog' (the `source` of pys_cog_resolve_product_cost()).
+ * @return bool true = with tax.
+ */
+function pys_cog_line_includes_tax( $source ) {
+    if ( $source === 'pixel_cog' ) {
+        return get_option( '_pixel_cog_tax_calculating' ) != 'no';
+    }
+    return (bool) PYS()->getOption( 'woo_cog_wc_include_tax' );
+}
+
+/**
+ * Source whose tax rule applies to a line that has no cost: the add-on's when it is active and
+ * allowed to answer, otherwise ours.
+ *
+ * @return string 'pixel_cog' | 'wc_cog'
+ */
+function pys_cog_default_tax_source() {
+    return ( pys_cog_get_source() !== 'wc_cog' && isPixelCogActive() ) ? 'pixel_cog' : 'wc_cog';
+}
+
+/**
+ * Cost of one line for a resolved cost: fixed = per unit × quantity, percent = share of $percent_base.
+ *
+ * @param array{type: string, val: float} $cost         From pys_cog_resolve_product_cost().
+ * @param float|int                       $quantity
+ * @param float                           $percent_base Line amount a percent cost is taken from.
+ * @return float
+ */
+function pys_cog_cost_amount( $cost, $quantity, $percent_base ) {
+    if ( $cost['type'] === 'percent' ) {
+        return (float) $percent_base * $cost['val'] / 100;
+    }
+    return (float) $cost['val'] * (float) $quantity;
+}
+
+/**
  * Calculate profit (price − COG) for a single product line.
- * Works for both 'wc_cog' and 'pixel_cog' sources.
+ * Works for the 'pixel_cog', 'wc_cog' and 'auto' sources.
  *
- * For 'wc_cog': amount = tax-adjusted price × qty, cog = $product->get_cogs_value() × qty.
  * For 'pixel_cog': delegates to pys_woo_get_cog_product_value() (PYS COG cascade).
+ * For 'wc_cog' and 'auto': the cost comes from pys_cog_resolve_product_cost(); amount is the
+ * tax-adjusted price × qty (rule of the line's own source), cost is fixed × qty or a percent
+ * of that amount.
  *
- * Returns '' (empty string) when no COG data is found, so callers can fall back to price.
+ * Without any cost the profit is the amount itself (cost 0), so callers never get an empty value.
+ * Returns '' only when the selected source is not available.
  *
  * @param \WC_Product $product
  * @param int         $quantity
@@ -682,33 +907,96 @@ function pys_cog_get_product_profit( $product, $quantity, $price ) {
         return '';
     }
 
-    if ( pys_cog_get_source() === 'wc_cog' ) {
-        $cogs_value = $product->get_cogs_value();
-        if ( $cogs_value === null ) {
-            return '';
-        }
-        $price_args = [ 'qty' => $quantity, 'price' => $price ];
-        // For wc_cog: tax inclusion is controlled by our own option, not the PYS COG plugin setting
-        if ( PYS()->getOption( 'woo_cog_wc_include_tax' ) ) {
-            $amount = wc_get_price_including_tax( $product, $price_args );
-        } else {
-            $amount = wc_get_price_excluding_tax( $product, $price_args );
-        }
-        $profit = (float) $amount - ( (float) $cogs_value * (int) $quantity );
-        return formatPriceTrimZeros( $profit );
+    // pixel_cog: delegate to existing PYS COG cascade function
+    if ( pys_cog_get_source() === 'pixel_cog' ) {
+        return pys_woo_get_cog_product_value( $product, $quantity, $price );
     }
 
-    // pixel_cog: delegate to existing PYS COG cascade function
-    return pys_woo_get_cog_product_value( $product, $quantity, $price );
+    $cost       = pys_cog_resolve_product_cost( $product );
+    $price_args = [ 'qty' => $quantity, 'price' => $price ];
+    if ( $cost === null ) {
+        // no cost found: the value is the amount itself, like pys_woo_get_cog_product_value()
+        if ( pys_cog_line_includes_tax( pys_cog_default_tax_source() ) ) {
+            $amount = (float) wc_get_price_including_tax( $product, $price_args );
+        } else {
+            $amount = (float) wc_get_price_excluding_tax( $product, $price_args );
+        }
+        return formatPriceTrimZeros( $amount );
+    }
+    if ( pys_cog_line_includes_tax( $cost['source'] ) ) {
+        $amount = (float) wc_get_price_including_tax( $product, $price_args );
+    } else {
+        $amount = (float) wc_get_price_excluding_tax( $product, $price_args );
+    }
+    return formatPriceTrimZeros( $amount - pys_cog_cost_amount( $cost, $quantity, $amount ) );
+}
+
+/**
+ * The product lines of an order with what the profit math needs, resolved through
+ * pys_cog_resolve_product_cost() (use for the 'wc_cog' and 'auto' sources).
+ *
+ * Per line: product (the variation when there is one, null when it was deleted), quantity,
+ * total (after coupons), total_tax, subtotal (before coupons), subtotal_tax, cost (resolver
+ * result or null), include_tax (the line's tax rule), revenue (total [+ total_tax]) and
+ * cost_amount. Both are null when the line has no cost.
+ *
+ * cost_amount: fixed = per unit × quantity, percent = share of the line SUBTOTAL before coupons
+ * (with its tax per the line's rule), as the PYS COG add-on does. A WooCommerce-resolved line
+ * uses the cost WooCommerce stored on the order item (get_cogs_value(): what the item cost when
+ * the order was placed) when the item carries one, otherwise the resolver value × quantity.
+ *
+ * @param \WC_Order $order
+ * @return array[]
+ */
+function pys_cog_get_order_lines( $order ) {
+    $lines = [];
+    foreach ( $order->get_items() as $item ) {
+        if ( ! ( $item instanceof \WC_Order_Item_Product ) ) {
+            continue;
+        }
+        $product  = $item->get_product();
+        $cost     = $product ? pys_cog_resolve_product_cost( $product ) : null;
+        $quantity = $item->get_quantity();
+        $line     = [
+            'product'      => $product ? $product : null,
+            'quantity'     => $quantity,
+            'total'        => (float) $item->get_total(),
+            'total_tax'    => (float) $item->get_total_tax(),
+            'subtotal'     => (float) $item->get_subtotal(),
+            'subtotal_tax' => (float) $item->get_subtotal_tax(),
+            'cost'         => $cost,
+            'include_tax'  => null,
+            'revenue'      => null,
+            'cost_amount'  => null,
+        ];
+        if ( $cost !== null ) {
+            $include_tax         = pys_cog_line_includes_tax( $cost['source'] );
+            $line['include_tax'] = $include_tax;
+            $line['revenue']     = $line['total'] + ( $include_tax ? $line['total_tax'] : 0.0 );
+            $stored              = $cost['source'] === 'wc_cog' ? (float) $item->get_cogs_value() : 0.0;
+            if ( $stored > 0 ) {
+                $line['cost_amount'] = $stored;
+            } else {
+                $base                = $line['subtotal'] + ( $include_tax ? $line['subtotal_tax'] : 0.0 );
+                $line['cost_amount'] = pys_cog_cost_amount( $cost, $quantity, $base );
+            }
+        }
+        $lines[] = $line;
+    }
+    return $lines;
 }
 
 /**
  * Calculate total profit for a WooCommerce order.
- * Works for both 'wc_cog' and 'pixel_cog' sources.
+ * Works for the 'wc_cog', 'pixel_cog' and 'auto' sources.
  *
- * For 'wc_cog':
- *   profit = subtotal − cogs_total [+ tax] [+ shipping]
- *   tax/shipping inclusion controlled by woo_cog_wc_include_tax / woo_cog_wc_include_shipping.
+ * For 'wc_cog' and 'auto' (per line, see pys_cog_get_order_lines(); lines without a cost
+ * contribute neither revenue nor cost, like the PYS COG add-on):
+ *   profit = Σ (line total after coupons [+ line tax] − line cost) [+ shipping]
+ *   Tax follows each line's own source (pys_cog_line_includes_tax()).
+ *   Shipping: 'auto' with the PYS COG add-on active adds the add-on's shipping profit meta when
+ *   its own shipping option is on; otherwise woo_cog_wc_include_shipping [+ the shipping tax
+ *   when woo_cog_wc_include_tax is on as well]. 'auto' never reads the add-on's order profit meta.
  *
  * For 'pixel_cog':
  *   Uses pre-calculated '_pixel_cost_of_goods_order_profit' order meta (stored by COG plugin).
@@ -724,15 +1012,26 @@ function pys_cog_get_order_profit( $order ) {
         return 0.0;
     }
 
-    if ( pys_cog_get_source() === 'wc_cog' ) {
-        $cogs_total = (float) $order->get_cogs_total_value();
-        $subtotal   = (float) $order->get_subtotal();
-        $profit     = $subtotal - $cogs_total;
-        if ( PYS()->getOption( 'woo_cog_wc_include_tax' ) ) {
-            $profit += (float) $order->get_total_tax();
+    $source = pys_cog_get_source();
+    if ( $source !== 'pixel_cog' ) {
+        $profit = 0.0;
+        foreach ( pys_cog_get_order_lines( $order ) as $line ) {
+            if ( $line['cost'] === null ) {
+                continue;
+            }
+            $profit += $line['revenue'] - $line['cost_amount'];
         }
-        if ( PYS()->getOption( 'woo_cog_wc_include_shipping' ) ) {
+        $shipping_mode = get_option( '_pixel_cost_of_goods_shipping_cost' );
+        if ( $source === 'auto' && isPixelCogActive() ) {
+            // the add-on's own shipping rule: its profit meta, only when its shipping option is on
+            if ( $shipping_mode && $shipping_mode !== 'exclude' ) {
+                $profit += (float) $order->get_meta( '_pixel_cost_of_goods_order_shipping_profit', true );
+            }
+        } elseif ( PYS()->getOption( 'woo_cog_wc_include_shipping' ) ) {
             $profit += (float) $order->get_shipping_total();
+            if ( PYS()->getOption( 'woo_cog_wc_include_tax' ) ) {
+                $profit += (float) $order->get_shipping_tax();
+            }
         }
         return max( 0.0, round( $profit, 2 ) );
     }
@@ -785,31 +1084,44 @@ function getAvailableProductCog( $product ) {
 
 
 function getAvailableProductCogOrder( $order ) {
-    // ── WooCommerce native COGS path ──────────────────────────────────────────
-    if ( pys_cog_get_source() === 'wc_cog' && isWcCogAvailable() && isWcCogFeatureEnabled() ) {
-        // For wc_cog: tax inclusion controlled by our own option, not the PYS COG plugin setting
-        $wc_include_tax = PYS()->getOption( 'woo_cog_wc_include_tax' );
+    // ── 'wc_cog' and 'auto': every line through the resolver and its own tax rule ──
+    // A line without a cost stays in the total with a zero cost: this is the event value.
+    if ( pys_cog_get_source() !== 'pixel_cog' && pys_cog_source_is_available() ) {
+        $default_source = pys_cog_default_tax_source();
         $order_total    = 0.0;
         $cost           = 0.0;
-        foreach ( $order->get_items() as $item_id => $item ) {
-            $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] ? $item['variation_id'] : $item['product_id'] );
-            $product = wc_get_product($product_id);
-            if(!$product) continue;
-
-            $args = array( 'qty'   => 1, 'price' => $product->get_price());
-            $price = 0;
-            $qlt = $item['quantity'] ?? 1;
-
-            if($wc_include_tax) {
-                $price = wc_get_price_excluding_tax($product, $args);
-            } else {
-                $price = wc_get_price_including_tax($product,$args);
+        foreach ( $order->get_items() as $item ) {
+            if ( ! ( $item instanceof \WC_Order_Item_Product ) ) {
+                continue;
             }
-            $order_total += (float) $price;
-
-            $cogs_value = $product->get_cogs_value();
-            if ( $cogs_value === null ) continue;
-            $cost += (float) $cogs_value * (int) $qlt;
+            $productObject = wc_get_product( $item->get_variation_id() ? $item->get_variation_id() : $item->get_product_id() );
+            if ( ! $productObject ) {
+                continue;
+            }
+            $line_cost    = pys_cog_resolve_product_cost( $productObject );
+            $include_tax  = pys_cog_line_includes_tax( $line_cost !== null ? $line_cost['source'] : $default_source );
+            // pys_round() like Pro's pys_cog_get_order_products_args(): the Purchase values cannot differ by cents
+            $order_total += (float) pys_round( $item->get_total() );
+            if ( $include_tax ) {
+                $order_total += (float) pys_round( $item->get_total_tax() );
+            }
+            if ( $line_cost === null ) {
+                continue;
+            }
+            $qlt  = $item->get_quantity();
+            $base = 0.0;
+            if ( $line_cost['type'] === 'percent' ) {
+                // a percent cost is a share of the line subtotal, like the COG plugin: discounted, before coupons
+                $price = pys_woo_line_unit_price( pys_round( $item->get_subtotal() ), pys_round( $item->get_subtotal_tax() ), $qlt, $include_tax );
+                if ( $price === false ) {
+                    $price_args = [ 'qty' => 1, 'price' => $productObject->get_price() ];
+                    $price      = $include_tax
+                        ? wc_get_price_including_tax( $productObject, $price_args )
+                        : wc_get_price_excluding_tax( $productObject, $price_args );
+                }
+                $base = $price * $qlt;
+            }
+            $cost += pys_cog_cost_amount( $line_cost, $qlt, $base );
         }
         return $order_total - $cost;
     }
@@ -944,32 +1256,200 @@ function getProductCogOrder( $args ) {
     return [ 'cost' => $cost, 'profit' => $custom_total - $cost ];
 }
 
+/**
+ * Check if every product in the order has a defined Cost of Goods.
+ *
+ * Uses the global woo_cog_source option (via pys_cog_get_source()):
+ * - 'wc_cog':    WooCommerce native COGS (10.3+), through pys_cog_resolve_product_cost().
+ * - 'auto':      the resolver's cascade (PYS levels, then WooCommerce).
+ * - 'pixel_cog': PYS COG plugin. Cascades: product → parent → category → global.
+ *
+ * Returns false if any single product lacks a cost value.
+ *
+ * @param \WC_Order $order
+ * @return bool
+ */
+function poasAllProductsHaveCost( $order ) {
+    $source = pys_cog_get_source();
+
+    // wc_cog / auto: every product line has to resolve to a cost; a deleted product does not
+    if ( $source !== 'pixel_cog' ) {
+        if ( ! pys_cog_source_is_available() ) {
+            return false;
+        }
+        foreach ( pys_cog_get_order_lines( $order ) as $line ) {
+            if ( $line['product'] === null || $line['cost'] === null ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // PYS COG plugin: cascade through product → parent → category → global
+    if ( ! isPixelCogActive() ) {
+        return false;
+    }
+
+    $global_cost = get_option( '_pixel_cost_of_goods_cost_val' );
+
+    foreach ( $order->get_items() as $item ) {
+        if ( ! ( $item instanceof \WC_Order_Item_Product ) ) {
+            continue;
+        }
+
+        $variation_id = $item->get_variation_id();
+        $product_id   = $variation_id ? $variation_id : $item->get_product_id();
+
+        // Level 1: product meta
+        $product_cost = get_post_meta( $product_id, '_pixel_cost_of_goods_cost_val', true );
+        if ( $product_cost !== '' && is_numeric( $product_cost ) ) {
+            continue;
+        }
+
+        // Level 2: parent product meta (if variation)
+        if ( $variation_id ) {
+            $parent_id    = $item->get_product_id();
+            $product_cost = get_post_meta( $parent_id, '_pixel_cost_of_goods_cost_val', true );
+            if ( $product_cost !== '' && is_numeric( $product_cost ) ) {
+                continue;
+            }
+        }
+
+        // Level 3: category cost
+        $cat_cost = get_product_cost_by_cat( $product_id );
+        if ( $cat_cost !== '' && $cat_cost !== false && is_numeric( $cat_cost ) ) {
+            continue;
+        }
+
+        // Level 4: global cost
+        if ( $global_cost !== '' && $global_cost !== false && is_numeric( $global_cost ) ) {
+            continue;
+        }
+
+        // No cost found at any level
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Net revenue of an order for Meta: the order profit, when every product has a cost.
+ * Same gate and number as the Pro ProfitConversion event (poasAllProductsHaveCost() + pys_cog_get_order_profit()).
+ *
+ * @param \WC_Order $order
+ * @return float|null null = omit it (not an order, source unavailable, a product without cost, profit zero or negative).
+ */
+function pys_cog_get_order_net_revenue( $order ) {
+    if ( ! ( $order instanceof \WC_Order ) || ! pys_cog_source_is_available() ) {
+        return null;
+    }
+    if ( ! poasAllProductsHaveCost( $order ) ) {
+        return null;
+    }
+    $profit = pys_cog_get_order_profit( $order );
+    if ( $profit <= 0.0 ) {
+        return null;
+    }
+    return round( $profit, 2 );
+}
+
+/**
+ * Whether a Meta Purchase event describes the whole order, which is what Meta's
+ * net_revenue (the whole order's profit) needs. False when the event's quantity
+ * differs from the order's (an event narrowed to some products). Free has no
+ * deposit / partial-payment handling and no per-pixel product filter, so this is
+ * the only whole-order signal it needs.
+ *
+ * The order side is the sum of quantities over the order's product lines whose
+ * product still exists (the lines getAvailableProductCogOrder() prices). The
+ * event side, in order of preference: the event's own product list ($products,
+ * set on events PHP built); the num_items param (browser-relayed events have no
+ * product list; the "num_items" parameter can be switched off, and then it is
+ * stripped before it gets here); the sum over contents[].quantity. Unknown = false.
+ *
+ * @param \WC_Order  $order
+ * @param array      $params   Event params.
+ * @param array|null $products The event's args['products'], when it has them.
+ * @return bool
+ */
+function pys_meta_event_covers_whole_order( $order, $params, $products = null ) {
+    if ( ! ( $order instanceof \WC_Order ) ) {
+        return false;
+    }
+
+    $event_qty = null;
+    if ( is_array( $products ) ) {
+        $event_qty = 0.0;
+        foreach ( $products as $product ) {
+            $event_qty += isset( $product['quantity'] ) ? (float) $product['quantity'] : 0.0;
+        }
+    } elseif ( isset( $params['num_items'] ) && is_numeric( $params['num_items'] ) ) {
+        $event_qty = (float) $params['num_items'];
+    } elseif ( ! empty( $params['contents'] ) && is_array( $params['contents'] ) ) {
+        $event_qty = 0.0;
+        foreach ( $params['contents'] as $content ) {
+            $event_qty += isset( $content['quantity'] ) ? (float) $content['quantity'] : 0.0;
+        }
+    }
+    if ( $event_qty === null ) {
+        return false;
+    }
+
+    $order_qty = 0.0;
+    foreach ( $order->get_items() as $item ) {
+        if ( ! ( $item instanceof \WC_Order_Item_Product ) ) {
+            continue;
+        }
+        if ( ! wc_get_product( $item->get_variation_id() ? $item->get_variation_id() : $item->get_product_id() ) ) {
+            continue;
+        }
+        $order_qty += (float) $item->get_quantity();
+    }
+    return $order_qty > 0 && abs( $event_qty - $order_qty ) < 0.0001;
+}
+
 function getAvailableProductCogCart() {
     if ( ! isWooCartAvailable() ) return '';
 
     $shipping        = WC()->cart->get_shipping_total();
     $cart_total_base = WC()->cart->get_total( 'edit' ) - $shipping;
 
-    // ── WooCommerce native COGS path ──────────────────────────────────────────
-    if ( pys_cog_get_source() === 'wc_cog' && isWcCogAvailable() && isWcCogFeatureEnabled() ) {
-        // For wc_cog: tax inclusion controlled by our own option, not the PYS COG plugin setting
-        $wc_include_tax = PYS()->getOption( 'woo_cog_wc_include_tax' );
-        $cart_total     = $cart_total_base;
-        if ( $wc_include_tax ) {
-            $cart_total -= WC()->cart->get_shipping_tax(); // keep product tax, remove shipping tax
-        } else {
-            $cart_total -= WC()->cart->get_total_tax();    // remove all tax
+    // ── 'wc_cog' and 'auto': every line through the resolver and its own tax rule ──
+    if ( pys_cog_get_source() !== 'pixel_cog' && pys_cog_source_is_available() ) {
+        $default_source = pys_cog_default_tax_source();
+        // goods without any tax; each line then adds back its own tax when its rule says so
+        $cart_total = $cart_total_base - WC()->cart->get_total_tax();
+        if ( pys_cog_line_includes_tax( $default_source ) ) {
+            $cart_total += (float) WC()->cart->get_fee_tax(); // fees are not product lines: default rule
         }
-        $cost = 0.0;
+        $cost       = 0.0;
         foreach ( WC()->cart->cart_contents as $item ) {
             $product_id = ( isset( $item['variation_id'] ) && 0 != $item['variation_id'] )
                 ? $item['variation_id']
                 : $item['product_id'];
-            $product = wc_get_product( $product_id );
-            if ( ! $product ) continue;
-            $cogs_value = $product->get_cogs_value();
-            if ( $cogs_value === null ) continue;
-            $cost += (float) $cogs_value * (int) $item['quantity'];
+            $product     = wc_get_product( $product_id );
+            $line_cost   = $product ? pys_cog_resolve_product_cost( $product ) : null;
+            $include_tax = pys_cog_line_includes_tax( $line_cost !== null ? $line_cost['source'] : $default_source );
+            if ( $include_tax ) {
+                $cart_total += (float) ( $item['line_tax'] ?? 0 );
+            }
+            if ( $line_cost === null ) {
+                continue;
+            }
+            $qlt  = $item['quantity'];
+            $base = 0.0;
+            if ( $line_cost['type'] === 'percent' ) {
+                $price = pys_woo_line_unit_price( $item['line_subtotal'] ?? null, $item['line_subtotal_tax'] ?? 0, $qlt, $include_tax );
+                if ( $price === false ) {
+                    $price_args = [ 'qty' => 1, 'price' => $product->get_price() ];
+                    $price      = $include_tax
+                        ? wc_get_price_including_tax( $product, $price_args )
+                        : wc_get_price_excluding_tax( $product, $price_args );
+                }
+                $base = $price * $qlt;
+            }
+            $cost += pys_cog_cost_amount( $line_cost, $qlt, $base );
         }
         return $cart_total - $cost;
     }
@@ -2887,6 +3367,13 @@ function pys_get_external_ids( $user_id = null ) {
         );
     }
 
+    // Every other id this account has been seen under, after the live ones.
+    if ( $user_id > 0 ) {
+        foreach ( pys_get_user_stored_external_ids( $user_id ) as $stored ) {
+            $ids[] = $stored;
+        }
+    }
+
     $ids = array_filter( array_map( 'strval', $ids ), 'strlen' );
     $ids = array_values( array_unique( $ids ) );
 
@@ -2897,6 +3384,75 @@ function pys_get_external_ids( $user_id = null ) {
      * @param int      $user_id WordPress user the set was built for, 0 when anonymous.
      */
     return apply_filters( 'pys_external_ids', $ids, $user_id );
+}
+
+/**
+ * The ids stored on an account in `pys_external_ids`, hashed, newest first.
+ *
+ * @param int $user_id
+ * @return string[] Hashed ids; empty for a guest or a corrupt list.
+ */
+function pys_get_user_stored_external_ids( $user_id ) {
+    $user_id = (int) $user_id;
+
+    if ( $user_id <= 0 ) {
+        return array();
+    }
+
+    $list = get_user_meta( $user_id, 'pys_external_ids', true );
+
+    if ( ! is_array( $list ) ) {
+        return array();
+    }
+
+    $out = array();
+
+    foreach ( $list as $raw ) {
+        if ( is_scalar( $raw ) ) {
+            $hashed = pys_hash_external_id( $raw );
+
+            if ( '' !== $hashed ) {
+                $out[] = $hashed;
+            }
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Remember an id the customer was seen under, on their account.
+ *
+ * Raw ids, distinct, newest first, at most 20 (the oldest
+ * drop off). No visitor-key check here: the browser cookie is minted from the
+ * visitor key, so the browser's own id often equals it. The CALLER decides
+ * whether the id is the browser's (login: the pbid cookie; checkout: the order
+ * id only when it equals the request's pbid cookie) and never passes the
+ * server's no-cookie fallback key.
+ *
+ * @param int    $user_id
+ * @param string $id Raw id, as the browser cookie or the order holds it.
+ * @return void
+ */
+function pys_append_user_external_id( $user_id, $id ) {
+    $user_id = (int) $user_id;
+    $id      = is_scalar( $id ) ? trim( (string) $id ) : '';
+
+    if ( $user_id <= 0 || '' === $id || strlen( $id ) > 191 ) {
+        return;
+    }
+
+    $list = get_user_meta( $user_id, 'pys_external_ids', true );
+    $list = is_array( $list ) ? array_values( array_filter( $list, 'is_string' ) ) : array();
+
+    if ( isset( $list[0] ) && $list[0] === $id ) {
+        return;
+    }
+
+    $list = array_values( array_diff( $list, array( $id ) ) );
+    array_unshift( $list, $id );
+
+    update_user_meta( $user_id, 'pys_external_ids', array_slice( $list, 0, 20 ) );
 }
 
 /**
@@ -2922,15 +3478,129 @@ function pys_get_order_external_ids( $stored_id, $user_id = 0 ) {
     $user_id = (int) $user_id;
 
     if ( $user_id > 0 ) {
+        // The account's canonical browser id, as stored (raw, like the order's).
+        $canonical = get_user_meta( $user_id, 'external_id', true );
+        $ids[]     = is_scalar( $canonical ) ? (string) $canonical : '';
+
         /** This filter is documented in pys_get_external_ids(). */
         $ids[] = pys_hash_external_id(
             apply_filters( 'pys_external_id_user_value', (string) $user_id, $user_id )
         );
+
+        // Then every other id the customer has been seen under, hashed.
+        foreach ( pys_get_user_stored_external_ids( $user_id ) as $stored ) {
+            $ids[] = $stored;
+        }
     }
 
     $ids = array_filter( array_map( 'strval', $ids ), 'strlen' );
     $ids = array_values( array_unique( $ids ) );
+    $ids = array_slice( $ids, 0, 20 );
 
     /** This filter is documented in pys_get_external_ids(). */
     return apply_filters( 'pys_external_ids', $ids, $user_id );
+}
+
+/**
+ * Hosts this site is served on: the home_url() and site_url() hosts plus the
+ * language domains/subdomains of Polylang and WPML.
+ *
+ * @return string[] Lowercased, unique, non-empty.
+ */
+function pys_site_hosts() {
+    $hosts = array();
+
+    foreach ( array( home_url(), site_url() ) as $url ) {
+        $host = wp_parse_url( (string) $url, PHP_URL_HOST );
+        if ( is_string( $host ) ) {
+            $hosts[] = $host;
+        }
+    }
+
+    // Polylang: "a different domain per language" and subdomain modes.
+    try {
+        $polylang = isset( $GLOBALS['polylang'] ) ? $GLOBALS['polylang'] : null;
+        if ( is_object( $polylang )
+            && isset( $polylang->links_model )
+            && is_object( $polylang->links_model )
+            && method_exists( $polylang->links_model, 'get_hosts' )
+        ) {
+            $hosts = array_merge( $hosts, array_values( (array) $polylang->links_model->get_hosts() ) );
+        }
+    } catch ( \Throwable $e ) {
+        // Language hosts are optional; fall back to the site hosts.
+    }
+
+    // WPML: "a different domain per language" (negotiation type 2).
+    try {
+        if ( defined( 'ICL_SITEPRESS_VERSION' )
+            && 2 === (int) apply_filters( 'wpml_setting', 0, 'language_negotiation_type' )
+        ) {
+            $domains = apply_filters( 'wpml_setting', array(), 'language_domains' );
+            foreach ( is_array( $domains ) ? $domains : array() as $domain ) {
+                if ( ! is_string( $domain ) || '' === trim( $domain ) ) {
+                    continue;
+                }
+                $domain = trim( $domain );
+                if ( false === strpos( $domain, '://' ) ) {
+                    $domain = 'http://' . $domain;
+                }
+                $host = wp_parse_url( $domain, PHP_URL_HOST );
+                if ( is_string( $host ) ) {
+                    $hosts[] = $host;
+                }
+            }
+        }
+    } catch ( \Throwable $e ) {
+        // Language hosts are optional; fall back to the site hosts.
+    }
+
+    /**
+     * Filters the hosts PixelYourSite treats as this site (REST same-origin
+     * check, MCP page scanner). Lets sites that serve pages on extra domains
+     * (TranslatePress, domain mapping) add them.
+     *
+     * @param string[] $hosts Hosts without scheme or port, e.g. `www.example.se`.
+     */
+    $hosts = apply_filters( 'pys_site_hosts', $hosts );
+
+    $clean = array();
+    foreach ( is_array( $hosts ) ? $hosts : array() as $host ) {
+        if ( ! is_string( $host ) ) {
+            continue;
+        }
+        $host = strtolower( trim( $host ) );
+        if ( '' !== $host ) {
+            $clean[] = $host;
+        }
+    }
+
+    return array_values( array_unique( $clean ) );
+}
+
+/**
+ * Whether a REST request comes from a page of this site: the Origin host (or,
+ * when Origin is absent, the Referer host) is one of pys_site_hosts().
+ *
+ * @param \WP_REST_Request $request
+ * @return bool
+ */
+function pys_rest_is_same_origin( $request ) {
+    $origin  = $request->get_header( 'origin' );
+    $referer = $request->get_header( 'referer' );
+
+    if ( ! empty( $origin ) ) {
+        $source = $origin;
+    } elseif ( ! empty( $referer ) ) {
+        $source = $referer;
+    } else {
+        return false;
+    }
+
+    $host = wp_parse_url( $source, PHP_URL_HOST );
+    if ( ! is_string( $host ) || '' === $host ) {
+        return false;
+    }
+
+    return in_array( strtolower( $host ), pys_site_hosts(), true );
 }

@@ -1,6 +1,8 @@
 <?php
 namespace PixelYourSite;
 
+require_once __DIR__ . '/functions-wc-attribution.php';
+
 class EnrichOrder {
     private static $_instance;
 
@@ -23,69 +25,17 @@ class EnrichOrder {
             // Block-based checkout (Store API)
             add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'woo_save_checkout_fields_block' ), 10, 1 );
 
+            // WooCommerce writes its attribution meta at priority 10; fill the last visit after it.
+            add_action( 'woocommerce_order_save_attribution_data', array( $this, 'woo_fill_last_visit_from_attribution' ), 20, 1 );
+
             // Subscription renewal orders (WooCommerce Subscriptions)
             add_filter( 'wcs_renewal_order_created', array( $this, 'woo_save_renewal_order_fields' ), 10, 2 );
-
-            add_action( 'add_meta_boxes', array($this,'woo_add_order_meta_boxes') );
-            if(PYS()->getOption("woo_add_enrich_to_admin_email")) {
-                add_action( 'woocommerce_email_customer_details', array($this,'woo_add_enrich_to_admin_email'),80,4 );
-            }
         }
 
         // edd
         if(PYS()->getOption("edd_enabled_save_data_to_orders")) {
             add_filter('edd_payment_meta', array($this, 'edd_save_checkout_fields'),10,2);
-            add_action('edd_view_order_details_main_after', array($this, 'add_edd_order_details'));
         }
-    }
-
-    function add_edd_order_details($payment_id) {
-        if ( ! current_user_can( 'manage_pys_reports' ) ) {
-            return;
-        }
-
-        echo '<div id="edd-payment-notes" class="postbox">
-    <h3 class="hndle"><span>PixelYourSite</span></h3>';
-        echo "<div style='margin:20px'>
-                <p>With the paid plugin, you can see more data on the Easy Digital Downloads Reports page. <a target='_blank' href='https://www.pixelyoursite.com/strategy/edd-first-party-reports'>Click here for details.</a></p>
-                <p>You can ". (PYS()->getOption('edd_enabled_display_data_to_orders') ? 'hide' : 'show') ." Report data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=edd")."' target='_blank'>Easy Digital Downloads page</a>. </p>
-                <p>You can stop storing this data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=edd")."' target='_blank'>Easy Digital Downloads page</a></p>
-                </div>";
-        include 'views/html-edd-order-box.php';
-        echo '</div>';
-    }
-
-    function woo_add_order_meta_boxes () {
-        if ( ! current_user_can( 'manage_pys_reports' ) ) {
-            return;
-        }
-
-        $screen = isWooUseHPStorage()
-            ? wc_get_page_screen_id( 'shop-order' )
-            : 'shop_order';
-        add_meta_box( 'pys_enrich_fields_woo', __('PixelYourSite','pys'),
-            array($this,"woo_render_order_fields"), $screen);
-    }
-
-    function woo_render_order_fields($post) {
-        if ( ! current_user_can( 'manage_pys_reports' ) ) {
-            return;
-        }
-
-        if ($post instanceof \WP_Post) {
-            $orderId = $post->ID;
-        } elseif (method_exists($post, 'get_id')) {
-            $orderId = $post->get_id();
-        } else {
-            // Handle the situation when $post is neither a \WP_Post object nor an object with get_id() method.
-            $orderId = null; // Or another default value.
-        }
-        echo "<div style='margin:20px 10px'>
-                <p>With the paid plugin, you can see more data on the WooCommerce Reports page. <a href='https://www.pixelyoursite.com/strategy/woocommerce-first-party-reports' target='_blank'>Click here for details</a></p>
-                <p>You can ". (PYS()->getOption('woo_enabled_display_data_to_orders') ? 'hide' : 'show') ." Report data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=woo")."' target='_blank'>WooCommerce page</a>. </p>
-                <p>You can stop storing this data from the plugin's <a href='".admin_url("admin.php?page=pixelyoursite&tab=woo")."' target='_blank'>WooCommerce page</a>.</p>
-                </div>";
-        include 'views/html-order-meta-box.php';
     }
     /**
      * Wrapper for the woocommerce_new_order hook
@@ -123,6 +73,7 @@ class EnrichOrder {
         $pysData = $this->getPysData( false );
         $order->update_meta_data( 'pys_enrich_data', $pysData );
         $order->save();
+        pys_fill_last_visit_from_wc_attribution( $order );
     }
 
     /**
@@ -138,6 +89,14 @@ class EnrichOrder {
         $pysData = $this->getPysData( false );
         $order->update_meta_data( 'pys_enrich_data', $pysData );
         $order->save();
+        pys_fill_last_visit_from_wc_attribution( $order );
+    }
+
+    /**
+     * @param \WC_Order $order
+     */
+    public function woo_fill_last_visit_from_attribution( $order ) {
+        pys_fill_last_visit_from_wc_attribution( $order );
     }
 
     /**
@@ -159,24 +118,6 @@ class EnrichOrder {
         return $renewal_order;
     }
 
-    /**
-     * Not capability gated: no admin user owns this request; the option controls it.
-     *
-     * @param \WC_Order$order
-     * @param $sent_to_admin
-     * @param $plain_text
-     * @param $email
-     */
-
-    function woo_add_enrich_to_admin_email($order, $sent_to_admin) {
-        if($sent_to_admin) {
-            $orderId = $order->get_id();
-            echo "<h2 style='text-align: center'>". __('PixelYourSite','pys')."</h2>";
-            echo "Your clients don't see this information! We send it to you in this \"New Order\" email. If you want to remove this data from the \"New Order\" email, open <a href='".admin_url("admin.php?page=pixelyoursite&tab=woo")."' target='_blank'>PixelYourSite's WooCommerce page</a>, disable \"Send reports data to the New Order email\" and save.
-            <br/>With PixelYourSite Professional, you can view and download this data from the plugin's own reports page. Find out how WooCommerce Reports work and how to visualize and download your data: <a href='https://www.pixelyoursite.com/strategy/woocommerce-first-party-reports' target='_blank'>Click here for details</a>.<br/>";
-            include 'views/html-order-meta-box.php';
-        }
-    }
 
 
     function edd_save_checkout_fields( $payment_meta ,$init_payment_data) {

@@ -54,7 +54,19 @@ class Facebook_REST_API {
             }
         }
 
-        $singleEvent = $this->data_to_single_event( $event, $data, $eventID, $ids, $woo_order, $edd_order, $referrer_url, $event_source_url );
+        $event_slug = sanitize_key( (string) $request->get_param( 'event_slug' ) );
+
+        if ( ! pys_server_event_has_consent( 'facebook', (string) $event ) ) {
+            return new \WP_REST_Response(
+                array(
+                    'success' => false,
+                    'reason'  => 'no_consent',
+                ),
+                200
+            );
+        }
+
+        $singleEvent = $this->data_to_single_event( $event, $data, $eventID, $ids, $woo_order, $edd_order, $referrer_url, $event_source_url, $event_slug );
 
         // Authentication and the send both run inside the task: the user is needed
         // while the payload is built in sendEventsNow(), and it may run after the
@@ -169,8 +181,9 @@ class Facebook_REST_API {
      * session-bound and roll every 12h, which breaks cached pages).
      *
      * Defense in Depth applied at this layer:
-     *   1) Same-origin enforcement via Origin / Referer headers blocks the
-     *      most common cross-site abuse vector.
+     *   1) Same-origin enforcement via Origin / Referer headers (site and
+     *      Polylang / WPML language hosts) blocks the most common
+     *      cross-site abuse vector.
      *   2) Payload data is sanitized in sanitize_data() / get_event_args().
      *   3) The `pys_rest_event_permission` filter lets site owners harden
      *      this further (rate limits, bot rules) or relax it on environments
@@ -180,24 +193,7 @@ class Facebook_REST_API {
      * @return bool
      */
     public function check_permission( $request ) {
-        $origin    = $request->get_header( 'origin' );
-        $referer   = $request->get_header( 'referer' );
-        $site      = wp_parse_url( home_url() );
-        $site_host = isset( $site['host'] ) ? strtolower( $site['host'] ) : '';
-
-        $is_same_origin = false;
-
-        if ( ! empty( $origin ) ) {
-            $origin_parts = wp_parse_url( $origin );
-            $is_same_origin = ! empty( $site_host )
-                && isset( $origin_parts['host'] )
-                && strtolower( $origin_parts['host'] ) === $site_host;
-        } elseif ( ! empty( $referer ) ) {
-            $referer_parts = wp_parse_url( $referer );
-            $is_same_origin = ! empty( $site_host )
-                && isset( $referer_parts['host'] )
-                && strtolower( $referer_parts['host'] ) === $site_host;
-        }
+        $is_same_origin = pys_rest_is_same_origin( $request );
 
         // Per-IP rate limiting: max requests per minute per namespace.
         // The limit is configured via the 'pys_check_permission_rate_limit'
@@ -352,7 +348,7 @@ class Facebook_REST_API {
     /**
      * Convert data to SingleEvent object
      */
-    private function data_to_single_event( $event_name, $params, $event_id, $ids, $woo_order, $edd_order, $referrer_url = '', $event_source_url = '' ) {
+    private function data_to_single_event( $event_name, $params, $event_id, $ids, $woo_order, $edd_order, $referrer_url = '', $event_source_url = '', $event_slug = '' ) {
         $singleEvent = new SingleEvent( "", "" );
 
         $payload = array(
@@ -362,6 +358,12 @@ class Facebook_REST_API {
             'edd_order' => $edd_order,
             'pixelIds'  => $ids
         );
+
+        // The browser's event id (e_id); the SingleEvent keeps an empty id. It only
+        // tells the server which kind of event this is (net_revenue is Purchase-only).
+        if ( '' !== $event_slug ) {
+            $payload['event_slug'] = $event_slug;
+        }
 
         if ( ! empty( $referrer_url ) && pys_is_valid_public_url( $referrer_url ) ) {
             $payload['referrer_url'] = $referrer_url;
@@ -381,25 +383,38 @@ class Facebook_REST_API {
      * Enqueue scripts for frontend
      */
     public function enqueue_scripts() {
-        if ( ! Facebook()->isServerApiEnabled() ) {
-            return;
-        }
-
-        wp_localize_script( 'jquery', 'pysFacebookRest', array(
-            'restApiUrl' => rest_url( 'pys-facebook/v1/event' ),
-            'debug'      => PYS()->getOption( 'debug_enabled' )
-        ) );
+        $this->localize_rest_data();
     }
 
     /**
      * Enqueue admin scripts
      */
     public function enqueue_admin_scripts() {
+        $this->localize_rest_data();
+    }
+
+    /**
+     * Print the route URL as a global on our own source-less handle.
+     *
+     * Not on 'jquery': WordPress ends that inline block with a
+     * `sourceURL=jquery-core-js-extra` comment, and script optimizers that
+     * defer jQuery (WP Rocket) wrap every inline script mentioning jquery in a
+     * DOMContentLoaded callback. The `var` then never reaches window, and
+     * public.js, which picks REST only when the global exists, falls back to
+     * admin-ajax.php. The handle name must stay free of "jquery".
+     */
+    private function localize_rest_data() {
         if ( ! Facebook()->isServerApiEnabled() ) {
             return;
         }
 
-        wp_localize_script( 'jquery', 'pysFacebookRest', array(
+        if ( ! wp_script_is( 'pys-rest', 'registered' ) ) {
+            wp_register_script( 'pys-rest', false, array(), PYS_FREE_VERSION, false );
+        }
+
+        wp_enqueue_script( 'pys-rest' );
+
+        wp_localize_script( 'pys-rest', 'pysFacebookRest', array(
             'restApiUrl' => rest_url( 'pys-facebook/v1/event' ),
             'debug'      => PYS()->getOption( 'debug_enabled' )
         ) );

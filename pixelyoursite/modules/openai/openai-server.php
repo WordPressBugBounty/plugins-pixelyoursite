@@ -262,7 +262,7 @@ class OpenAIServer {
             $serverEvent->user = $userData;
         }
 
-        $serverEvent->data = $this->normaliseData( $params['data'] ?? array( 'type' => 'contents' ) );
+        $serverEvent->data = $this->normaliseData( $params['data'] ?? array( 'type' => $serverEvent->type === 'custom' ? 'custom' : 'contents' ) );
 
         return $serverEvent;
     }
@@ -387,10 +387,15 @@ class OpenAIServer {
             }
 
         } elseif ( EventsManager::isTrackExternalId() ) {
-            $external_id = OpenAI()->getExternalId( $wooOrder, $eddOrder );
+            $external_ids = OpenAI()->getExternalId( $wooOrder, $eddOrder );
 
-            if ( $external_id !== '' ) {
-                $userData->external_ids_sha256 = array( hash( 'sha256', $external_id ) );
+            if ( ! empty( $external_ids ) ) {
+                $userData->external_ids_sha256 = array_map(
+                    function ( $id ) {
+                        return hash( 'sha256', (string) $id );
+                    },
+                    array_slice( $external_ids, 0, OpenAI::MATCHING_LIMITS['external_id_sha256'] )
+                );
             }
         }
 
@@ -556,6 +561,10 @@ class OpenAIServer {
 
         if ( $event_name === '' || empty( $ids ) ) {
             wp_send_json_error( 'Missing mandatory parameters: event and ids', 400 );
+        }
+
+        if ( ! pys_server_event_has_consent( 'openai', $event_name ) ) {
+            wp_send_json_success( array( 'reason' => 'no_consent' ) );
         }
 
         $params   = isset( $_POST['data'] ) ? map_deep( wp_unslash( $_POST['data'] ), 'sanitize_text_field' ) : array();
